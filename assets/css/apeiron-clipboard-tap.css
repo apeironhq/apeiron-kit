@@ -1,0 +1,205 @@
+.elementor-widget-apeiron-clipboard-tap .elementor-widget-container {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap-wrapper {
+	--apeiron-font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	--apeiron-clipboard-tap-primary: var(--apeiron-dashboard-primary, #083c57);
+	--apeiron-clipboard-tap-text-color: #ffffff;
+	--apeiron-clipboard-tap-success-color: #047857;
+	--apeiron-clipboard-tap-error-color: #991b1b;
+	--apeiron-clipboard-tap-focus-border-color: rgba(8, 60, 87, 0.22);
+	--apeiron-clipboard-tap-control-radius: 8px;
+	--apeiron-clipboard-tap-font-size-body: 14px;
+	--apeiron-clipboard-tap-font-weight-title: 500;
+	--apeiron-clipboard-tap-line-height-ui: 1.45;
+	--apeiron-clipboard-tap-transition-duration: 200ms;
+	position: relative;
+	display: flex;
+	justify-content: center;
+	max-width: 100%;
+	font-family: var(--apeiron-font-family);
+	box-sizing: border-box;
+}
+
+/* Inheritance keeps Elementor Typography overrides working on nested text. */
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap-wrapper :where(button, span) {
+	font-family: inherit;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap-wrapper *,
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap-wrapper *::before,
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap-wrapper *::after {
+	box-sizing: border-box;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	max-width: 100%;
+	padding: 12px 18px;
+	/* Reserve focus border space to prevent layout shift. */
+	border: 1px solid transparent;
+	border-radius: var(--apeiron-clipboard-tap-control-radius);
+	background: var(--apeiron-clipboard-tap-primary);
+	background-color: var(--apeiron-clipboard-tap-primary);
+	background-image: none;
+	color: var(--apeiron-clipboard-tap-text-color);
+	fill: currentColor;
+	font-family: var(--apeiron-font-family);
+	font-size: var(--apeiron-clipboard-tap-font-size-body);
+	font-weight: var(--apeiron-clipboard-tap-font-weight-title);
+	line-height: var(--apeiron-clipboard-tap-line-height-ui);
+	letter-spacing: 0;
+	text-decoration: none;
+	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	outline: 0;
+	transition: opacity var(--apeiron-clipboard-tap-transition-duration) ease, background-color var(--apeiron-clipboard-tap-transition-duration) ease, color var(--apeiron-clipboard-tap-transition-duration) ease, border-color var(--apeiron-clipboard-tap-transition-duration) ease;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap:hover {
+	opacity: 0.85;
+	background-image: none;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	transform: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap:active {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	transform: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap:focus {
+	outline: 0;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap:focus-visible {
+	border-color: var(--apeiron-clipboard-tap-focus-border-color);
+	outline: none;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-loading {
+	opacity: 0.65 !important;
+	cursor: wait;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-loading::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 12px;
+	height: 12px;
+	margin: -6px 0 0 -6px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: apeironClipboardTapSpin 0.7s linear infinite;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-loading .apeiron-kit-clipboard-tap__content {
+	visibility: hidden;
+}
+
+@keyframes apeironClipboardTapSpin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__content {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	font-size: 16px;
+	line-height: 1;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__icon svg {
+	display: block;
+	width: 1em;
+	height: 1em;
+	fill: currentColor;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__icon i {
+	line-height: 1;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__icon[hidden] {
+	display: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__text {
+	display: block;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-copied,
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-copied:hover,
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-copied:focus-visible {
+	background-color: var(--apeiron-clipboard-tap-success-color);
+	background-image: none;
+	color: var(--apeiron-clipboard-tap-text-color);
+	fill: currentColor;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-error,
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-error:hover,
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-error:focus-visible {
+	background-color: var(--apeiron-clipboard-tap-error-color);
+	background-image: none;
+	color: var(--apeiron-clipboard-tap-text-color);
+	fill: currentColor;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap__status {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap {
+		transition-duration: .01ms !important;
+	}
+
+	.elementor-widget-apeiron-clipboard-tap .apeiron-kit-clipboard-tap.is-loading::before {
+		animation-duration: 1.4s;
+	}
+}

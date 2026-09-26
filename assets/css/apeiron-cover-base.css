@@ -1,0 +1,245 @@
+.apeiron-cover {
+	/* Canonical variables; --ap-cover-* aliases preserve saved Elementor CSS. */
+	--apeiron-cover-z-index: 2147483000;
+	--apeiron-cover-bg-color: #bcaf93;
+	--apeiron-cover-bg-tint: rgba(255, 255, 255, .08);
+	--apeiron-cover-bg-image: none;
+	--apeiron-cover-pattern-image: none;
+	--apeiron-cover-pattern-size: auto;
+	--apeiron-cover-pattern-custom-size: 520px auto;
+	--apeiron-cover-pattern-repeat: repeat;
+	--apeiron-cover-panel-bg: #ffffff;
+	--apeiron-cover-panel-divider: transparent;
+	--apeiron-cover-center-strip-width: 12px;
+	--apeiron-cover-center-strip-gap: 2px;
+	--apeiron-cover-seam-width: 9px;
+	--apeiron-cover-seam-gap: 1px;
+	--apeiron-cover-center-strip-bg: transparent;
+	--apeiron-cover-center-strip-border: transparent;
+	--apeiron-cover-center-strip-surface: var(--apeiron-cover-center-strip-bg);
+	--apeiron-cover-center-mask-width: var(--apeiron-cover-center-strip-gap);
+	--apeiron-cover-center-strip-edge-offset: calc(var(--apeiron-cover-center-strip-width) / 2);
+	--apeiron-cover-center-mask-bg: rgba(255, 255, 255, .98);
+	--apeiron-cover-center-mask-line-color: transparent;
+	--apeiron-cover-center-edge-shadow: rgba(45, 39, 32, .018);
+	--apeiron-cover-center-label-top: 25%;
+	--apeiron-cover-center-label-bottom: 76%;
+	--apeiron-cover-center-label-color: rgba(83, 83, 83, .52);
+	--apeiron-cover-info-top: 50%;
+	--apeiron-cover-info-duration: 4100ms;
+	--apeiron-cover-panel-duration: 3650ms;
+	--apeiron-cover-exit-duration: 2150ms;
+	--apeiron-cover-ribbon-height: 68px;
+	--apeiron-cover-ribbon-bg: #4c1337;
+	--apeiron-cover-ribbon-tail-bg: #4c1337;
+	--apeiron-cover-ribbon-dash-color: #ffffff;
+	--apeiron-cover-ribbon-dash-width: 3px;
+	--apeiron-cover-ribbon-frame-color: #ffffff;
+	--apeiron-cover-ribbon-edge-width: 3.5;
+	--apeiron-cover-ribbon-tail-edge-width: 7;
+	--apeiron-cover-ribbon-frame-style: dashed;
+	--apeiron-cover-ribbon-frame-width: 4px;
+	--apeiron-cover-ribbon-frame-inset: 0;
+	--apeiron-cover-ribbon-text-color: rgba(255, 255, 255, .92);
+	--apeiron-cover-ribbon-tail-width: 40px;
+	--apeiron-cover-ribbon-tail-height: 54px;
+	--apeiron-cover-pin-size: 128px;
+	--apeiron-cover-pin-min-size: 128px;
+	--apeiron-cover-pin-actual-size: max(var(--apeiron-cover-pin-min-size), var(--apeiron-cover-pin-size));
+	--apeiron-cover-pin-bg: #3a0c29;
+	--apeiron-cover-pin-color: #ffffff;
+	--apeiron-cover-pin-ring-color: #3a0c29;
+	--apeiron-cover-pin-ring-width: 10;
+	--apeiron-cover-pin-image-size: 46px;
+	--apeiron-cover-recipient-gap: 48px;
+	--apeiron-cover-recipient-bg: #ffffff;
+	--apeiron-cover-recipient-width: 176px;
+	--apeiron-cover-recipient-drop: 3px;
+	--apeiron-cover-recipient-border-width: 5;
+	--apeiron-cover-recipient-radius: 34;
+	--apeiron-cover-recipient-shadow-color: rgba(0, 0, 0, .16);
+	--apeiron-cover-recipient-shadow-blur: 10;
+	--apeiron-cover-recipient-shadow-y: 10;
+	--apeiron-cover-button-color: #ffffff;
+	--apeiron-cover-button-bg: transparent;
+	--apeiron-cover-button-hover-bg: transparent;
+	--apeiron-cover-button-hover-color: #ffffff;
+	--apeiron-cover-button-transition-duration: 280ms;
+	--apeiron-cover-button-padding: 0px;
+	--apeiron-cover-ease: cubic-bezier(.24, 0, .08, 1);
+	--apeiron-cover-ease-ribbon: cubic-bezier(.26, 0, .1, 1);
+	--apeiron-cover-font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif);
+	--ap-cover-z-index: var(--apeiron-cover-z-index);
+	--ap-cover-bg-color: var(--apeiron-cover-bg-color);
+	--ap-cover-bg-tint: var(--apeiron-cover-bg-tint);
+	--ap-cover-bg-image: var(--apeiron-cover-bg-image);
+	--ap-cover-pattern-image: var(--apeiron-cover-pattern-image);
+	--ap-cover-pattern-size: var(--apeiron-cover-pattern-size);
+	--ap-cover-pattern-custom-size: var(--apeiron-cover-pattern-custom-size);
+	--ap-cover-pattern-repeat: var(--apeiron-cover-pattern-repeat);
+	--ap-cover-panel-bg: var(--apeiron-cover-panel-bg);
+	--ap-cover-panel-divider: var(--apeiron-cover-panel-divider);
+	--ap-cover-center-strip-width: var(--apeiron-cover-seam-width);
+	--ap-cover-center-strip-gap: var(--apeiron-cover-seam-gap);
+	--ap-cover-center-strip-bg: var(--apeiron-cover-center-strip-bg);
+	--ap-cover-center-strip-border: var(--apeiron-cover-center-strip-border);
+	--ap-cover-center-strip-surface: var(--apeiron-cover-center-strip-surface);
+	--ap-cover-center-mask-width: var(--apeiron-cover-center-mask-width);
+	--ap-cover-center-strip-edge-offset: var(--apeiron-cover-center-strip-edge-offset);
+	--ap-cover-center-mask-bg: var(--apeiron-cover-center-mask-bg);
+	--ap-cover-center-mask-line-color: var(--apeiron-cover-center-mask-line-color);
+	--ap-cover-center-edge-shadow: var(--apeiron-cover-center-edge-shadow);
+	--ap-cover-center-label-top: var(--apeiron-cover-center-label-top);
+	--ap-cover-center-label-bottom: var(--apeiron-cover-center-label-bottom);
+	--ap-cover-center-label-color: var(--apeiron-cover-center-label-color);
+	--ap-cover-info-top: var(--apeiron-cover-info-top);
+	--ap-cover-info-duration: var(--apeiron-cover-info-duration);
+	--ap-cover-panel-duration: var(--apeiron-cover-panel-duration);
+	--ap-cover-exit-duration: var(--apeiron-cover-exit-duration);
+	--ap-cover-ribbon-height: var(--apeiron-cover-ribbon-height);
+	--ap-cover-ribbon-bg: var(--apeiron-cover-ribbon-bg);
+	--ap-cover-ribbon-tail-bg: var(--apeiron-cover-ribbon-tail-bg);
+	--ap-cover-ribbon-dash-color: var(--apeiron-cover-ribbon-dash-color);
+	--ap-cover-ribbon-dash-width: var(--apeiron-cover-ribbon-dash-width);
+	--ap-cover-ribbon-frame-color: var(--apeiron-cover-ribbon-frame-color);
+	--ap-cover-ribbon-edge-width: var(--apeiron-cover-ribbon-edge-width);
+	--ap-cover-ribbon-tail-edge-width: var(--apeiron-cover-ribbon-tail-edge-width);
+	--ap-cover-ribbon-frame-style: var(--apeiron-cover-ribbon-frame-style);
+	--ap-cover-ribbon-frame-width: var(--apeiron-cover-ribbon-frame-width);
+	--ap-cover-ribbon-frame-inset: var(--apeiron-cover-ribbon-frame-inset);
+	--ap-cover-ribbon-text-color: var(--apeiron-cover-ribbon-text-color);
+	--ap-cover-ribbon-tail-width: var(--apeiron-cover-ribbon-tail-width);
+	--ap-cover-ribbon-tail-height: var(--apeiron-cover-ribbon-tail-height);
+	--ap-cover-pin-size: var(--apeiron-cover-pin-size);
+	--ap-cover-pin-min-size: var(--apeiron-cover-pin-min-size);
+	--ap-cover-pin-actual-size: var(--apeiron-cover-pin-actual-size);
+	--ap-cover-pin-bg: var(--apeiron-cover-pin-bg);
+	--ap-cover-pin-color: var(--apeiron-cover-pin-color);
+	--ap-cover-pin-ring-color: var(--apeiron-cover-pin-ring-color);
+	--ap-cover-pin-ring-width: var(--apeiron-cover-pin-ring-width);
+	--ap-cover-pin-image-size: var(--apeiron-cover-pin-image-size);
+	--ap-cover-recipient-gap: var(--apeiron-cover-recipient-gap);
+	--ap-cover-recipient-bg: var(--apeiron-cover-recipient-bg);
+	--ap-cover-recipient-width: var(--apeiron-cover-recipient-width);
+	--ap-cover-recipient-drop: var(--apeiron-cover-recipient-drop);
+	--ap-cover-recipient-border-width: var(--apeiron-cover-recipient-border-width);
+	--ap-cover-recipient-radius: var(--apeiron-cover-recipient-radius);
+	--ap-cover-recipient-shadow-color: var(--apeiron-cover-recipient-shadow-color);
+	--ap-cover-recipient-shadow-blur: var(--apeiron-cover-recipient-shadow-blur);
+	--ap-cover-recipient-shadow-y: var(--apeiron-cover-recipient-shadow-y);
+	--ap-cover-button-color: var(--apeiron-cover-button-color);
+	--ap-cover-button-bg: var(--apeiron-cover-button-bg);
+	--ap-cover-button-hover-bg: var(--apeiron-cover-button-hover-bg);
+	--ap-cover-button-hover-color: var(--apeiron-cover-button-hover-color);
+	--ap-cover-button-transition-duration: var(--apeiron-cover-button-transition-duration);
+	--ap-cover-button-padding: var(--apeiron-cover-button-padding);
+	--ap-cover-ease: var(--apeiron-cover-ease);
+	--ap-cover-ease-ribbon: var(--apeiron-cover-ease-ribbon);
+	position: fixed;
+	inset: 0;
+	z-index: var(--ap-cover-z-index);
+	width: 100%;
+	max-width: none;
+	height: 100vh;
+	height: 100svh;
+	height: 100dvh;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	overflow: hidden;
+	color: #2c1903;
+	font-family: var(--apeiron-cover-font-family);
+	background: transparent;
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transform: translateY(0);
+	transition:
+		transform var(--ap-cover-exit-duration) var(--ap-cover-ease),
+		opacity var(--ap-cover-exit-duration) var(--ap-cover-ease),
+		visibility var(--ap-cover-exit-duration) var(--ap-cover-ease);
+	box-sizing: border-box;
+}
+
+.apeiron-cover *,
+.apeiron-cover *::before,
+.apeiron-cover *::after {
+	box-sizing: border-box;
+}
+
+.apeiron-cover button,
+.apeiron-cover input,
+.apeiron-cover select,
+.apeiron-cover textarea {
+	font-family: inherit;
+}
+
+html.apeiron-cover-scroll-lock,
+body.apeiron-cover-scroll-lock {
+	overflow: hidden !important;
+	height: 100% !important;
+	overscroll-behavior: none !important;
+}
+
+body.apeiron-cover-scroll-lock {
+	touch-action: none !important;
+}
+
+.apeiron-cover.is-complete {
+	display: none !important;
+}
+
+.apeiron-cover__stage {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background: var(--ap-cover-bg-color);
+	isolation: isolate;
+}
+
+.apeiron-cover.is-releasing {
+	pointer-events: none;
+}
+
+.apeiron-cover--exit-down.is-releasing {
+	transform: translateY(101%);
+	opacity: 1;
+}
+
+.apeiron-cover--exit-up.is-releasing {
+	transform: translateY(-101%);
+	opacity: 1;
+}
+
+.apeiron-cover--exit-fade.is-releasing {
+	transform: scale(1.03);
+	opacity: 0;
+}
+
+.apeiron-cover--exit-none {
+	transition-duration: 1ms;
+}
+
+.apeiron-cover--exit-none.is-releasing {
+	opacity: 0;
+}
+
+.elementor-widget-apeiron-cover {
+	display: block !important;
+	min-height: 0 !important;
+	height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	overflow: visible !important;
+}
+
+.elementor-widget-apeiron-cover > .elementor-widget-container {
+	display: block !important;
+	min-height: 0 !important;
+	height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	overflow: visible !important;
+}

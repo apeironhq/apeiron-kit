@@ -1,0 +1,351 @@
+.elementor-widget-apeiron-social-proof .elementor-widget-container {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof {
+	--apeiron-font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	--apeiron-primary: var(--apeiron-dashboard-primary, #083c57);
+	--apeiron-primary-hover: var(--apeiron-dashboard-primary-dark, #062a3d);
+	--apeiron-primary-soft: var(--apeiron-dashboard-primary-soft, #f3f7fa);
+	--apeiron-soft-bg: #f7f7fb;
+	--apeiron-surface: var(--apeiron-dashboard-surface, #ffffff);
+	--apeiron-surface-soft: var(--apeiron-dashboard-surface-soft, #f9fafb);
+	--apeiron-border: #e5e7ef;
+	--apeiron-border-strong: #d6dae5;
+	--apeiron-border-focus: rgba(8, 60, 87, 0.4);
+	--apeiron-text: var(--apeiron-dashboard-text, #1d2939);
+	--apeiron-muted: var(--apeiron-dashboard-text-muted, #475467);
+	--apeiron-subtle: var(--apeiron-dashboard-text-faint, #98a2b3);
+	--apeiron-font-size-section: 18px;
+	--apeiron-font-size-body: 14px;
+	--apeiron-font-size-small: 14px;
+	--apeiron-font-size-caption: 12px;
+	--apeiron-font-size-pill: 12px;
+	--apeiron-font-weight-body: 400;
+	--apeiron-font-weight-label: 500;
+	--apeiron-font-weight-title: 500;
+	--apeiron-font-weight-heading: 600;
+	--apeiron-line-height-ui: 1.45;
+	--apeiron-line-height-body: 1.6;
+	--apeiron-line-height-heading: 1.35;
+
+	--apeiron-container-radius: 8px;
+	--apeiron-control-radius: 8px;
+	--apeiron-transition: 0.2s ease;
+	--apeiron-sp-offset: 20px;
+	--apeiron-sp-distance: 24px;
+	--apeiron-sp-duration: 0.4s;
+	--apeiron-sp-gap: 12px;
+	--apeiron-sp-image-size: 40px;
+	/* Keep dashboard radius as fallback for Elementor's responsive alias. */
+	--apeiron-sp-image-radius: var(--apeiron-sp-image-radius-global, var(--apeiron-control-radius));
+	--apeiron-sp-close-size: 28px;
+
+	position: fixed;
+	top: auto;
+	right: auto;
+	bottom: auto;
+	left: auto;
+	z-index: 9999;
+	width: 300px;
+	max-width: calc(100vw - (2 * var(--apeiron-sp-offset)) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+	max-height: calc(100vh - (2 * var(--apeiron-sp-offset)));
+	max-height: calc(100dvh - (2 * var(--apeiron-sp-offset)) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+	padding: 14px;
+	border: 1px solid rgba(15, 23, 42, 0.06);
+	border-radius: var(--apeiron-container-radius);
+	background: var(--apeiron-surface);
+	background-image: none;
+	color: var(--apeiron-text);
+	font-family: var(--apeiron-font-family);
+	font-size: var(--apeiron-font-size-small);
+	line-height: var(--apeiron-line-height-body);
+	box-shadow: 0 6px 20px rgba(15, 23, 42, 0.035);
+	outline: none;
+	overflow-x: hidden;
+	overflow-y: auto;
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	appearance: none;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition:
+		opacity var(--apeiron-sp-duration) cubic-bezier(0.4, 0, 0.2, 1),
+		transform var(--apeiron-sp-duration) cubic-bezier(0.4, 0, 0.2, 1),
+		visibility 0s linear var(--apeiron-sp-duration);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-shadow-disabled {
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof *,
+.elementor-widget-apeiron-social-proof .apeiron-social-proof *::before,
+.elementor-widget-apeiron-social-proof .apeiron-social-proof *::after {
+	box-sizing: border-box;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof {
+	font-family: var(--apeiron-font-family);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof :where(div, p, span, strong, button) {
+	font-family: inherit;
+}
+
+/* Equal specificity lets source order move the popup into its visible state. */
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-animation-fade {
+	transform: none;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-animation-slide-top {
+	transform: translateY(calc(0px - var(--apeiron-sp-distance)));
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-animation-slide-bottom {
+	transform: translateY(var(--apeiron-sp-distance));
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-animation-slide-left {
+	transform: translateX(calc(0px - var(--apeiron-sp-distance)));
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-animation-slide-right {
+	transform: translateX(var(--apeiron-sp-distance));
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.is-visible {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transform: none;
+	transition-delay: 0s;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-h-left {
+	left: calc(var(--apeiron-sp-offset) + env(safe-area-inset-left, 0px));
+	right: auto;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-h-right {
+	right: calc(var(--apeiron-sp-offset) + env(safe-area-inset-right, 0px));
+	left: auto;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-v-top {
+	top: calc(var(--apeiron-sp-offset) + env(safe-area-inset-top, 0px));
+	bottom: auto;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof.apeiron-sp-v-bottom {
+	bottom: calc(var(--apeiron-sp-offset) + env(safe-area-inset-bottom, 0px));
+	top: auto;
+}
+
+/* prefix_class updates position in the editor without a PHP rerender. */
+.elementor-widget-apeiron-social-proof.apeiron-sp-custom-position-yes.apeiron-sp-position-top-right .apeiron-social-proof {
+	top: calc(var(--apeiron-sp-offset) + env(safe-area-inset-top, 0px));
+	right: calc(var(--apeiron-sp-offset) + env(safe-area-inset-right, 0px));
+	bottom: auto;
+	left: auto;
+}
+
+.elementor-widget-apeiron-social-proof.apeiron-sp-custom-position-yes.apeiron-sp-position-top-left .apeiron-social-proof {
+	top: calc(var(--apeiron-sp-offset) + env(safe-area-inset-top, 0px));
+	right: auto;
+	bottom: auto;
+	left: calc(var(--apeiron-sp-offset) + env(safe-area-inset-left, 0px));
+}
+
+.elementor-widget-apeiron-social-proof.apeiron-sp-custom-position-yes.apeiron-sp-position-bottom-right .apeiron-social-proof {
+	top: auto;
+	right: calc(var(--apeiron-sp-offset) + env(safe-area-inset-right, 0px));
+	bottom: calc(var(--apeiron-sp-offset) + env(safe-area-inset-bottom, 0px));
+	left: auto;
+}
+
+.elementor-widget-apeiron-social-proof.apeiron-sp-custom-position-yes.apeiron-sp-position-bottom-left .apeiron-social-proof {
+	top: auto;
+	right: auto;
+	bottom: calc(var(--apeiron-sp-offset) + env(safe-area-inset-bottom, 0px));
+	left: calc(var(--apeiron-sp-offset) + env(safe-area-inset-left, 0px));
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__close {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--apeiron-sp-close-size);
+	height: var(--apeiron-sp-close-size);
+	padding: 0;
+	border: 1px solid var(--apeiron-border);
+	border-radius: var(--apeiron-control-radius);
+	background: var(--apeiron-surface-soft);
+	color: var(--apeiron-muted);
+	font-family: var(--apeiron-font-family);
+	font-size: 16px;
+	font-weight: var(--apeiron-font-weight-body);
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	outline: none;
+	transition:
+		background-color var(--apeiron-transition),
+		border-color var(--apeiron-transition),
+		color var(--apeiron-transition);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__close:hover {
+	background: var(--apeiron-primary-soft);
+	border-color: var(--apeiron-border-strong);
+	color: var(--apeiron-text);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__close:active {
+	background: var(--apeiron-primary-soft);
+	border-color: var(--apeiron-border-focus);
+	color: var(--apeiron-primary);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__close:focus-visible {
+	border: 1px solid var(--apeiron-border-focus);
+	outline: none;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__content {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: flex-start;
+	gap: var(--apeiron-sp-gap);
+	width: 100%;
+	min-width: 0;
+	padding-right: calc(var(--apeiron-sp-close-size) + 4px);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__image {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: var(--apeiron-sp-image-size);
+	height: var(--apeiron-sp-image-size);
+	min-width: var(--apeiron-sp-image-size);
+	margin: 0;
+	border-radius: var(--apeiron-sp-image-radius);
+	color: var(--apeiron-subtle);
+	overflow: hidden;
+	box-shadow: none;
+	outline: none;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__image img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border: 1px solid var(--apeiron-border);
+	border-radius: var(--apeiron-sp-image-radius);
+	background: var(--apeiron-surface-soft);
+	object-fit: cover;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__image.is-placeholder {
+	border: 1px solid var(--apeiron-border);
+	background: var(--apeiron-surface-soft);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__placeholder-icon {
+	width: 22px;
+	height: 22px;
+	color: var(--apeiron-subtle);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__text {
+	flex: 1;
+	min-width: 0;
+	text-align: left;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__name {
+	margin: 0 0 4px;
+	color: var(--apeiron-text);
+	font-size: var(--apeiron-font-size-body);
+	font-weight: var(--apeiron-font-weight-title);
+	line-height: var(--apeiron-line-height-ui);
+	letter-spacing: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__description {
+	margin: 0 0 4px;
+	color: var(--apeiron-muted);
+	font-size: var(--apeiron-font-size-small);
+	font-weight: var(--apeiron-font-weight-body);
+	line-height: var(--apeiron-line-height-body);
+	letter-spacing: 0;
+	overflow-wrap: anywhere;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__inline-name {
+	color: var(--apeiron-text);
+	font-weight: var(--apeiron-font-weight-title);
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__product {
+	color: var(--apeiron-text);
+	font-weight: var(--apeiron-font-weight-title);
+	font-style: normal;
+}
+
+.elementor-widget-apeiron-social-proof .apeiron-social-proof__date {
+	display: block;
+	color: var(--apeiron-subtle);
+	font-size: var(--apeiron-font-size-caption);
+	font-weight: var(--apeiron-font-weight-body);
+	line-height: var(--apeiron-line-height-ui);
+	letter-spacing: 0;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+	.elementor-widget-apeiron-social-proof .apeiron-social-proof {
+		--apeiron-font-size-body: 14px;
+		--apeiron-font-size-small: 14px;
+		--apeiron-font-size-caption: 12px;
+	}
+}
+
+@media (max-width: 768px) {
+	.elementor-widget-apeiron-social-proof .apeiron-social-proof {
+		--apeiron-font-size-body: 14px;
+		--apeiron-font-size-small: 14px;
+		--apeiron-font-size-caption: 12px;
+		--apeiron-font-size-pill: 12px;
+		--apeiron-container-radius: 8px;
+		--apeiron-sp-offset: 16px;
+		--apeiron-sp-gap: 10px;
+		max-width: calc(100vw - (2 * var(--apeiron-sp-offset)) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.elementor-widget-apeiron-social-proof .apeiron-social-proof,
+	.elementor-widget-apeiron-social-proof .apeiron-social-proof__close {
+		transition-duration: 0.01ms !important;
+	}
+
+	.elementor-widget-apeiron-social-proof .apeiron-social-proof {
+		transform: none !important;
+	}
+}

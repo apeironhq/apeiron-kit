@@ -1,0 +1,43 @@
+# This repository holds the Apeiron Kit product source, not the full development
+# workspace. Everything listed here stays on the developer's machine.
+#
+# Note the leading slashes: they anchor a rule to the plugin root, so the
+# development screenshots there are ignored while runtime images under assets/
+# are still tracked.
+
+# Agent and tooling workspaces
+/.claude/
+/.playwright-mcp/
+/mcp-image-reader/
+/node_modules/
+/test-results/
+/tests/
+/docs/
+
+# Editor and agent configuration
+/AGENTS.md
+/opencode.json
+/*.code-workspace
+
+# Node manifests drive the local asset build and the local test suite, both of
+# which live outside this repository.
+/package.json
+/package-lock.json
+
+# Development screenshots (plugin root only)
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.webp
+
+# Local environment, secrets and generated artefacts
+.env
+config.env
+*.env
+*.log
+*.sql
+*.zip
+*.bak
+.DS_Store
+Thumbs.db

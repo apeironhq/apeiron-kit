@@ -1,0 +1,18 @@
+html.apeiron-page-loader-booting::before {
+  box-sizing: border-box;
+  content: "";
+  position: fixed;
+  z-index: 2147483010;
+}
+
+html.apeiron-page-loader-booting::before {
+  inset: 0;
+  background: var(--ap-page-loader-boot-bg, #f7f7fb);
+  opacity: var(--ap-page-loader-boot-opacity, .98);
+}
+
+html.apeiron-page-loader-scroll-lock,
+html.apeiron-page-loader-scroll-lock body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}

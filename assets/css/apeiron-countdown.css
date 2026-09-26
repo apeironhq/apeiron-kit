@@ -1,0 +1,138 @@
+.elementor-widget-apeiron-countdown,
+.elementor-widget-apeiron-pulse-countdown {
+	box-shadow: none;
+}
+
+.apeiron-kit-countdown-wrapper {
+	--apeiron-countdown-background: #f7f7fb;
+	--apeiron-countdown-item-background: #ffffff;
+	--apeiron-countdown-item-hover-background: #fbfcff;
+	--apeiron-countdown-border-color: #e5e7ef;
+	--apeiron-countdown-hover-border-color: #d6dae5;
+	--apeiron-countdown-value-color: #083c57;
+	--apeiron-countdown-text-color: #253044;
+	--apeiron-countdown-muted-color: #6b7890;
+	--apeiron-countdown-expired-opacity: 0.55;
+	width: var(--apeiron-countdown-width, 252px);
+	max-width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 8px;
+	border: 1px solid var(--apeiron-countdown-border-color);
+	border-radius: 8px;
+	background: var(--apeiron-countdown-background);
+	background-image: none;
+	color: var(--apeiron-countdown-text-color);
+	font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	box-shadow: none;
+	box-sizing: border-box;
+	position: relative;
+}
+
+.apeiron-kit-countdown-wrapper *,
+.apeiron-kit-countdown-wrapper *::before,
+.apeiron-kit-countdown-wrapper *::after {
+	box-sizing: border-box;
+}
+
+.apeiron-kit-countdown {
+	display: flex;
+	gap: 6px;
+	flex-direction: var(--apeiron-countdown-direction, row);
+	flex-wrap: nowrap;
+	justify-content: center;
+	align-items: stretch;
+	width: 100%;
+	margin: 0;
+}
+
+.apeiron-kit-countdown__item {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 7px 10px;
+	border: 1px solid var(--apeiron-countdown-border-color);
+	border-radius: 8px;
+	background: var(--apeiron-countdown-item-background);
+	background-image: none;
+	color: var(--apeiron-countdown-text-color);
+	text-align: center;
+	box-shadow: none;
+	transition-property: background-color, border-color, box-shadow, opacity;
+	transition-duration: 0.2s;
+	transition-timing-function: ease;
+}
+
+.apeiron-kit-countdown__item:hover {
+	border-color: var(--apeiron-countdown-hover-border-color);
+	background: var(--apeiron-countdown-item-hover-background);
+	box-shadow: none;
+}
+
+.apeiron-kit-countdown__value {
+	display: block;
+	color: var(--apeiron-countdown-value-color);
+	font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	font-size: 22px;
+	font-weight: 600;
+	line-height: 1.1;
+	letter-spacing: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.apeiron-kit-countdown__label {
+	display: block;
+	margin-top: 3px;
+	color: var(--apeiron-countdown-muted-color);
+	font-family: inherit;
+	font-size: 11px;
+	font-weight: 400;
+	line-height: 1.35;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+.apeiron-kit-countdown__separator {
+	display: flex;
+	align-items: center;
+	align-self: center;
+	justify-content: center;
+	padding: 0 1px;
+	color: var(--apeiron-countdown-muted-color);
+	font-family: inherit;
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: 0;
+}
+
+.apeiron-kit-countdown.is-expired .apeiron-kit-countdown__item {
+	opacity: var(--apeiron-countdown-expired-opacity, 0.55);
+}
+
+.apeiron-kit-countdown.is-expired {
+	flex-wrap: wrap;
+}
+
+.apeiron-kit-countdown__expired {
+	width: 100%;
+	margin-top: 4px;
+	padding: 10px 12px;
+	border: 1px solid var(--apeiron-countdown-border-color);
+	border-radius: 8px;
+	background: var(--apeiron-countdown-item-background);
+	color: #475467;
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 1.45;
+	text-align: center;
+	box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.apeiron-kit-countdown__item {
+		transition-duration: 0s !important;
+	}
+}

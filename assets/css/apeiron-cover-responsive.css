@@ -1,0 +1,84 @@
+@media (max-width: 767px) {
+	.apeiron-cover {
+		--apeiron-cover-ribbon-height: 51px;
+		--apeiron-cover-recipient-width: 144px;
+		--apeiron-cover-recipient-drop: 2px;
+	}
+
+	.apeiron-cover__info {
+		--ap-cover-pin-render-size: clamp(72px, var(--ap-cover-pin-actual-size), 260px);
+		--ap-cover-ribbon-render-height: clamp(20px, var(--ap-cover-ribbon-height), 180px);
+	}
+
+	.apeiron-cover__welcome {
+		padding: 28px 16px;
+	}
+
+	.apeiron-cover__photo {
+		margin-top: 12px;
+		margin-bottom: 12px;
+	}
+
+	.apeiron-cover__recipient-card {
+		width: min(250px, calc(100vw - 48px));
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__pin-content {
+		gap: calc(var(--ap-cover-pin-render-size) * .03);
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__monogram {
+		margin-top: 0;
+		font-size: clamp(15px, calc(var(--ap-cover-pin-render-size) * .155), 42px);
+		line-height: 1.05;
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__open-button {
+		width: auto;
+		min-height: 0;
+		margin-top: 0;
+		font-size: clamp(10px, calc(var(--ap-cover-pin-render-size) * .065), 16px);
+		line-height: 1.08;
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__recipient-heading {
+		margin-bottom: 1.5%;
+		line-height: 1.25;
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__recipient-name {
+		line-height: 1.35;
+	}
+}
+
+@media (max-height: 1050px) and (min-width: 768px) {
+	.apeiron-cover__info {
+		--ap-cover-pin-render-size: clamp(72px, var(--ap-cover-pin-actual-size), 260px);
+		--ap-cover-ribbon-render-height: clamp(20px, var(--ap-cover-ribbon-height), 180px);
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__pin {
+		padding: 0;
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__monogram {
+		font-size: clamp(15px, calc(var(--ap-cover-pin-render-size) * .155), 46px);
+	}
+
+	.apeiron-cover--type-classic .apeiron-cover__open-button {
+		min-height: 0;
+		font-size: clamp(10px, calc(var(--ap-cover-pin-render-size) * .065), 16px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.apeiron-cover,
+	.apeiron-cover *,
+	.apeiron-cover *::before,
+	.apeiron-cover *::after {
+		animation-duration: .01ms !important;
+		animation-iteration-count: 1 !important;
+		scroll-behavior: auto !important;
+		transition-duration: .01ms !important;
+	}
+}

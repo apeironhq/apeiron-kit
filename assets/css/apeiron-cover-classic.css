@@ -1,0 +1,743 @@
+.apeiron-cover--type-classic {
+	--ap-cover-seam-render-width: max(min(6px, var(--ap-cover-center-strip-width)), calc(var(--ap-cover-center-strip-width) - 1px));
+	--ap-cover-seam-render-gap: max(0px, calc(var(--ap-cover-center-strip-gap) - 1px));
+	--ap-cover-seam-grain:
+		radial-gradient(circle at 50% 50%, rgba(104, 84, 59, .055) 0 .35px, transparent .75px),
+		radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .18) 0 .3px, transparent .7px);
+	--ap-cover-seam-fade-left:
+		var(--ap-cover-seam-grain),
+		linear-gradient(
+			270deg,
+			rgba(255, 255, 255, .12) 0,
+			rgba(102, 82, 57, .1) 44%,
+			rgba(120, 98, 70, .038) 78%,
+			rgba(120, 98, 70, 0) 100%
+		);
+	--ap-cover-seam-fade-right:
+		var(--ap-cover-seam-grain),
+		linear-gradient(
+			90deg,
+			rgba(255, 255, 255, .12) 0,
+			rgba(255, 255, 255, .5) 44%,
+			rgba(255, 255, 255, .15) 78%,
+			rgba(255, 255, 255, 0) 100%
+		);
+}
+
+.apeiron-cover__background {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background-color: var(--ap-cover-bg-color);
+	background-image:
+		linear-gradient(45deg, var(--ap-cover-bg-tint), var(--ap-cover-bg-tint)),
+		var(--ap-cover-bg-image);
+	background-position: bottom center;
+	background-repeat: var(--ap-cover-pattern-repeat);
+	background-size: var(--ap-cover-pattern-size);
+}
+
+/* Elementor lazy backgrounds must not suppress plugin-owned cover layers. */
+.elementor-element.elementor-widget.elementor-widget-apeiron-cover .apeiron-cover.apeiron-cover--type-classic .apeiron-cover__center-strip {
+	background-image: var(--ap-cover-seam-fade-left) !important;
+}
+
+.elementor-element.elementor-widget.elementor-widget-apeiron-cover .apeiron-cover.apeiron-cover--type-classic .apeiron-cover__center-strip--reverse {
+	background-image: var(--ap-cover-seam-fade-right) !important;
+}
+
+.elementor-element.elementor-widget.elementor-widget-apeiron-cover .apeiron-cover.apeiron-cover--type-classic .apeiron-cover__background {
+	background-image:
+		linear-gradient(45deg, var(--ap-cover-bg-tint), var(--ap-cover-bg-tint)),
+		var(--ap-cover-bg-image) !important;
+}
+
+.apeiron-cover__background::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(130% 100% at 50% 0%, transparent 62%, rgba(76, 46, 25, .06) 100%),
+		radial-gradient(130% 100% at 50% 100%, transparent 65%, rgba(76, 46, 25, .05) 100%);
+	pointer-events: none;
+}
+
+.apeiron-cover__welcome {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: clamp(24px, 6vh, 64px) 20px;
+	text-align: center;
+	text-shadow: 1px 1px 3px rgba(255, 255, 255, .45);
+}
+
+.apeiron-cover__welcome-inner {
+	width: 100%;
+	max-width: 360px;
+	margin: 0 auto;
+}
+
+.apeiron-cover.is-ready .apeiron-cover__welcome-inner {
+	animation: ap-cover-rise 1250ms var(--ap-cover-ease) both;
+}
+
+@keyframes ap-cover-rise {
+	from { opacity: 0; transform: translateY(14px) scale(.985); }
+	to   { opacity: 1; transform: none; }
+}
+
+.apeiron-cover__ornament {
+	display: block;
+	width: 58px;
+	height: auto;
+	margin: 0 auto 8px;
+	object-fit: contain;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .14));
+}
+
+.apeiron-cover__welcome-text,
+.apeiron-cover__event-label {
+	margin: 0;
+	font-size: clamp(18px, 3.2vw, 28px);
+	font-weight: 500;
+	line-height: 1.2;
+	letter-spacing: .04em;
+}
+
+.apeiron-cover__event-date {
+	max-width: 100%;
+	margin: 14px 0 0;
+	font-size: clamp(12px, 2vw, 16px);
+	font-weight: 500;
+	line-height: 1.4;
+	letter-spacing: .03em;
+	text-align: center;
+	overflow-wrap: anywhere;
+}
+
+.apeiron-cover__event-label {
+	margin-top: 10px;
+	font-size: clamp(14px, 2.4vw, 19px);
+	font-weight: 600;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+}
+
+.apeiron-cover__photo {
+	display: block;
+	width: 159px;
+	height: 159px;
+	margin: 16px auto;
+	border: 7px solid #ffffff;
+	border-radius: 8px;
+	object-fit: cover;
+	background: #ffffff;
+	box-shadow:
+		0 18px 38px rgba(0, 0, 0, .26),
+		inset 0 1px 4px rgba(0, 0, 0, .14);
+}
+
+.apeiron-cover__names {
+	display: grid;
+	gap: 2px;
+	margin-top: 14px;
+	justify-items: center;
+}
+
+.apeiron-cover__name {
+	margin: 0;
+	font-size: clamp(28px, 6vw, 48px);
+	font-weight: 700;
+	line-height: 1.02;
+	letter-spacing: .01em;
+	overflow-wrap: anywhere;
+}
+
+.apeiron-cover__name-separator {
+	margin: 0;
+	font-size: clamp(30px, 7vw, 54px);
+	font-weight: 400;
+	line-height: .9;
+	letter-spacing: 0;
+	opacity: .85;
+}
+
+.apeiron-cover__panels {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	display: flex;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.apeiron-cover__panels::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 50%;
+	z-index: 6;
+	width: var(--ap-cover-seam-render-gap);
+	background-image:
+		var(--ap-cover-seam-grain),
+		linear-gradient(90deg, rgba(102, 82, 57, .1), rgba(255, 255, 255, .12));
+	background-position: 0 1px, 1px 5px, 0 0;
+	background-repeat: repeat, repeat, no-repeat;
+	background-size: 3px 7px, 4px 11px, 100% 100%;
+	border: 0;
+	box-shadow: none;
+	background-color: var(--ap-cover-panel-divider);
+	opacity: 1;
+	pointer-events: none;
+	transform: translateX(-50%);
+}
+
+.apeiron-cover__panel {
+	position: relative;
+	width: 50%;
+	height: 100%;
+	overflow: hidden;
+	background-color: var(--ap-cover-panel-bg);
+	background-image: var(--ap-cover-pattern-image);
+	background-position: top left;
+	background-repeat: var(--ap-cover-pattern-repeat);
+	background-size: var(--ap-cover-pattern-size);
+	transform: scaleX(1);
+	transition: transform var(--ap-cover-panel-duration) var(--ap-cover-ease);
+	will-change: transform;
+}
+
+.elementor-element.elementor-widget.elementor-widget-apeiron-cover .apeiron-cover.apeiron-cover--type-classic .apeiron-cover__panel {
+	background-image: var(--ap-cover-pattern-image) !important;
+}
+
+.apeiron-cover__panel::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity var(--ap-cover-panel-duration) var(--ap-cover-ease);
+}
+
+.apeiron-cover__panel--left {
+	transform-origin: left center;
+	border-right: 0;
+}
+
+.apeiron-cover__panel--left::after {
+	background: linear-gradient(90deg, transparent 62%, rgba(0, 0, 0, .16));
+}
+
+.apeiron-cover__panel--right {
+	transform-origin: right center;
+	border-left: 0;
+}
+
+.apeiron-cover__panel--right::after {
+	background: linear-gradient(270deg, transparent 62%, rgba(0, 0, 0, .16));
+}
+
+.apeiron-cover.is-panels-opening .apeiron-cover__panel::after {
+	opacity: 1;
+}
+
+.apeiron-cover.is-panels-opening .apeiron-cover__panels::before {
+	content: none;
+}
+
+.apeiron-cover.is-panels-opening .apeiron-cover__center-strip-label {
+	opacity: 0;
+	visibility: hidden;
+}
+
+.apeiron-cover__center-strip {
+	position: absolute;
+	top: 0;
+	right: calc(var(--ap-cover-seam-render-gap) / 2);
+	bottom: 0;
+	z-index: 4;
+	display: block;
+	width: max(0px, calc((var(--ap-cover-seam-render-width) - var(--ap-cover-seam-render-gap)) / 2));
+	overflow: hidden;
+	border: 0;
+	background-color: var(--ap-cover-center-strip-bg);
+	background-image: var(--ap-cover-seam-fade-left);
+	background-position: 0 1px, 1px 5px, 0 0;
+	background-repeat: repeat, repeat, no-repeat;
+	background-size: 3px 7px, 4px 11px, 100% 100%;
+	box-shadow:
+		inset -1px 0 color-mix(in srgb, var(--ap-cover-center-strip-border) 60%, transparent),
+		-2.5px 0 7px rgba(79, 63, 43, .05);
+	pointer-events: none;
+	transition:
+		right var(--ap-cover-panel-duration) var(--ap-cover-ease),
+		left var(--ap-cover-panel-duration) var(--ap-cover-ease);
+}
+
+.apeiron-cover__center-strip--reverse {
+	right: auto;
+	left: calc(var(--ap-cover-seam-render-gap) / 2);
+	background-image: var(--ap-cover-seam-fade-right);
+	box-shadow:
+		inset 1px 0 color-mix(in srgb, var(--ap-cover-center-strip-border) 60%, transparent),
+		2.5px 0 7px rgba(255, 255, 255, .23);
+}
+
+.apeiron-cover.is-panels-opening .apeiron-cover__center-strip {
+	opacity: 0;
+	visibility: hidden;
+}
+
+.apeiron-cover.is-panels-opening .apeiron-cover__center-strip--reverse {
+	right: auto;
+	left: 0;
+}
+
+.apeiron-cover__center-strip-label {
+	position: absolute;
+	top: var(--ap-cover-center-label-top);
+	left: 50%;
+	z-index: 7;
+	display: none;
+	max-height: calc(100% - 72px);
+	overflow: hidden;
+	color: var(--ap-cover-center-label-color);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1;
+	letter-spacing: 0;
+	white-space: nowrap;
+	opacity: .16;
+	pointer-events: none;
+	text-shadow: 0 1px 0 rgba(255, 255, 255, .9);
+	text-overflow: ellipsis;
+	transform: translate(-50%, -50%);
+	writing-mode: vertical-rl;
+}
+
+.apeiron-cover__center-strip-label--top {
+	top: var(--ap-cover-center-label-top);
+}
+
+.apeiron-cover__center-strip-label--bottom {
+	top: var(--ap-cover-center-label-bottom);
+	transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.apeiron-cover__info {
+	--ap-cover-accent: color-mix(in srgb, var(--ap-cover-ribbon-frame-color) 24%, #b8893e);
+	--ap-cover-pin-render-size: clamp(72px, var(--ap-cover-pin-actual-size), 300px);
+	--ap-cover-ribbon-render-height: clamp(20px, var(--ap-cover-ribbon-height), 180px);
+	--ap-cover-tail-w: var(--ap-cover-ribbon-tail-width);
+	--ap-cover-tail-h: var(--ap-cover-ribbon-tail-height);
+	/* guest-tag.svg geometry drives the card and ring offsets. */
+	--ap-cover-tag-w: min(var(--ap-cover-recipient-width), calc(100vw - 40px));
+	--ap-cover-tag-h: calc(var(--ap-cover-tag-w) * .743);
+	--ap-cover-tag-ring-offset: calc(var(--ap-cover-tag-h) * .1069);
+	/* Tail tip follows the final SVG endpoint. */
+	--ap-cover-tail-tip: calc(var(--ap-cover-ribbon-render-height) + (var(--ap-cover-tail-h) * .912));
+
+	/* Elementor controls feed final SVG variables. */
+	--gold: var(--ap-cover-accent);
+	--gold-main: var(--ap-cover-accent);
+	--gold-light: color-mix(in srgb, var(--ap-cover-accent) 45%, #fff3c7);
+	--gold-highlight: color-mix(in srgb, var(--ap-cover-accent) 24%, #fff8dd);
+	--gold-dark: color-mix(in srgb, var(--ap-cover-accent) 60%, #4a2f05);
+	--stitch-color: var(--ap-cover-ribbon-dash-color);
+	--stitch-width: var(--ap-cover-ribbon-dash-width);
+	--ribbon-edge-width: var(--ap-cover-ribbon-edge-width);
+	--tail-edge-width: var(--ap-cover-ribbon-tail-edge-width);
+
+	--seal-color: var(--ap-cover-pin-bg);
+	--seal-color-light: color-mix(in srgb, var(--ap-cover-pin-bg) 76%, #ffffff);
+	--seal-color-dark: color-mix(in srgb, var(--ap-cover-pin-bg) 74%, #000000);
+	--seal-ring: color-mix(in srgb, var(--ap-cover-pin-ring-color) 84%, #000000);
+	--seal-ring-light: color-mix(in srgb, var(--ap-cover-pin-ring-color) 70%, #ffffff);
+	--seal-ring-dark: color-mix(in srgb, var(--ap-cover-pin-ring-color) 58%, #000000);
+	--seal-ring-width: var(--ap-cover-pin-ring-width);
+
+	--ribbon-main: var(--ap-cover-ribbon-bg);
+	--ribbon-top: color-mix(in srgb, var(--ap-cover-ribbon-bg) 72%, #ffffff);
+	--ribbon-mid: color-mix(in srgb, var(--ap-cover-ribbon-bg) 86%, #ffffff);
+	--ribbon-bottom: color-mix(in srgb, var(--ap-cover-ribbon-bg) 76%, #000000);
+
+	--tail-main: var(--ap-cover-ribbon-tail-bg);
+	--tail-light: color-mix(in srgb, var(--ap-cover-ribbon-tail-bg) 66%, #ffffff);
+	--tail-mid: color-mix(in srgb, var(--ap-cover-ribbon-tail-bg) 82%, #ffffff);
+	--tail-dark: color-mix(in srgb, var(--ap-cover-ribbon-tail-bg) 72%, #000000);
+
+	--tag-color: var(--ap-cover-recipient-bg);
+	--tag-light: color-mix(in srgb, var(--ap-cover-recipient-bg) 55%, #ffffff);
+	--tag-dark: color-mix(in srgb, var(--ap-cover-recipient-bg) 82%, #6f6552);
+	--tag-border-width: var(--ap-cover-recipient-border-width);
+	--tag-radius: var(--ap-cover-recipient-radius);
+	--tag-shadow-color: var(--ap-cover-recipient-shadow-color);
+	--tag-shadow-blur: var(--ap-cover-recipient-shadow-blur);
+	--tag-shadow-y: var(--ap-cover-recipient-shadow-y);
+	position: absolute;
+	top: var(--ap-cover-info-top);
+	left: 50%;
+	z-index: 9;
+	width: 100%;
+	min-width: 0;
+	overflow: visible;
+	text-align: center;
+	transform: translate(-50%, calc(var(--ap-cover-ribbon-render-height) / -2));
+	transition:
+		transform var(--ap-cover-info-duration) var(--ap-cover-ease-ribbon),
+		opacity 420ms var(--ap-cover-ease),
+		visibility 420ms var(--ap-cover-ease);
+	will-change: transform;
+}
+
+.apeiron-cover__ribbon {
+	position: relative;
+	--ap-cover-ribbon-center-y: calc(var(--ap-cover-ribbon-render-height) / 2);
+	display: flex;
+	width: 100%;
+	height: var(--ap-cover-ribbon-render-height);
+	align-items: center;
+	justify-content: center;
+	margin: 0;
+	border: 0;
+	background: transparent;
+}
+
+/* Final SVGs paint surfaces; HTML remains available for text. */
+.apeiron-cover__art {
+	position: absolute;
+	z-index: 0;
+	display: block;
+	line-height: 0;
+	pointer-events: none;
+}
+
+.apeiron-cover__art svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.apeiron-cover__art--ribbon .invitation-ribbon__edge--top,
+.apeiron-cover__art--ribbon .invitation-ribbon__edge--bottom {
+	height: calc(var(--ribbon-edge-width) * 1px);
+}
+
+.apeiron-cover__art--ribbon .invitation-ribbon__edge--bottom {
+	y: calc(160px - (var(--ribbon-edge-width) * 1px));
+}
+
+.apeiron-cover__art--tag .guest-tag__paper,
+.apeiron-cover__art--tag .guest-tag__paper-highlight,
+.apeiron-cover__art--tag .guest-tag__paper-clip {
+	rx: calc(var(--tag-radius) * 1px);
+}
+
+.apeiron-cover__art--tag .guest-tag__paper-bevel {
+	rx: max(0px, calc((var(--tag-radius) - 3) * 1px));
+}
+
+.apeiron-cover__art--tag .guest-tag__paper-keyline {
+	rx: max(0px, calc((var(--tag-radius) - 10) * 1px));
+}
+
+.apeiron-cover__art--tag .guest-tag__paper-keyline-inner {
+	rx: max(0px, calc((var(--tag-radius) - 13) * 1px));
+}
+
+.apeiron-cover__art--ribbon {
+	inset: 0;
+	z-index: 0;
+}
+
+.apeiron-cover__art--tail {
+	top: calc(var(--ap-cover-ribbon-render-height) - (var(--ap-cover-tail-h) * .043));
+	left: 50%;
+	z-index: 1;
+	width: var(--ap-cover-tail-w);
+	height: var(--ap-cover-tail-h);
+	transform: translateX(-50%);
+}
+
+.apeiron-cover__art--seal {
+	inset: 0;
+	z-index: 0;
+}
+
+.apeiron-cover__art--tag {
+	inset: 0;
+	z-index: 0;
+}
+
+.apeiron-cover__ribbon-name {
+	position: absolute;
+	top: 50%;
+	z-index: 3;
+	display: block;
+	width: max(0px, calc(50% - (var(--ap-cover-pin-actual-size) / 2) - 28px));
+	overflow: hidden;
+	color: var(--ap-cover-ribbon-text-color);
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	text-overflow: ellipsis;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, .32);
+	white-space: nowrap;
+	transform: translateY(-50%);
+}
+
+.apeiron-cover__ribbon-name--left {
+	right: calc(50% + (var(--ap-cover-pin-actual-size) / 2) + 14px);
+	text-align: right;
+}
+
+.apeiron-cover__ribbon-name--right {
+	left: calc(50% + (var(--ap-cover-pin-actual-size) / 2) + 14px);
+	text-align: left;
+}
+
+.apeiron-cover__pin {
+	position: absolute;
+	top: var(--ap-cover-ribbon-center-y);
+	left: 50%;
+	z-index: 5;
+	display: block;
+	width: var(--ap-cover-pin-render-size);
+	height: var(--ap-cover-pin-render-size);
+	min-width: var(--ap-cover-pin-render-size);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--ap-cover-pin-color);
+	text-shadow: none;
+	transform: translate(-50%, -50%);
+}
+
+.apeiron-cover__pin-content {
+	position: absolute;
+	inset: 29% 24%;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	gap: calc(var(--ap-cover-pin-render-size) * .034);
+}
+
+.apeiron-cover__monogram {
+	width: 100%;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: clamp(16px, calc(var(--ap-cover-pin-render-size) * .155), 60px);
+	font-weight: 500;
+	line-height: 1.1;
+	letter-spacing: .055em;
+	color: var(--ap-cover-pin-color);
+	text-shadow: 0 2px 1px rgba(0, 0, 0, .34), 0 0 1px #fff4bf;
+	overflow-wrap: anywhere;
+}
+
+.apeiron-cover__pin-image {
+	display: block;
+	width: var(--ap-cover-pin-image-size);
+	max-width: 72%;
+	height: auto;
+	max-height: calc(var(--ap-cover-pin-actual-size) * .42);
+	margin: 0 auto 2px;
+	object-fit: contain;
+}
+
+.apeiron-cover--type-classic .apeiron-cover__open-button {
+	-webkit-appearance: none;
+	appearance: none;
+	position: relative;
+	display: inline-flex;
+	width: auto;
+	max-width: 100%;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	gap: 1px;
+	min-height: 0;
+	border: 1px solid transparent !important;
+	border-radius: 8px;
+	background: var(--ap-cover-button-bg) !important;
+	color: var(--ap-cover-button-color) !important;
+	font: inherit;
+	font-family: inherit;
+	font-size: clamp(10px, calc(var(--ap-cover-pin-render-size) * .065), 20px);
+	font-weight: 500;
+	line-height: 1.22;
+	letter-spacing: .02em;
+	text-align: center;
+	text-decoration: none;
+	text-transform: none;
+	box-shadow: none;
+	outline: none;
+	cursor: pointer;
+	transition:
+		opacity var(--ap-cover-button-transition-duration) var(--ap-cover-ease),
+		background-color var(--ap-cover-button-transition-duration) var(--ap-cover-ease),
+		color var(--ap-cover-button-transition-duration) var(--ap-cover-ease);
+}
+
+/* Override legacy Elementor per-post button padding. */
+.apeiron-cover.apeiron-cover--type-classic .apeiron-cover__open-button {
+	padding: var(--ap-cover-button-padding) !important;
+}
+
+/* Preserve the tap target without affecting layout. */
+.apeiron-cover--type-classic .apeiron-cover__open-button::after {
+	content: "";
+	position: absolute;
+	inset:
+		calc(var(--ap-cover-pin-render-size) * -.037)
+		calc(var(--ap-cover-pin-render-size) * -.046);
+}
+
+.apeiron-cover--type-classic .apeiron-cover__open-button-line {
+	display: block;
+	width: 100%;
+	line-height: 1.08;
+	white-space: nowrap;
+}
+
+.apeiron-cover--type-classic .apeiron-cover__open-button:hover,
+.apeiron-cover--type-classic .apeiron-cover__open-button:focus,
+.apeiron-cover--type-classic .apeiron-cover__open-button:focus-visible,
+.apeiron-cover--type-classic .apeiron-cover__open-button:active {
+	background: var(--ap-cover-button-hover-bg) !important;
+	color: var(--ap-cover-button-hover-color) !important;
+	text-decoration: none !important;
+	border-color: transparent !important;
+	box-shadow: none;
+	outline: none;
+	transform: none;
+	letter-spacing: .04em;
+}
+
+.apeiron-cover--type-classic .apeiron-cover__open-button:active {
+	transform: none;
+}
+
+.apeiron-cover__recipient {
+	position: absolute;
+	top: calc(
+		max(
+			var(--ap-cover-tail-tip),
+			calc((var(--ap-cover-ribbon-render-height) / 2) + (var(--ap-cover-pin-render-size) / 2))
+		)
+		+ var(--ap-cover-recipient-drop)
+		- var(--ap-cover-tag-ring-offset)
+		- (var(--ap-cover-tag-h) * .075)
+	);
+	right: 0;
+	left: 0;
+	/* Keep the tag ring under the tail tip. */
+	z-index: 0;
+	display: flex;
+	justify-content: center;
+	width: 100%;
+	margin-top: 0;
+	padding: 0 18px;
+}
+
+.apeiron-cover__recipient-card {
+	position: relative;
+	width: var(--ap-cover-tag-w);
+	max-width: 100%;
+	aspect-ratio: 700 / 520;
+	margin: 0 auto;
+	color: #2c1903;
+	text-shadow: none;
+}
+
+/* Clear legacy Elementor card paint behind guest-tag.svg. */
+.apeiron-cover.apeiron-cover--type-classic .apeiron-cover__recipient-card {
+	width: var(--ap-cover-tag-w) !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.apeiron-cover__recipient-content {
+	position: absolute;
+	top: 39.8%;
+	right: 12.6%;
+	bottom: 16.7%;
+	left: 12.6%;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	padding: 0 4%;
+}
+
+.apeiron-cover__recipient-heading {
+	margin: 0 0 1%;
+	font-family: Georgia, "Times New Roman", serif;
+	font-size: clamp(12px, calc(var(--ap-cover-tag-w) * .085), 21px);
+	font-weight: 650;
+	line-height: 1.25;
+	letter-spacing: .01em;
+}
+
+.apeiron-cover__recipient-name {
+	/* Dynamic Tag names are capped at two lines inside the keyline. */
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+	width: 100%;
+	max-width: 100%;
+	margin: 0;
+	overflow: hidden;
+	font-size: clamp(10px, calc(var(--ap-cover-tag-w) * .062), 15px);
+	font-weight: 500;
+	line-height: 1.3;
+	letter-spacing: 0;
+	overflow-wrap: anywhere;
+}
+
+.apeiron-cover.is-opening .apeiron-cover__info {
+	transform: translate(-50%, calc(100vh + 90px));
+}
+
+.apeiron-cover.is-info-hidden .apeiron-cover__info {
+	opacity: 0;
+	visibility: hidden;
+}
+
+html:has(.apeiron-cover.is-editor-preview) {
+	scrollbar-width: none;
+}
+
+html:has(.apeiron-cover.is-editor-preview)::-webkit-scrollbar {
+	display: none;
+}
+
+.apeiron-cover--panel-shrink.is-panels-opening .apeiron-cover__panel {
+	transform: scaleX(0);
+}
+
+.apeiron-cover--panel-slide.is-panels-opening .apeiron-cover__panel--left {
+	transform: translateX(calc(-100% - var(--ap-cover-center-strip-width)));
+}
+
+.apeiron-cover--panel-slide.is-panels-opening .apeiron-cover__panel--right {
+	transform: translateX(calc(100% + var(--ap-cover-center-strip-width)));
+}

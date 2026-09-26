@@ -1,0 +1,302 @@
+.elementor-widget-apeiron-signal-form .elementor-widget-container {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form {
+	--apeiron-signal-form-background: var(--apeiron-soft-bg, #f7f7fb);
+	--apeiron-signal-form-surface: var(--apeiron-dashboard-surface, #ffffff);
+	--apeiron-signal-form-border-color: #e5e7ef;
+	--apeiron-signal-form-border-strong-color: #d6dae5;
+	--apeiron-signal-form-primary: var(--apeiron-dashboard-primary, #083c57);
+	--apeiron-signal-form-text-color: var(--apeiron-dashboard-text, #1d2939);
+	--apeiron-signal-form-muted-color: var(--apeiron-dashboard-text-muted, #475467);
+	--apeiron-signal-form-subtle-color: var(--apeiron-dashboard-text-faint, #98a2b3);
+	--apeiron-signal-form-focus-border-color: rgba(8, 60, 87, 0.22);
+	--apeiron-signal-form-focus-ring-color: var(--apeiron-signal-form-primary);
+	--apeiron-signal-form-field-gap: 18px;
+	--apeiron-signal-form-loading-opacity: .65;
+	--apeiron-signal-form-transition-duration: 200ms;
+	--apeiron-signal-form-success-color: var(--apeiron-dashboard-text-muted, #475467);
+	--apeiron-signal-form-error-color: #991b1b;
+	--apeiron-signal-form-control-radius: 8px;
+	--apeiron-signal-form-font-size-body: 14px;
+	--apeiron-signal-form-font-size-label: 14px;
+	--apeiron-signal-form-font-weight-label: 500;
+	--apeiron-signal-form-font-weight-title: 500;
+	--apeiron-signal-form-font-weight-heading: 600;
+	--apeiron-signal-form-line-height-ui: 1.45;
+	width: 100%;
+	max-width: 100%;
+	padding: 28px;
+	border: 1px solid var(--apeiron-signal-form-border-color);
+	border-radius: 8px;
+	background: var(--apeiron-signal-form-background);
+	color: var(--apeiron-signal-form-text-color);
+	font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	box-sizing: border-box;
+	position: relative;
+}
+
+/* Keep Elementor Typography controls able to override inherited form fonts. */
+.elementor-widget-apeiron-signal-form .apeiron-signal-form :where(h1, h2, h3, h4, h5, h6, p, span, label, button, input, textarea, select, option) {
+	font-family: inherit;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form *,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form *::before,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form *::after {
+	box-sizing: border-box;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__title {
+	margin: 0 0 22px;
+	padding: 0 0 18px;
+	border-bottom: 1px solid var(--apeiron-signal-form-border-color);
+	color: var(--apeiron-signal-form-text-color);
+	font-size: 18px;
+	font-weight: var(--apeiron-signal-form-font-weight-heading, 600);
+	line-height: 1.35;
+	letter-spacing: 0;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form {
+	display: grid;
+	gap: var(--apeiron-signal-form-field-gap, 18px);
+	margin: 0;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	margin: 0;
+	min-width: 0;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form label span {
+	display: block;
+	margin: 0 0 0.35rem;
+	color: var(--apeiron-signal-form-text-color);
+	font-size: var(--apeiron-signal-form-font-size-label, 14px);
+	font-weight: var(--apeiron-signal-form-font-weight-label, 500);
+	line-height: var(--apeiron-signal-form-line-height-ui, 1.45);
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form input,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form select {
+	width: 100%;
+	min-height: 44px;
+	padding: 12px 14px;
+	border: 1px solid var(--apeiron-signal-form-border-color);
+	border-radius: var(--apeiron-signal-form-control-radius, 10px);
+	background: var(--apeiron-signal-form-surface);
+	color: var(--apeiron-signal-form-text-color);
+	font-family: inherit;
+	font-size: var(--apeiron-signal-form-font-size-body, 14px);
+	line-height: var(--apeiron-signal-form-line-height-ui, 1.45);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	outline: 0;
+	-webkit-appearance: none;
+	appearance: none;
+	transition: border-color var(--apeiron-signal-form-transition-duration) ease, background-color var(--apeiron-signal-form-transition-duration) ease, color var(--apeiron-signal-form-transition-duration) ease;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea {
+	min-height: 80px;
+	max-height: 160px;
+	resize: vertical;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form select {
+	cursor: pointer;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23475569'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+	background-position: right 14px center;
+	background-repeat: no-repeat;
+	background-size: 12px;
+	padding-right: 2.5rem;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form input:hover,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea:hover,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form select:hover {
+	border-color: var(--apeiron-signal-form-border-strong-color);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form input:focus,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea:focus,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form select:focus,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form input:active,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea:active,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form select:active,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form input:focus-visible,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea:focus-visible,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form select:focus-visible {
+	border-color: var(--apeiron-signal-form-focus-border-color);
+	background-color: var(--apeiron-signal-form-surface);
+	outline: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__field :is(input, textarea, select)[aria-invalid="true"],
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__field :is(input, textarea, select)[aria-invalid="true"]:focus {
+	border-color: var(--apeiron-signal-form-error-color);
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form input::placeholder,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea::placeholder {
+	color: var(--apeiron-signal-form-subtle-color);
+	font-size: var(--apeiron-signal-form-font-size-body, 14px);
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	min-height: 44px;
+	padding: 12px 18px;
+	border: none;
+	border-radius: var(--apeiron-signal-form-control-radius, 10px);
+	background: var(--apeiron-signal-form-primary);
+	background-color: var(--apeiron-signal-form-primary);
+	background-image: none;
+	color: #fff;
+	font-size: var(--apeiron-signal-form-font-size-body, 14px);
+	font-weight: var(--apeiron-signal-form-font-weight-title, 500);
+	line-height: var(--apeiron-signal-form-line-height-ui, 1.45);
+	letter-spacing: 0;
+	text-decoration: none;
+	cursor: pointer;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	outline: 0;
+	transition: opacity var(--apeiron-signal-form-transition-duration) ease, background-color var(--apeiron-signal-form-transition-duration) ease, color var(--apeiron-signal-form-transition-duration) ease, border-color var(--apeiron-signal-form-transition-duration) ease;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__button:hover {
+	opacity: 0.85;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	transform: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__button:active {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	transform: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__button:focus {
+	outline: 0;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__button:focus-visible,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__button:focus-visible:hover {
+	border-color: transparent;
+	outline: 1px solid var(--apeiron-signal-form-focus-ring-color);
+	outline-offset: -1px;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form.is-loading .apeiron-signal-form__button {
+	opacity: var(--apeiron-signal-form-loading-opacity);
+	cursor: wait;
+	pointer-events: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__button[disabled]:disabled {
+	opacity: var(--apeiron-signal-form-loading-opacity);
+	cursor: wait;
+	pointer-events: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__notice,
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__empty {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--apeiron-signal-form-muted-color);
+	font-size: 13px;
+	font-weight: 400;
+	line-height: var(--apeiron-signal-form-line-height-ui, 1.45);
+	text-align: left;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__notice[hidden] {
+	display: none;
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__notice.is-error {
+	color: var(--apeiron-signal-form-error-color);
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form form .apeiron-signal-form__notice.is-success {
+	color: var(--apeiron-signal-form-success-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form *,
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form *::before,
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form *::after {
+		transition-duration: .01ms !important;
+		animation-duration: .01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
+
+.elementor-widget-apeiron-signal-form .apeiron-signal-form__notice a {
+	color: inherit;
+	font-weight: 700;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form {
+		padding: 22px;
+	}
+}
+
+@media (max-width: 768px) {
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form {
+		padding: 16px;
+		border-radius: 8px;
+	}
+
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form__title {
+		font-size: 15px;
+	}
+
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form input,
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form textarea,
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form select {
+		min-height: 42px;
+		padding: 10px 12px;
+		font-size: 14px;
+	}
+
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form select {
+		padding-right: 2.35rem;
+		background-position: right 12px center;
+	}
+
+	.elementor-widget-apeiron-signal-form .apeiron-signal-form__button {
+		width: 100%;
+		min-height: 42px;
+		padding: 10px 16px;
+		font-size: 14px;
+	}
+}

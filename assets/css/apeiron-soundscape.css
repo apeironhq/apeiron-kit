@@ -1,0 +1,421 @@
+.elementor-widget-apeiron-soundscape .elementor-widget-container {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player {
+	--apeiron-soundscape-bg: #f7f7fb;
+	--apeiron-soundscape-hover-bg: #eef6fa;
+	--apeiron-soundscape-active-bg: #083c57;
+	--apeiron-soundscape-border-color: #e5e7ef;
+	--apeiron-soundscape-hover-border-color: #d6dae5;
+	--apeiron-soundscape-active-border-color: #083c57;
+	--apeiron-soundscape-focus-border-color: rgba(8, 60, 87, 0.22);
+	--apeiron-soundscape-icon-color: #083c57;
+	--apeiron-soundscape-icon-hover-color: #062f44;
+	--apeiron-soundscape-icon-active-color: #ffffff;
+	--apeiron-soundscape-effect-color: #083c57;
+	--apeiron-soundscape-effect-duration: 3s;
+	--apeiron-soundscape-effect-spread: 2.2;
+	--apeiron-soundscape-effect-opacity: 0.5;
+	--apeiron-soundscape-spin-track-color: #6f94a5;
+	--apeiron-soundscape-spin-accent-color: currentColor;
+	--apeiron-soundscape-spin-arc: 82deg;
+	--apeiron-soundscape-spin-direction: normal;
+	--apeiron-soundscape-spin-inset: -6px;
+	--apeiron-soundscape-spin-width: 2px;
+	--apeiron-soundscape-size: 42px;
+	--apeiron-soundscape-square-radius: 8px;
+	--apeiron-soundscape-transition-duration: 0.2s;
+	--apeiron-soundscape-transition-timing: ease;
+	--apeiron-soundscape-error-bg: #fef2f2;
+	--apeiron-soundscape-error-color: #991b1b;
+	--apeiron-soundscape-error-border-color: #fecaca;
+	--apeiron-soundscape-status-bg: #ffffff;
+	--apeiron-soundscape-status-color: #6b7890;
+	--apeiron-soundscape-status-border-color: #e5e7ef;
+	position: relative;
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	gap: 0.75rem;
+	max-width: 100%;
+	padding: 0;
+	border: 1px solid var(--apeiron-soundscape-border-color);
+	border-radius: 50%;
+	background: var(--apeiron-soundscape-bg);
+	color: var(--apeiron-soundscape-icon-color);
+	font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	box-sizing: border-box;
+	overflow: visible;
+	transition: background-color var(--apeiron-soundscape-transition-duration) var(--apeiron-soundscape-transition-timing),
+		border-color var(--apeiron-soundscape-transition-duration) var(--apeiron-soundscape-transition-timing),
+		color var(--apeiron-soundscape-transition-duration) var(--apeiron-soundscape-transition-timing),
+		opacity var(--apeiron-soundscape-transition-duration) var(--apeiron-soundscape-transition-timing);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player *,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player *::before,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player *::after {
+	box-sizing: border-box;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player {
+	width: var(--apeiron-soundscape-size);
+	height: var(--apeiron-soundscape-size);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-shape-circle {
+	border-radius: 50%;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-shape-square {
+	border-radius: var(--apeiron-soundscape-square-radius);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player::before,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player::after {
+	content: "";
+	position: absolute;
+	z-index: 0;
+	pointer-events: none;
+	opacity: 0;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player::before {
+	inset: var(--apeiron-soundscape-spin-inset);
+	border-radius: 999px;
+	padding: var(--apeiron-soundscape-spin-width);
+	background: conic-gradient(
+		from 0deg,
+		var(--apeiron-soundscape-spin-accent-color) 0 var(--apeiron-soundscape-spin-arc),
+		var(--apeiron-soundscape-spin-track-color) var(--apeiron-soundscape-spin-arc) 360deg
+	);
+	opacity: 1;
+	visibility: hidden;
+	-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	mask-composite: exclude;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-shape-square::before {
+	border-radius: max(2px, calc(var(--apeiron-soundscape-square-radius) - var(--apeiron-soundscape-spin-inset)));
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player::after {
+	inset: -4px;
+	border-radius: inherit;
+	border: 1px solid var(--apeiron-soundscape-effect-color);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player .apeiron-soundscape-toggle {
+	appearance: none;
+	-webkit-appearance: none;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-width: 0;
+	padding: 0;
+	color: inherit;
+	background: transparent;
+	border: 0;
+	border-radius: 8px;
+	font: inherit;
+	cursor: pointer;
+	position: relative;
+	z-index: 2;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player .apeiron-soundscape-toggle,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player .apeiron-soundscape-toggle-inner {
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-toggle.is-pause {
+	display: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-toggle.is-play {
+	display: flex;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing .apeiron-soundscape-toggle.is-play {
+	display: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing .apeiron-soundscape-toggle.is-pause {
+	display: flex;
+}
+
+.elementor-widget-apeiron-soundscape .elementor-icon-wrapper {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
+.elementor-widget-apeiron-soundscape .elementor-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+	transition: transform 0.25s ease, color 0.2s ease, fill 0.2s ease;
+	cursor: pointer;
+	color: inherit;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon {
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	color: inherit !important;
+	box-shadow: none !important;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon i,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon svg {
+	width: 1em;
+	height: 1em;
+	position: relative;
+	display: block;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon svg {
+	fill: currentColor !important;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon-shell {
+	width: 100%;
+	height: 100%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	flex: 0 0 auto;
+	padding: 0;
+	border: 0;
+	border-radius: inherit;
+	background: transparent;
+	color: inherit;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon-shell .elementor-icon {
+	position: relative;
+	z-index: 2;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon-shell i,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-icon-shell svg {
+	font-size: 1em;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-toggle-inner {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	padding: 0;
+	border-radius: inherit;
+	gap: var(--apeiron-soundscape-gap, 0.65rem);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player:hover {
+	background: var(--apeiron-soundscape-hover-bg);
+	border-color: var(--apeiron-soundscape-hover-border-color);
+	color: var(--apeiron-soundscape-icon-hover-color);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing {
+	background: var(--apeiron-soundscape-active-bg);
+	border-color: var(--apeiron-soundscape-active-border-color);
+	color: var(--apeiron-soundscape-icon-active-color);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing:hover {
+	background: var(--apeiron-soundscape-active-bg);
+	border-color: var(--apeiron-soundscape-active-border-color);
+	color: var(--apeiron-soundscape-icon-active-color);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-empty {
+	cursor: not-allowed;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-empty .apeiron-soundscape-toggle {
+	pointer-events: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-loading .apeiron-soundscape-toggle-inner {
+	animation: apeironSoundLoading 1s ease-in-out infinite;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.has-error {
+	background: var(--apeiron-soundscape-error-bg);
+	border-color: var(--apeiron-soundscape-error-border-color);
+	color: var(--apeiron-soundscape-error-color);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-status {
+	position: absolute;
+	top: calc(100% + 8px);
+	left: 50%;
+	z-index: 4;
+	display: none;
+	width: max-content;
+	max-width: min(220px, 80vw);
+	padding: 6px 8px;
+	border: 1px solid var(--apeiron-soundscape-status-border-color);
+	border-radius: 8px;
+	background: var(--apeiron-soundscape-status-bg);
+	color: var(--apeiron-soundscape-status-color);
+	box-shadow: 0 8px 18px rgba(8, 60, 87, 0.08);
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 1.35;
+	text-align: center;
+	white-space: normal;
+	transform: translateX(-50%);
+	pointer-events: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-status.is-visible {
+	display: block;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-loading .apeiron-soundscape-status {
+	width: max-content;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	font-weight: 400;
+	line-height: 1.35;
+	white-space: nowrap;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.has-error .apeiron-soundscape-status {
+	border-color: var(--apeiron-soundscape-error-border-color);
+	background: var(--apeiron-soundscape-error-bg);
+	color: var(--apeiron-soundscape-error-color);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing.is-effect-spin::before,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing.is-effect-spin_pulse::before {
+	opacity: 1;
+	visibility: visible;
+	animation: apeironSoundDiscSpin var(--apeiron-soundscape-effect-duration) linear infinite var(--apeiron-soundscape-spin-direction);
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing.is-effect-pulse::after,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing.is-effect-spin_pulse::after {
+	animation: apeironSoundPulse calc(var(--apeiron-soundscape-effect-duration) * 0.75) ease-out infinite;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing.is-effect-beat {
+	animation: apeironSoundBeat var(--apeiron-soundscape-effect-duration) ease-in-out infinite;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player.is-playing.is-effect-glow::after {
+	inset: 0;
+	border: 0;
+	box-shadow: 0 0 0 0 var(--apeiron-soundscape-effect-color);
+	opacity: var(--apeiron-soundscape-effect-opacity);
+	animation: apeironSoundGlow var(--apeiron-soundscape-effect-duration) ease-in-out infinite;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-toggle:focus,
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-toggle:active {
+	outline: none;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-toggle:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-soundscape .apeiron-soundscape-player:has(.apeiron-soundscape-toggle:focus-visible) {
+	border-color: var(--apeiron-soundscape-focus-border-color);
+	box-shadow: none;
+}
+
+@keyframes apeironSoundDiscSpin {
+	from {
+		transform: rotate(0deg);
+	}
+
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes apeironSoundPulse {
+	0% {
+		opacity: var(--apeiron-soundscape-effect-opacity);
+		transform: scale(0.88);
+	}
+
+	100% {
+		opacity: 0;
+		transform: scale(var(--apeiron-soundscape-effect-spread));
+	}
+}
+
+@keyframes apeironSoundBeat {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+
+	18% {
+		transform: scale(1.06);
+	}
+
+	34% {
+		transform: scale(1);
+	}
+
+	52% {
+		transform: scale(1.04);
+	}
+}
+
+@keyframes apeironSoundGlow {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 var(--apeiron-soundscape-effect-color);
+		opacity: 0;
+	}
+
+	50% {
+		box-shadow: 0 0 0 calc(5px * var(--apeiron-soundscape-effect-spread) / 2.2) var(--apeiron-soundscape-effect-color);
+		opacity: var(--apeiron-soundscape-effect-opacity);
+	}
+}
+
+@keyframes apeironSoundLoading {
+	0%,
+	100% {
+		opacity: 0.72;
+		transform: scale(0.96);
+	}
+
+	50% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (max-width: 768px) {
+	.elementor-widget-apeiron-soundscape .apeiron-soundscape-player {
+		gap: 0.6rem;
+	}
+}

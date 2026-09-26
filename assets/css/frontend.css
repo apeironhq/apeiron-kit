@@ -1,0 +1,246 @@
+/* ==========================================================================
+   Apeiron Kit — Global Design System (Frontend shared tokens + Rubik font)
+   Loaded as the `apeiron-kit-frontend` dependency by every widget so the
+   same self-hosted font, color, and typography scale is available to all
+   widgets. Per-widget stylesheets consume these variables as plugin-owned
+   defaults; Elementor Global Kit is intentionally not part of this cascade.
+   ========================================================================== */
+
+@font-face {
+	font-family: "Rubik";
+	font-style: normal;
+	font-weight: 300 900;
+	font-display: swap;
+	src: url("../fonts/rubik-latin-300-900.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "Rubik";
+	font-style: normal;
+	font-weight: 300 900;
+	font-display: swap;
+	src: url("../fonts/rubik-latin-ext-300-900.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Rubik";
+	font-style: italic;
+	font-weight: 300 900;
+	font-display: swap;
+	src: url("../fonts/rubik-latin-italic-300-900.woff2") format("woff2");
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "Rubik";
+	font-style: italic;
+	font-weight: 300 900;
+	font-display: swap;
+	src: url("../fonts/rubik-latin-ext-italic-300-900.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+	/* Stable source tokens shared with the plugin dashboard. Widget-local
+	   aliases must reference these names, never themselves. */
+	--apeiron-dashboard-font-family: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--apeiron-dashboard-primary: #083c57;
+	--apeiron-dashboard-primary-dark: #062a3d;
+	--apeiron-dashboard-primary-soft: #f3f7fa;
+	--apeiron-dashboard-background: #f4f6fb;
+	--apeiron-dashboard-surface: #ffffff;
+	--apeiron-dashboard-surface-soft: #f9fafb;
+	--apeiron-dashboard-border: #eaecf0;
+	--apeiron-dashboard-border-soft: #f2f4f7;
+	--apeiron-dashboard-border-hover: rgba(8, 60, 87, 0.16);
+	--apeiron-dashboard-text: #1d2939;
+	--apeiron-dashboard-text-muted: #475467;
+	--apeiron-dashboard-text-label: #344054;
+	--apeiron-dashboard-text-faint: #98a2b3;
+
+	--apeiron-font-family: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+	/* Brand palette — identical to the dashboard design tokens. */
+	--apeiron-primary: #083c57;
+	--apeiron-primary-dark: #062a3d;
+	--apeiron-primary-rgb: 8, 60, 87;
+	--apeiron-primary-soft: #f3f7fa;
+
+	/* Surfaces */
+	--apeiron-surface-soft: #f9fafb;
+	--apeiron-soft-bg: #f4f6fb;
+
+	/* Borders — aligned with dashboard. */
+	--apeiron-border-soft: #f2f4f7;
+	--apeiron-border-hover: rgba(8, 60, 87, 0.16);
+	--apeiron-border-divider: #eaecf0;
+	--apeiron-border-strong: #eaecf0;
+	--apeiron-border: #eaecf0;
+
+	/* Text */
+	--apeiron-text: #1d2939;
+	--apeiron-text-muted: #475467;
+	--apeiron-text-label: #344054;
+	--apeiron-text-faint: #98a2b3;
+
+	/* Typography scale — identical to the dashboard. */
+	--apeiron-font-size-section: 18px;
+	--apeiron-font-size-title: 14px;
+	--apeiron-font-size-body: 13px;
+	--apeiron-font-size-small: 12px;
+	--apeiron-font-size-caption: 11px;
+	--apeiron-font-size-label: 13px;
+	--apeiron-font-size-pill: 11px;
+	--apeiron-font-size-count: 26px;
+
+	--apeiron-font-weight-body: 400;
+	--apeiron-font-weight-ui: 450;
+	--apeiron-font-weight-label: 500;
+	--apeiron-font-weight-title: 500;
+	--apeiron-font-weight-heading: 700;
+
+	--apeiron-line-height-ui: 1.35;
+	--apeiron-line-height-body: 1.5;
+	--apeiron-line-height-heading: 1.3;
+	--apeiron-line-height-tight: 1.2;
+
+	/* Radius — aligned with dashboard (8px system). */
+	--apeiron-radius-xs: 4px;
+	--apeiron-radius-sm: 8px;
+	--apeiron-radius: 8px;
+	--apeiron-radius-lg: 8px;
+	--apeiron-radius-pill: 999px;
+
+	--apeiron-space-gap: 18px;
+	--apeiron-space-cards: 14px;
+
+	--apeiron-transition: 0.2s ease;
+}
+
+/* === BASE === */
+.apeiron-section {
+	background: #fff;
+	border-radius: 20px;
+	padding: 2rem;
+	box-shadow: 0 4px 24px rgba(15,23,42,.06);
+	border: 1px solid rgba(15,23,42,.06);
+}
+
+/* === COPY TEXT === */
+.apeiron-copy-text {
+	text-align: center;
+}
+
+.elementor-align-left .apeiron-copy-text { text-align: left; }
+.elementor-align-center .apeiron-copy-text { text-align: center; }
+.elementor-align-right .apeiron-copy-text { text-align: right; }
+.elementor-align-justify .apeiron-copy-text { text-align: justify; }
+
+.apeiron-copy-text__image {
+	margin-bottom: 1.25rem;
+}
+
+.apeiron-copy-text__image img {
+	display: block;
+	margin: 0 auto;
+}
+
+.apeiron-copy-text__heading {
+	margin: 0 0 1rem;
+	font-weight: 600;
+	color: #0f172a;
+}
+
+.apeiron-copy-text__content {
+	margin-bottom: 1.5rem;
+	padding-bottom: 1.25rem;
+	color: #475569;
+	word-break: break-word;
+	line-height: 1.7;
+}
+
+.apeiron-copy-text__content.is-hidden {
+	display: none;
+}
+
+.apeiron-copy-text__button {
+	background: #083c57;
+	color: #fff;
+	border: none;
+	border-radius: 12px;
+	padding: .875rem 2rem;
+	cursor: pointer;
+	font-weight: 600;
+	font-size: 1rem;
+	box-shadow: 0 4px 16px rgba(8,60,87,.15);
+	transition: all .25s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.apeiron-copy-text__button:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 24px rgba(8,60,87,.25);
+}
+
+.apeiron-copy-text__button:active {
+	transform: translateY(0);
+}
+
+.apeiron-copy-text__button.is-copied {
+	background: #10b981;
+	box-shadow: 0 4px 16px rgba(16,185,129,.2);
+}
+
+.apeiron-copy-text__button-content {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: .5rem;
+}
+
+.apeiron-copy-text__button-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.apeiron-copy-text__button-icon i,
+.apeiron-copy-text__button-icon svg {
+	width: 1em;
+	height: 1em;
+}
+
+.apeiron-copy-text__button-text {
+	display: inline-block;
+}
+
+.apeiron-copy-text__success {
+	margin-top: 1rem;
+	color: #10b981;
+	font-weight: 600;
+	font-size: .9rem;
+	opacity: 0;
+	transition: opacity .25s ease;
+}
+
+.apeiron-copy-text__success.is-visible {
+	opacity: 1;
+}
+
+/* === EMPTY STATE === */
+.apeiron-kit-empty-audio {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+	background: #f8fafc;
+	border: 1px dashed #e2e8f0;
+	border-radius: 12px;
+	color: #64748b;
+	font-size: .9rem;
+	text-align: center;
+}

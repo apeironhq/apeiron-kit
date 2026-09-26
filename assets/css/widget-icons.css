@@ -1,0 +1,72 @@
+/**
+ * Apeiron Kit - Widget Icons
+ * Custom SVG icons for Elementor widget panel
+ * Uses CSS mask-image for currentColor inheritance
+ */
+
+[class^="apeiron-icon-"],
+[class*=" apeiron-icon-"] {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+.apeiron-icon-countdown {
+    -webkit-mask-image: url('../icon/stopwatch.svg');
+    mask-image: url('../icon/stopwatch.svg');
+}
+
+.apeiron-icon-audio {
+    -webkit-mask-image: url('../icon/sound-wave-circle-sparkle-28-regular.svg');
+    mask-image: url('../icon/sound-wave-circle-sparkle-28-regular.svg');
+}
+
+.apeiron-icon-form {
+    -webkit-mask-image: url('../icon/clipboard.svg');
+    mask-image: url('../icon/clipboard.svg');
+}
+
+.apeiron-icon-clipboard {
+    -webkit-mask-image: url('../icon/copy.svg');
+    mask-image: url('../icon/copy.svg');
+}
+
+.apeiron-icon-comment {
+    -webkit-mask-image: url('../icon/comment-add-01.svg');
+    mask-image: url('../icon/comment-add-01.svg');
+}
+
+.apeiron-icon-guest,
+.apeiron-icon-manager {
+    -webkit-mask-image: url('../icon/manager-self-service.svg');
+    mask-image: url('../icon/manager-self-service.svg');
+}
+
+.apeiron-icon-scroll {
+    -webkit-mask-image: url('../icon/mouse-23.svg');
+    mask-image: url('../icon/mouse-23.svg');
+}
+
+.apeiron-icon-notification {
+    -webkit-mask-image: url('../icon/notification-bubble.svg');
+    mask-image: url('../icon/notification-bubble.svg');
+}
+
+.apeiron-icon-loader {
+    -webkit-mask-image: url('../icon/page-loader.svg');
+    mask-image: url('../icon/page-loader.svg');
+}
+
+.apeiron-icon-cover {
+    -webkit-mask-image: url('../icon/cover.svg');
+    mask-image: url('../icon/cover.svg');
+}

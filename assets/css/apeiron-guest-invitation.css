@@ -1,0 +1,1249 @@
+/* Scope resets to the widget so Elementor Advanced controls remain available. */
+.elementor-widget-apeiron-guest-invitation-manager {
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container {
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn {
+	box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	-webkit-box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn:hover,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn:active,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn:focus {
+	box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	-webkit-box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	outline: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn:focus-visible {
+	border: 1px solid var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	outline: none;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn {
+	box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	-webkit-box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn:hover,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn:active,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn:focus {
+	box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	-webkit-box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	outline: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn:focus-visible {
+	border: 1px solid var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	outline: none;
+	box-shadow: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-input:focus,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-input:active,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-input:focus-visible {
+	border-color: var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	border-width: 1px;
+	outline: none;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-file-input:focus {
+	border-color: var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	outline: none;
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-list-section,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-table-wrapper,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-template-buttons,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-form {
+	box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+	-webkit-box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.apeiron-invitation-container {
+	--apeiron-guest-invitation-background: var(--apeiron-soft-bg, #f7f7fb);
+	--apeiron-guest-invitation-surface: var(--apeiron-dashboard-surface, #ffffff);
+	--apeiron-guest-invitation-surface-soft: #fbfcff;
+	--apeiron-guest-invitation-border-color: #e5e7ef;
+	--apeiron-guest-invitation-border-strong-color: #d6dae5;
+	--apeiron-guest-invitation-primary: var(--apeiron-dashboard-primary, #083c57);
+	--apeiron-guest-invitation-primary-hover: var(--apeiron-dashboard-primary-dark, #062f44);
+	--apeiron-guest-invitation-primary-soft: #eef6fa;
+	--apeiron-guest-invitation-success-color: #047857;
+	--apeiron-guest-invitation-success-background: #ecfdf5;
+	--apeiron-guest-invitation-success-border-color: #bbf7d0;
+	--apeiron-guest-invitation-error-color: #991b1b;
+	--apeiron-guest-invitation-error-background: #fef2f2;
+	--apeiron-guest-invitation-error-border-color: #fecaca;
+	--apeiron-guest-invitation-text-color: var(--apeiron-dashboard-text, #1d2939);
+	--apeiron-guest-invitation-muted-color: var(--apeiron-dashboard-text-muted, #475467);
+	--apeiron-guest-invitation-subtle-color: var(--apeiron-dashboard-text-faint, #98a2b3);
+	--apeiron-guest-invitation-focus-border-color: rgba(8, 60, 87, 0.22);
+	--apeiron-guest-invitation-control-radius: 8px;
+	--apeiron-guest-invitation-font-size-body: 14px;
+	--apeiron-guest-invitation-font-size-label: 14px;
+	--apeiron-guest-invitation-font-weight-label: 500;
+	--apeiron-guest-invitation-font-weight-title: 500;
+	--apeiron-guest-invitation-font-weight-heading: 600;
+	--apeiron-guest-invitation-line-height-ui: 1.45;
+	width: 100%;
+	max-width: 100%;
+	padding: 28px;
+	background: var(--apeiron-guest-invitation-background);
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	border-radius: 8px;
+	box-sizing: border-box;
+	color: var(--apeiron-guest-invitation-text-color);
+	font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+	position: relative;
+}
+
+/* Inheritance lets explicit Elementor typography controls reach nested text. */
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container {
+	font-family: var(--apeiron-dashboard-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container :where(h1, h2, h3, h4, h5, h6, p, span, label, button, input, textarea, select, option, th, td) {
+	font-family: inherit;
+}
+
+/* Keep widget defaults independent from Elementor Kit and theme element rules.
+   Per-instance Elementor controls remain stronger because their selectors also
+   include the page and element IDs. */
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-header-title,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-label,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-dropzone-text,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-section-title,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-name {
+	color: var(--apeiron-guest-invitation-text-color);
+	background-color: transparent;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-header-description,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-hint,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-dropzone-hint,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-create-status,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-phone,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table thead th,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table tbody tr.apeiron-empty-state td {
+	color: var(--apeiron-guest-invitation-muted-color);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-header-description,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-hint,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-dropzone-hint,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-create-status,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-phone {
+	background-color: transparent;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-form-input,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-file-input {
+	color: var(--apeiron-guest-invitation-text-color);
+	background-color: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-dropzone,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-dropzone-icon,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-table-wrapper,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table {
+	background-color: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table thead th,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table tbody tr.apeiron-empty-state td {
+	background-color: var(--apeiron-guest-invitation-surface-soft);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-template {
+	color: var(--apeiron-guest-invitation-primary);
+	background-color: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-create,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-excel,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-copy {
+	color: #fff;
+	background-color: var(--apeiron-guest-invitation-primary);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-download {
+	color: var(--apeiron-guest-invitation-muted-color);
+	background-color: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn {
+	border-width: 1px;
+	border-style: solid;
+	border-color: transparent;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-wa {
+	color: #fff;
+	background-color: #16a34a;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-fb {
+	color: #fff;
+	background-color: #1877f2;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-ig {
+	color: #fff;
+	background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn {
+	border: 0 solid transparent;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn:focus,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn:focus-visible,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn:focus,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn:focus-visible {
+	border-width: 1px;
+	border-color: var(--apeiron-guest-invitation-focus-border-color);
+	outline: none;
+	box-shadow: none;
+}
+
+.apeiron-invitation-container *,
+.apeiron-invitation-container *::before,
+.apeiron-invitation-container *::after {
+	box-sizing: border-box;
+}
+
+.apeiron-invitation-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+.apeiron-invitation-form {
+	display: grid;
+	gap: 18px;
+	background: transparent;
+	border-radius: 0;
+	padding: 0;
+	border: none;
+	margin-bottom: 0;
+}
+
+.apeiron-form-group {
+	margin-bottom: 0;
+}
+
+.apeiron-form-group:last-child {
+	margin-bottom: 0;
+}
+
+.apeiron-form-group label {
+	display: block;
+	font-weight: var(--apeiron-guest-invitation-font-weight-label, 500);
+	font-size: var(--apeiron-guest-invitation-font-size-label, 14px);
+	color: var(--apeiron-guest-invitation-text-color);
+	margin-bottom: 0.35rem;
+	line-height: var(--apeiron-guest-invitation-line-height-ui, 1.45);
+}
+
+.apeiron-form-label {
+	font-size: var(--apeiron-guest-invitation-font-size-label, 14px);
+	font-weight: var(--apeiron-guest-invitation-font-weight-label, 500);
+	line-height: var(--apeiron-guest-invitation-line-height-ui, 1.45);
+	color: var(--apeiron-guest-invitation-text-color);
+}
+
+.apeiron-form-hint {
+	font-size: 12px;
+	font-style: italic;
+	color: var(--apeiron-guest-invitation-muted-color);
+	margin-top: 0.25rem;
+	margin-bottom: 0.5rem;
+	line-height: 1.5;
+}
+
+.apeiron-form-hint kbd {
+	background: var(--apeiron-guest-invitation-surface-soft);
+	border: 1px solid var(--apeiron-guest-invitation-border-strong-color);
+	border-radius: 4px;
+	padding: 2px 6px;
+	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	font-size: 0.85em;
+	color: var(--apeiron-guest-invitation-muted-color);
+	font-weight: 500;
+}
+
+.apeiron-form-input {
+	width: 100%;
+	padding: 12px 14px;
+	min-height: 44px;
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	border-radius: 8px;
+	font-size: 14px;
+	line-height: 1.45;
+	font-family: inherit;
+	background: var(--apeiron-guest-invitation-surface);
+	color: var(--apeiron-guest-invitation-text-color);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	outline: none;
+	-webkit-appearance: none;
+	appearance: none;
+	transition: border-color 0.2s ease, background-color 0.2s ease;
+	box-sizing: border-box;
+	resize: vertical;
+}
+
+.apeiron-form-input:hover {
+	border-color: var(--apeiron-guest-invitation-border-strong-color);
+}
+
+.apeiron-form-input:focus,
+.apeiron-form-input:active,
+.apeiron-form-input:focus-visible {
+	outline: none;
+	border-color: var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	background: var(--apeiron-guest-invitation-surface);
+}
+
+.apeiron-form-input::placeholder {
+	color: var(--apeiron-guest-invitation-subtle-color);
+	font-size: 13px;
+}
+
+.apeiron-import-section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 2px;
+	padding-top: 20px;
+	border-top: 1px solid var(--apeiron-guest-invitation-border-color);
+}
+
+.apeiron-import-section>label {
+	display: block;
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--apeiron-guest-invitation-text-color);
+	margin-bottom: 0;
+	line-height: 1.4;
+}
+
+.apeiron-dropzone {
+	position: relative;
+	border: 1px dashed var(--apeiron-guest-invitation-border-color);
+	border-radius: 8px;
+	padding: 18px 16px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--apeiron-guest-invitation-surface);
+	cursor: pointer;
+	transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.apeiron-dropzone:hover {
+	border-color: var(--apeiron-guest-invitation-border-strong-color);
+	background: var(--apeiron-guest-invitation-surface-soft);
+	box-shadow: none;
+}
+
+.apeiron-dropzone.is-dragging {
+	border-color: var(--apeiron-guest-invitation-primary);
+	background: var(--apeiron-guest-invitation-primary-soft);
+}
+
+.apeiron-dropzone.has-file {
+	border-color: var(--apeiron-guest-invitation-success-border-color);
+	background: var(--apeiron-guest-invitation-success-background);
+}
+
+.apeiron-dropzone-input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+	z-index: 2;
+}
+
+.apeiron-dropzone-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	pointer-events: none;
+	gap: 6px;
+}
+
+.apeiron-dropzone-icon {
+	background: var(--apeiron-guest-invitation-surface);
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	border-radius: 8px;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: none;
+	margin-bottom: 0.25rem;
+}
+
+.apeiron-dropzone-text {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--apeiron-guest-invitation-text-color);
+	margin: 0;
+}
+
+.apeiron-dropzone-hint {
+	font-size: 12px;
+	color: var(--apeiron-guest-invitation-muted-color);
+	margin: 0;
+	line-height: 1.4;
+}
+
+.apeiron-dropzone-file {
+	max-width: 100%;
+	margin: 0.15rem 0 0;
+	color: var(--apeiron-guest-invitation-success-color);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.35;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.apeiron-import-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+
+.apeiron-import-actions .apeiron-btn {
+	flex: 0 0 auto;
+	min-width: 150px;
+}
+
+.apeiron-file-input {
+	padding: 12px 14px;
+	font-size: 14px;
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	border-radius: 8px;
+	background: var(--apeiron-guest-invitation-surface);
+	cursor: pointer;
+	transition: border-color 0.2s ease;
+	color: var(--apeiron-guest-invitation-muted-color);
+}
+
+.apeiron-file-input:hover {
+	border-color: var(--apeiron-guest-invitation-border-strong-color);
+}
+
+.apeiron-file-input:focus {
+	outline: none;
+	border-color: var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.apeiron-template-section {
+	display: flex;
+	flex-direction: column;
+	margin-top: 2px;
+	padding-top: 20px;
+	border-top: 1px solid var(--apeiron-guest-invitation-border-color);
+}
+
+.apeiron-template-section>label {
+	display: block;
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--apeiron-guest-invitation-text-color);
+	margin-bottom: 10px;
+	line-height: 1.4;
+}
+
+.apeiron-template-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.apeiron-template-buttons .apeiron-btn {
+	padding: 9px 14px;
+	font-size: var(--apeiron-guest-invitation-font-size-body, 14px);
+	border-radius: var(--apeiron-guest-invitation-control-radius, 10px);
+	font-weight: var(--apeiron-guest-invitation-font-weight-title, 500);
+}
+
+.apeiron-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	padding: 12px 18px;
+	border: 0 solid transparent;
+	border-radius: var(--apeiron-guest-invitation-control-radius, 10px);
+	font-weight: var(--apeiron-guest-invitation-font-weight-title, 500);
+	font-size: var(--apeiron-guest-invitation-font-size-body, 14px);
+	cursor: pointer;
+	transition: opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+	text-decoration: none;
+	white-space: nowrap;
+	box-sizing: border-box;
+	letter-spacing: 0;
+	line-height: var(--apeiron-guest-invitation-line-height-ui, 1.45);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+	outline: none;
+}
+
+.apeiron-guest-btn {
+	display: inline-flex;
+}
+
+.apeiron-btn:hover {
+	opacity: 0.85;
+	transform: none;
+}
+
+.apeiron-btn:active {
+	transform: none;
+}
+
+.apeiron-btn:focus {
+	outline: none;
+}
+
+.apeiron-btn:focus-visible {
+	border: 1px solid var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	outline: none;
+	box-shadow: none;
+}
+
+.apeiron-btn.is-loading::before {
+	content: "";
+	width: 12px;
+	height: 12px;
+	margin-right: 6px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: apeironGuestInvitationSpin 0.7s linear infinite;
+}
+
+@keyframes apeironGuestInvitationSpin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-template.is-active,
+.apeiron-btn-template.is-active {
+	position: relative;
+	font-weight: var(--apeiron-guest-invitation-font-weight-heading, 600);
+	outline: none;
+	background: var(--apeiron-guest-invitation-primary);
+	color: #fff;
+	border-color: var(--apeiron-guest-invitation-primary);
+	box-shadow: none;
+}
+
+.apeiron-btn-template::before,
+.apeiron-btn-template::after {
+	content: none;
+	display: none;
+}
+
+.apeiron-btn-template {
+	background-color: var(--apeiron-guest-invitation-surface);
+	color: var(--apeiron-guest-invitation-primary);
+	border-width: 1px;
+	border-color: var(--apeiron-guest-invitation-border-color);
+	box-shadow: none;
+}
+
+.apeiron-btn-template:hover {
+	background: var(--apeiron-guest-invitation-surface-soft);
+	border-color: var(--apeiron-guest-invitation-border-strong-color);
+	color: var(--apeiron-guest-invitation-primary);
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-template.is-active:hover,
+.apeiron-btn-template.is-active:hover {
+	background: var(--apeiron-guest-invitation-primary-hover);
+	border-color: var(--apeiron-guest-invitation-primary);
+	color: #fff;
+	opacity: 1;
+}
+
+.apeiron-btn-create {
+	background: var(--apeiron-guest-invitation-primary);
+	color: #fff;
+	padding: 12px 22px;
+	font-size: var(--apeiron-guest-invitation-font-size-body, 14px);
+	font-weight: var(--apeiron-guest-invitation-font-weight-title, 500);
+}
+
+.apeiron-btn-create:hover {
+	background: var(--apeiron-guest-invitation-primary-hover);
+}
+
+.apeiron-form-actions {
+	text-align: center;
+	margin-top: 4px;
+}
+
+.apeiron-create-status {
+	margin: 8px 0 0;
+	color: var(--apeiron-guest-invitation-muted-color);
+	font-size: 12px;
+	font-style: italic;
+	font-weight: 400;
+	line-height: 1.45;
+}
+
+.apeiron-create-status[hidden] {
+	display: none;
+}
+
+.apeiron-btn-download {
+	background: var(--apeiron-guest-invitation-surface);
+	color: var(--apeiron-guest-invitation-muted-color);
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	text-decoration: none;
+}
+
+.apeiron-btn-download:hover {
+	background: var(--apeiron-guest-invitation-surface-soft);
+	border-color: var(--apeiron-guest-invitation-border-strong-color);
+	color: var(--apeiron-guest-invitation-text-color);
+	text-decoration: none;
+	opacity: 1;
+}
+
+.apeiron-btn-download svg {
+	color: #0d9e6d;
+}
+
+.apeiron-btn-excel {
+	background: var(--apeiron-guest-invitation-primary);
+	color: #fff;
+}
+
+.apeiron-btn-excel:hover {
+	background: var(--apeiron-guest-invitation-primary-hover);
+}
+
+.apeiron-header-section {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin-bottom: 22px;
+	padding-bottom: 18px;
+	border-bottom: 1px solid var(--apeiron-guest-invitation-border-color);
+}
+
+.apeiron-header-icon {
+	color: var(--apeiron-guest-invitation-primary);
+	font-size: 18px;
+	padding-top: 2px;
+	line-height: 1.3;
+}
+
+.apeiron-header-icon i,
+.apeiron-header-icon svg {
+	width: 1em;
+	height: 1em;
+}
+
+.apeiron-header-icon svg:not([fill="none"]) {
+	fill: currentColor;
+}
+
+.apeiron-header-text {
+	flex: 1;
+}
+
+.apeiron-header-title {
+	font-size: 18px;
+	font-weight: var(--apeiron-guest-invitation-font-weight-heading, 600);
+	color: var(--apeiron-guest-invitation-text-color);
+	margin: 0 0 4px;
+	line-height: 1.35;
+	letter-spacing: 0;
+}
+
+.apeiron-header-description {
+	font-size: 14px;
+	color: var(--apeiron-guest-invitation-muted-color);
+	margin: 0;
+	line-height: 1.5;
+}
+
+.apeiron-guest-list-section {
+	background: transparent;
+	border-radius: 0;
+	padding: 0;
+	border: none;
+	margin-top: 22px;
+	padding-top: 20px;
+	border-top: 1px solid var(--apeiron-guest-invitation-border-color);
+}
+
+.apeiron-section-title {
+	font-size: 16px;
+	font-weight: var(--apeiron-guest-invitation-font-weight-heading, 600);
+	color: var(--apeiron-guest-invitation-text-color);
+	margin: 0 0 12px;
+	line-height: 1.35;
+	letter-spacing: 0;
+}
+
+.apeiron-table-wrapper {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	border-radius: 8px;
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	background: var(--apeiron-guest-invitation-surface);
+	overflow-y: hidden;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(15, 23, 42, .15) transparent;
+}
+
+.apeiron-table-wrapper::-webkit-scrollbar {
+	height: 5px;
+}
+
+.apeiron-table-wrapper::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.apeiron-table-wrapper::-webkit-scrollbar-thumb {
+	background: rgba(15, 23, 42, .15);
+	border-radius: 10px;
+}
+
+.apeiron-table-wrapper::-webkit-scrollbar-thumb:hover {
+	background: rgba(15, 23, 42, .25);
+}
+
+.apeiron-guest-table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	font-size: 14px;
+	background: var(--apeiron-guest-invitation-surface);
+	min-width: 100%;
+	table-layout: fixed;
+}
+
+.apeiron-guest-table th,
+.apeiron-guest-table td {
+	border: 0;
+}
+
+.apeiron-guest-table thead {
+	background: var(--apeiron-guest-invitation-surface);
+	position: sticky;
+	top: 0;
+	z-index: 10;
+}
+
+.apeiron-guest-table thead th {
+	padding: 12px 16px;
+	text-align: left;
+	font-weight: var(--apeiron-guest-invitation-font-weight-label, 500);
+	color: var(--apeiron-guest-invitation-muted-color);
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+	background: var(--apeiron-guest-invitation-surface-soft);
+	border-bottom: 1px solid var(--apeiron-guest-invitation-border-color);
+}
+
+.apeiron-guest-table thead th:first-child {
+	width: 52px;
+	text-align: center;
+}
+
+.apeiron-guest-table thead th:nth-child(2) {
+	width: auto;
+}
+
+.apeiron-guest-table thead th:last-child {
+	width: 168px;
+	text-align: right;
+	padding-right: 16px;
+}
+
+.apeiron-guest-table tbody tr {
+	transition: background-color 0.15s ease;
+}
+
+.apeiron-guest-table tbody tr:hover {
+	background-color: var(--apeiron-guest-invitation-surface-soft);
+}
+
+.apeiron-guest-table tbody td {
+	padding: 14px 16px;
+	color: var(--apeiron-guest-invitation-text-color);
+	vertical-align: middle;
+	font-weight: 400;
+	line-height: var(--apeiron-guest-invitation-line-height-ui, 1.45);
+	font-size: var(--apeiron-guest-invitation-font-size-body, 14px);
+	border-top: 0;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table th,
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table td {
+	border: 0 !important;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table thead th {
+	border-top: 0 !important;
+	border-bottom: 1px solid var(--apeiron-guest-invitation-border-color) !important;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table tbody td {
+	border-top: 0 !important;
+	border-bottom: 0 !important;
+}
+
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-guest-table tbody tr + tr td {
+	border-top: 1px solid var(--apeiron-guest-invitation-border-color) !important;
+}
+
+.apeiron-guest-table tbody td:first-child {
+	color: var(--apeiron-guest-invitation-muted-color);
+	font-weight: 400;
+	font-size: 13px;
+	text-align: center;
+}
+
+.apeiron-guest-table tbody td:last-child {
+	text-align: right;
+	padding-right: 16px;
+	width: 168px;
+}
+
+.apeiron-guest-name {
+	display: block;
+	font-weight: 500;
+	color: var(--apeiron-guest-invitation-text-color);
+}
+
+.apeiron-guest-phone {
+	display: block;
+	margin-top: 2px;
+	color: var(--apeiron-guest-invitation-muted-color);
+	font-size: 12px;
+	font-weight: 400;
+	line-height: 1.35;
+}
+
+.apeiron-guest-table tbody tr.apeiron-empty-state td {
+	text-align: center;
+	padding: 28px 16px;
+	color: var(--apeiron-guest-invitation-muted-color);
+	font-size: 13px;
+	background: var(--apeiron-guest-invitation-surface-soft);
+}
+
+.apeiron-action-buttons {
+	display: inline-flex;
+	gap: 8px;
+	flex-wrap: nowrap;
+	align-items: center;
+	justify-content: flex-start;
+	flex-direction: row;
+	width: max-content;
+	max-width: 100%;
+	white-space: nowrap;
+}
+
+.apeiron-guest-table tbody td:last-child .apeiron-action-buttons {
+	justify-content: flex-end;
+	margin-left: auto;
+}
+
+.apeiron-guest-table tbody td.apeiron-action-buttons {
+	display: table-cell;
+	white-space: nowrap;
+}
+
+.apeiron-guest-table tbody td.apeiron-action-buttons .apeiron-action-btn + .apeiron-action-btn {
+	margin-left: 8px;
+}
+
+.apeiron-action-btn {
+	padding: 0;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: opacity 0.2s ease;
+	color: #fff;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	position: relative;
+	flex-shrink: 0;
+}
+
+.apeiron-action-btn svg {
+	width: 14px;
+	height: 14px;
+	fill: currentColor;
+	stroke: none;
+	flex-shrink: 0;
+}
+
+.apeiron-action-btn svg[stroke] {
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+}
+
+.apeiron-action-btn:hover {
+	opacity: 0.86;
+	transform: none;
+}
+
+.apeiron-action-btn:active {
+	opacity: 1;
+	transform: none;
+}
+
+.apeiron-action-btn:focus {
+	outline: none;
+}
+
+.apeiron-action-btn:focus-visible {
+	border: 1px solid var(--apeiron-guest-invitation-focus-border-color, rgba(8, 60, 87, 0.22));
+	outline: none;
+	box-shadow: none;
+}
+
+.apeiron-btn-wa {
+	background: #16a34a;
+}
+
+.apeiron-btn-fb {
+	background: #1877f2;
+}
+
+.apeiron-btn-ig {
+	background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+	position: relative;
+	overflow: hidden;
+}
+
+.apeiron-btn-ig::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+	opacity: 1;
+	z-index: 0;
+}
+
+.apeiron-btn-ig svg {
+	position: relative;
+	z-index: 1;
+	filter: brightness(0) invert(1);
+}
+
+.apeiron-btn-copy {
+	background: var(--apeiron-guest-invitation-primary);
+}
+
+.apeiron-btn-copy:hover {
+	opacity: 0.75;
+}
+
+.apeiron-toast-container {
+	--apeiron-guest-invitation-surface: #ffffff;
+	--apeiron-guest-invitation-border-color: #e5e7ef;
+	--apeiron-guest-invitation-primary: #083c57;
+	--apeiron-guest-invitation-success-color: #047857;
+	--apeiron-guest-invitation-error-color: #991b1b;
+	--apeiron-guest-invitation-text-color: #1d2939;
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	z-index: 999999;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	pointer-events: none;
+}
+
+.apeiron-toast {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px 10px 14px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--apeiron-guest-invitation-text-color);
+	background: var(--apeiron-guest-invitation-surface);
+	border: 1px solid var(--apeiron-guest-invitation-border-color);
+	border-left: 3px solid var(--apeiron-guest-invitation-primary);
+	pointer-events: auto;
+	animation: apeironToastIn 0.3s ease forwards;
+	max-width: 360px;
+	line-height: 1.45;
+	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.apeiron-toast.is-success {
+	color: var(--apeiron-guest-invitation-text-color);
+	background: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+	border-left-color: var(--apeiron-guest-invitation-success-color);
+}
+
+.apeiron-toast.is-error {
+	color: var(--apeiron-guest-invitation-text-color);
+	background: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+	border-left-color: var(--apeiron-guest-invitation-error-color);
+}
+
+.apeiron-toast.is-warning {
+	color: var(--apeiron-guest-invitation-text-color);
+	background: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+	border-left-color: #d97706;
+}
+
+.apeiron-toast.is-info {
+	color: var(--apeiron-guest-invitation-text-color);
+	background: var(--apeiron-guest-invitation-surface);
+	border-color: var(--apeiron-guest-invitation-border-color);
+	border-left-color: var(--apeiron-guest-invitation-primary);
+}
+
+.apeiron-toast.is-hiding {
+	animation: apeironToastOut 0.3s ease forwards;
+}
+
+@keyframes apeironToastIn {
+	from {
+		opacity: 0;
+		transform: translateX(40px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes apeironToastOut {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+
+	to {
+		opacity: 0;
+		transform: translateX(40px);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.apeiron-invitation-container *,
+	.apeiron-invitation-container *::before,
+	.apeiron-invitation-container *::after,
+	.apeiron-toast-container *,
+	.apeiron-toast-container *::before,
+	.apeiron-toast-container *::after {
+		animation-duration: .01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: .01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+@media (min-width: 768px) {
+	.apeiron-guest-table {
+		min-width: 100%;
+	}
+
+	.apeiron-action-buttons {
+		flex-direction: row;
+	}
+
+	.apeiron-action-btn {
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
+		min-height: 32px;
+	}
+
+	.apeiron-action-btn svg {
+		width: 15px;
+		height: 15px;
+	}
+}
+
+@media (max-width: 767px) {
+
+	.apeiron-invitation-container {
+		padding: 16px;
+		border-radius: 8px;
+	}
+
+	.apeiron-section-title {
+		font-size: 15px;
+	}
+
+	.apeiron-template-buttons {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: 100%;
+	}
+
+	.apeiron-template-buttons .apeiron-btn {
+		width: 100%;
+		min-width: 0;
+	}
+
+	.apeiron-form-input,
+	.apeiron-file-input {
+		padding: 11px 12px;
+		font-size: 14px;
+	}
+
+	.apeiron-dropzone {
+		padding: 16px 14px;
+	}
+
+	.apeiron-btn-create {
+		width: 100%;
+		padding: 11px 16px;
+		font-size: 14px;
+	}
+
+	.apeiron-btn-download {
+		width: 100%;
+		text-align: center;
+	}
+
+	.apeiron-import-actions {
+		flex-direction: column;
+	}
+
+	.apeiron-import-actions .apeiron-btn {
+		width: 100%;
+		flex-basis: auto;
+	}
+
+	.apeiron-guest-table {
+		font-size: 12px;
+		min-width: 100%;
+	}
+
+	.apeiron-guest-table thead th {
+		padding: 8px;
+		font-size: 10px;
+	}
+
+	.apeiron-guest-table tbody td {
+		padding: 8px;
+		font-size: 12px;
+	}
+
+	.apeiron-guest-table thead th:first-child {
+		width: 40px;
+	}
+
+	.apeiron-guest-table thead th:last-child,
+	.apeiron-guest-table tbody td:last-child {
+		width: 106px;
+	}
+
+	.apeiron-guest-table tbody tr.apeiron-empty-state td {
+		padding: 26px 12px;
+	}
+
+	.apeiron-action-buttons {
+		gap: 6px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		width: auto;
+		white-space: normal;
+	}
+
+	.apeiron-action-btn {
+		width: 28px;
+		height: 28px;
+		min-width: 28px;
+		min-height: 28px;
+	}
+
+	.apeiron-action-btn svg {
+		width: 13px;
+		height: 13px;
+	}
+
+	.apeiron-toast-container {
+		top: auto;
+		bottom: 20px;
+		right: 12px;
+		left: 12px;
+	}
+
+	.apeiron-toast {
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 480px) {
+
+	.apeiron-form-group label {
+		font-size: 12px;
+	}
+
+	.apeiron-form-hint {
+		font-size: 11px;
+	}
+
+	.apeiron-btn {
+		padding: 10px 14px;
+		font-size: 13px;
+	}
+
+	.apeiron-guest-table {
+		min-width: 100%;
+	}
+}

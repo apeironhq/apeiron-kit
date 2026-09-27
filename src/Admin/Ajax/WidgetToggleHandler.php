@@ -9,9 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Widget toggle AJAX handler.
- */
+/** Tangani perubahan status widget melalui AJAX. */
 class WidgetToggleHandler {
 
 	private const NONCE_ACTION = 'apeiron_widget_toggle';
@@ -19,9 +17,7 @@ class WidgetToggleHandler {
 	private bool $registered = false;
 	private bool $cache_clear_scheduled = false;
 
-	/**
-	 * Register individual compatibility endpoints and the atomic bulk endpoint.
-	 */
+	/** Daftarkan endpoint tunggal dan massal. */
 	public function register(): void {
 		if ( $this->registered ) {
 			return;
@@ -33,9 +29,7 @@ class WidgetToggleHandler {
 		add_action( 'wp_ajax_apeiron_check_widget_usage', [ $this, 'handle_check_usage' ] );
 	}
 
-	/**
-	 * Preserve the individual toggle endpoint for existing clients.
-	 */
+	/** Pertahankan endpoint tunggal untuk klien lama. */
 	public function handle_toggle(): void {
 		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
 
@@ -102,12 +96,7 @@ class WidgetToggleHandler {
 		] );
 	}
 
-	/**
-	 * Atomically apply one state to a validated set of widgets.
-	 *
-	 * Validation and usage checks complete before the single option write, so a
-	 * rejected request cannot leave a partially applied widget list.
-	 */
+	/** Validasi seluruh widget sebelum menyimpan perubahan massal sekaligus. */
 	public function handle_bulk_toggle(): void {
 		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
 
@@ -220,16 +209,10 @@ class WidgetToggleHandler {
 		] );
 	}
 
-	/**
-	 * Get the nonce action string.
-	 */
 	public static function get_nonce_action(): string {
 		return self::NONCE_ACTION;
 	}
 
-	/**
-	 * Return indexed usage for the compatibility usage-check endpoint.
-	 */
 	public function handle_check_usage(): void {
 		check_ajax_referer( self::NONCE_ACTION, 'nonce' );
 
@@ -267,16 +250,13 @@ class WidgetToggleHandler {
 		wp_send_json_success( $usage[ $widget ] );
 	}
 
-	/**
-	 * @return string[]
-	 */
+	/** @return string[] */
 	private static function allowed_widgets(): array {
 		return WidgetRegistry::allowed_slugs();
 	}
 
 	/**
-	 * Parse and strictly validate the complete bulk widget list before any write.
-	 *
+	 * Validasi daftar lengkap widget sebelum menulis pengaturan.
 	 * @return string[]
 	 */
 	private function get_bulk_widgets(): array {
@@ -331,9 +311,7 @@ class WidgetToggleHandler {
 	}
 
 	/**
-	 * Persist the complete disabled list with exactly one option write.
-	 *
-	 * @param string[] $disabled Disabled widget slugs.
+	 * @param string[] $disabled Slug widget yang dinonaktifkan.
 	 */
 	private function persist_disabled_widgets( array $disabled ): bool {
 		$disabled = WidgetRegistry::sanitize_slugs( $disabled );
@@ -347,8 +325,8 @@ class WidgetToggleHandler {
 	}
 
 	/**
-	 * @param string[] $left  First widget list.
-	 * @param string[] $right Second widget list.
+	 * @param string[] $left Daftar widget pertama.
+	 * @param string[] $right Daftar widget kedua.
 	 */
 	private static function same_slug_set( array $left, array $right ): bool {
 		sort( $left );
@@ -357,9 +335,7 @@ class WidgetToggleHandler {
 		return $left === $right;
 	}
 
-	/**
-	 * Schedule one non-blocking Elementor CSS cache clear for this request.
-	 */
+	/** Jadwalkan satu pembersihan cache CSS Elementor pada akhir permintaan. */
 	private function schedule_elementor_cache_clear(): void {
 		if ( $this->cache_clear_scheduled ) {
 			return;

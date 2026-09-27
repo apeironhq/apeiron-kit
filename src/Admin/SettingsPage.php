@@ -18,12 +18,7 @@ use ApeironKit\Admin\Ajax\WidgetToggleHandler;
 use ApeironKit\Core\LicenseManager;
 use ApeironKit\Core\Plugin;
 
-/**
- * Admin Settings Page Controller.
- * 
- * Orchestrates menu registration, settings, and delegates
- * rendering to individual Tab classes.
- */
+/** Kelola halaman admin dan tampilkan konten melalui tab. */
 class SettingsPage {
 	private const AJAX_HANDLERS = [
 		'dashboard_tab'         => [ self::class, 'handle_load_dashboard_tab' ],
@@ -63,9 +58,6 @@ class SettingsPage {
 		return $this->license_manager;
 	}
 
-	/**
-	 * Register all hooks and actions.
-	 */
 	public function register(): void {
 		$is_ajax = function_exists( 'wp_doing_ajax' ) && wp_doing_ajax();
 
@@ -87,10 +79,7 @@ class SettingsPage {
 		$this->notice_relocator()->register();
 	}
 
-	/**
-	 * Relocates Elementor's admin notices into the dashboard layout so they do
-	 * not stack above the header. Scoped to the Apeiron Kit screen internally.
-	 */
+	/** Tempatkan notice Elementor dalam layout halaman Apeiron. */
 	private function notice_relocator(): ElementorNoticeRelocator {
 		if ( null === $this->notice_relocator ) {
 			$this->notice_relocator = new ElementorNoticeRelocator();
@@ -99,9 +88,7 @@ class SettingsPage {
 		return $this->notice_relocator;
 	}
 
-	/**
-	 * Register only the admin AJAX handler needed by the current request.
-	 */
+	/** Daftarkan hanya handler AJAX yang diperlukan. */
 	private function register_ajax_action(): void {
 		$raw_action = $_REQUEST['action'] ?? '';
 		$action     = is_string( $raw_action ) ? sanitize_key( wp_unslash( $raw_action ) ) : '';
@@ -117,18 +104,10 @@ class SettingsPage {
 		add_action( 'wp_ajax_' . $action, [ $handler, $method ] );
 	}
 
-	/**
-	 * Get menu icon URL.
-	 *
-	 * @return string
-	 */
 	private function get_menu_icon_url(): string {
 		return APEIRON_KIT_URL . 'assets/img/icon.png';
 	}
 
-	/**
-	 * Add admin menu pages.
-	 */
 	public function add_menu(): void {
 		add_menu_page(
 			'ApeironKit',
@@ -141,27 +120,18 @@ class SettingsPage {
 		);
 	}
 
-	/**
-	 * Render main settings page.
-	 */
 	public function render_page(): void {
 		$active_tab = $this->get_current_tab();
 
 		$this->render_tab_shell( $active_tab );
 	}
 
-	/**
-	 * Get the active internal admin tab.
-	 */
 	private function get_current_tab(): string {
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'widgets';
 
 		return $this->normalize_dashboard_tab( $tab );
 	}
 
-	/**
-	 * Normalize dashboard tab keys.
-	 */
 	private function normalize_dashboard_tab( string $tab ): string {
 		$allowed = [
 			'widgets',
@@ -175,9 +145,6 @@ class SettingsPage {
 		return in_array( $tab, $allowed, true ) ? $tab : 'widgets';
 	}
 
-	/**
-	 * Build an internal admin tab URL.
-	 */
 	private function get_tab_url( string $tab = 'widgets', string $fragment = '' ): string {
 		$args = [ 'page' => $this->main_slug ];
 
@@ -194,9 +161,7 @@ class SettingsPage {
 		return $url;
 	}
 
-	/**
-	 * Redirect old submenu URLs to the internal admin tab.
-	 */
+	/** Arahkan URL submenu lama ke tab admin yang sesuai. */
 	public function redirect_legacy_pages(): void {
 		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 			return;
@@ -217,24 +182,13 @@ class SettingsPage {
 		exit;
 	}
 
-	/**
-	 * Render shared shell for internal tabs.
-	 */
 	private function render_tab_shell( string $active_tab ): void {
 		$license = $this->license_manager()->get_license();
 		$status_display = $this->license_manager()->get_status_display();
 		$is_license_active = ! empty( $license['key'] ) && ! empty( $status_display['is_valid'] );
 		?>
 		<div class="wrap apeiron-settings-wrap">
-			<?php
-			/*
-			 * Anchor for WordPress's client-side notice relocation. Without it,
-			 * wp-admin/js/common.js falls back to `.wrap h1` and injects every
-			 * notice from every plugin into the middle of the Apeiron brand
-			 * block. Anchoring here keeps those notices at the top of the page,
-			 * which is where they sit on any other admin screen.
-			 */
-			?>
+			<?php // Penanda ini menjaga notice WordPress di atas header Apeiron. ?>
 			<hr class="wp-header-end">
 			<div class="apeiron-dashboard-shell" data-apeiron-dashboard-tab-nonce="<?php echo esc_attr( wp_create_nonce( 'apeiron_dashboard_tab' ) ); ?>">
 				<div class="apeiron-dashboard-header-area">
@@ -258,10 +212,7 @@ class SettingsPage {
 		<?php
 	}
 
-	/**
-	 * Embed the cheap license fragment without executing its scripts. This avoids
-	 * another full admin-ajax bootstrap for the most common dashboard transition.
-	 */
+	/** Siapkan konten tab lisensi agar navigasi tidak meminta AJAX tambahan. */
 	private function render_prefetched_tab_templates( string $active_tab ): void {
 		if ( 'widgets' !== $active_tab ) {
 			return;
@@ -271,23 +222,12 @@ class SettingsPage {
 		<?php
 	}
 
-	/**
-	 * Render shared admin header.
-	 */
 	private function render_admin_header( bool $is_license_active ): void {
 		?>
 		<?php if ( ! $is_license_active ) : ?>
 			<div class="apeiron-license-alert-shell">
 				<div class="apeiron-license-header-alert" role="region" aria-label="<?php esc_attr_e( 'Pemberitahuan lisensi Apeiron Kit', 'apeiron-kit' ); ?>" data-apeiron-license-alert>
 					<span class="apeiron-license-header-alert__icon dashicons dashicons-lock"></span>
-					<?php
-					/*
-					 * The status itself is already stated by the header pill a few
-					 * pixels away, so this strip carries only the actionable half of
-					 * the message. Repeating "Lisensi belum aktif" in both places read
-					 * as two notices saying the same thing.
-					 */
-					?>
 					<span class="apeiron-license-header-alert__body">
 						<span class="apeiron-license-header-alert__text"><?php esc_html_e( 'Aktifkan lisensi untuk menjaga fitur Apeiron Kit tetap berjalan.', 'apeiron-kit' ); ?></span>
 					</span>
@@ -322,9 +262,6 @@ class SettingsPage {
 		<?php
 	}
 
-	/**
-	 * Render shared admin navigation.
-	 */
 	private function render_admin_nav( string $active_tab = 'widgets' ): void {
 		$groups = [
 			[
@@ -371,9 +308,6 @@ class SettingsPage {
 		<?php
 	}
 
-	/**
-	 * Render selected internal tab content.
-	 */
 	private function render_active_tab_content( string $active_tab ): void {
 		if ( 'widgets' === $active_tab ) {
 			$this->general_tab ??= new GeneralTab();
@@ -415,9 +349,6 @@ class SettingsPage {
 		$this->general_tab->render();
 	}
 
-	/**
-	 * Return a dashboard tab fragment for lightweight in-page navigation.
-	 */
 	public function handle_load_dashboard_tab(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error(
@@ -488,11 +419,6 @@ class SettingsPage {
 		return file_exists( $path ) ? (string) filemtime( $path ) : APEIRON_KIT_VERSION;
 	}
 
-	/**
-	 * Enqueue admin scripts and styles.
-	 *
-	 * @param string $hook Current admin page hook.
-	 */
 	public function enqueue_scripts( string $hook ): void {
 		$current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
 		
@@ -569,21 +495,12 @@ class SettingsPage {
 		);
 	}
 
-	/**
-	 * Check if current page is an Apeiron Kit admin page.
-	 *
-	 * @param string $current_page Current page slug.
-	 * @param string $hook Current hook.
-	 * @param array  $allowed_pages Allowed page slugs.
-	 * @return bool
-	 */
+	/** @param string[] $allowed_pages Slug halaman admin yang diizinkan. */
 	private function is_apeiron_page( string $current_page, string $hook, array $allowed_pages ): bool {
-		// Method 1: Check by GET parameter
 		if ( ! empty( $current_page ) && in_array( $current_page, $allowed_pages, true ) ) {
 			return true;
 		}
 		
-		// Method 2: Check by hook name
 		$allowed_hooks = [
 			'toplevel_page_' . $this->main_slug,
 		];
@@ -592,7 +509,6 @@ class SettingsPage {
 			return true;
 		}
 		
-		// Method 3: Check by screen ID
 		$current_screen = get_current_screen();
 		if ( $current_screen ) {
 			$screen_id = $current_screen->id;

@@ -8,59 +8,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Moves Elementor's admin notices out of the WordPress notice area and into the
- * Apeiron Kit page layout.
- *
- * WordPress fires `admin_notices` / `all_admin_notices` from admin-header.php,
- * before the page callback runs, so every notice lands above `.wrap` and pushes
- * the Apeiron header down. This detaches only the Elementor-owned callbacks on
- * the Apeiron Kit screen, then replays them inside the dashboard layout.
- *
- * Nothing is suppressed: the callbacks are executed unchanged, their markup is
- * emitted verbatim, and `admin_footer` acts as a backstop so a captured notice
- * still prints if the page body never rendered.
- *
- * Ownership is resolved from the file that declares the callback rather than
- * from a list of class names, because Elementor reorganises its namespaces
- * between releases. Anything Elementor adds in future is therefore picked up
- * without changes here, and callbacks owned by WordPress or any other plugin
- * are left exactly where they are.
- */
+/** Tampilkan notice milik Elementor di dalam halaman Apeiron tanpa mengubah notice lain. */
 final class ElementorNoticeRelocator {
 
 	private const HOOKS = [ 'admin_notices', 'all_admin_notices' ];
 
-	/**
-	 * Detached callbacks awaiting replay.
-	 *
-	 * @var callable[]
-	 */
+	/** @var callable[] Callback notice yang akan ditampilkan ulang. */
 	private array $captured = [];
 
 	private bool $rendered = false;
 
-	/**
-	 * Absolute, normalised directories whose notices should be relocated.
-	 *
-	 * @var string[]|null
-	 */
+	/** @var string[]|null Direktori sumber notice Elementor. */
 	private ?array $owner_dirs = null;
 
 	public function register(): void {
 		foreach ( self::HOOKS as $hook ) {
-			// PHP_INT_MIN so every other plugin has finished registering by the
-			// time this runs: capturing from inside the hook is what guarantees
-			// Elementor's own late registrations are visible.
+			// Tangkap notice setelah callback Elementor selesai didaftarkan.
 			add_action( $hook, [ $this, 'capture' ], PHP_INT_MIN );
 		}
 
 		add_action( 'admin_footer', [ $this, 'render_fallback' ], 1 );
 	}
 
-	/**
-	 * Detach Elementor-owned callbacks from the notice hook currently firing.
-	 */
+	/** Pindahkan hanya callback notice milik Elementor. */
 	public function capture(): void {
 		if ( ! $this->is_apeiron_screen() ) {
 			return;
@@ -76,8 +46,7 @@ final class ElementorNoticeRelocator {
 			return;
 		}
 
-		// Collect first, detach afterwards: removing while iterating the live
-		// callback array would re-index it mid-loop.
+		// Kumpulkan callback sebelum dilepas agar iterasi hook tetap stabil.
 		$pending = [];
 		foreach ( $wp_filter[ $hook ]->callbacks as $priority => $callbacks ) {
 			if ( ! is_array( $callbacks ) ) {
@@ -103,9 +72,7 @@ final class ElementorNoticeRelocator {
 		}
 	}
 
-	/**
-	 * Replay the captured notices inside the Apeiron Kit layout.
-	 */
+	/** Tampilkan notice yang telah dikumpulkan di halaman Apeiron. */
 	public function render(): void {
 		if ( $this->rendered ) {
 			return;
@@ -124,7 +91,7 @@ final class ElementorNoticeRelocator {
 				call_user_func( $callback );
 				$html .= $this->pin_in_place( (string) ob_get_clean() );
 			} catch ( \Throwable $exception ) {
-				// A broken third-party notice must not take the dashboard down.
+				// Kegagalan callback notice tidak boleh menghentikan halaman.
 				ob_end_clean();
 			}
 		}
@@ -136,30 +103,12 @@ final class ElementorNoticeRelocator {
 		printf(
 			'<div class="apeiron-vendor-notices" role="region" aria-label="%s">%s</div>',
 			esc_attr__( 'Pemberitahuan Elementor', 'apeiron-kit' ),
-			// Already-rendered notice markup produced by Elementor itself.
-			// Escaping here would print the raw HTML on screen.
+			// Markup notice Elementor sudah dirender; escaping akan menampilkan HTML mentah.
 			$html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		);
 	}
 
-	/**
-	 * Opt a notice out of WordPress's client-side notice relocation.
-	 *
-	 * Relocating on the server is not enough on its own. wp-admin/js/common.js
-	 * runs, on every admin page:
-	 *
-	 *     if ( ! $headerEnd.length ) { $headerEnd = $( '.wrap h1, .wrap h2' ).first(); }
-	 *     $( 'div.updated, div.error, div.notice' ).not( '.inline, .below-h2' )
-	 *         .insertAfter( $headerEnd );
-	 *
-	 * so any notice left unmarked is pulled back out of this container on DOM
-	 * ready and re-inserted after the first heading — inside the Apeiron brand
-	 * block. `inline` is the opt-out core documents for exactly this, and core's
-	 * own update_nag() uses it. Only top-level elements are touched, because
-	 * those are what the selector above matches; nested markup is left alone.
-	 *
-	 * @param string $html Rendered notice markup.
-	 */
+	/** Beri kelas inline agar WordPress tidak memindahkan notice dari area Apeiron. */
 	private function pin_in_place( string $html ): string {
 		if ( '' === trim( $html ) || ! class_exists( '\DOMDocument' ) ) {
 			return $html;
@@ -211,14 +160,11 @@ final class ElementorNoticeRelocator {
 			$rebuilt .= (string) $document->saveHTML( $node );
 		}
 
-		// Never hand back an empty string: a failed re-serialisation would
-		// silently swallow the notice.
+		// Jika serialisasi gagal, tetap tampilkan notice asli.
 		return '' !== trim( $rebuilt ) ? $rebuilt : $html;
 	}
 
-	/**
-	 * Backstop so a captured notice is never silently dropped.
-	 */
+	/** Tampilkan notice tersimpan jika halaman belum merendernya. */
 	public function render_fallback(): void {
 		if ( $this->rendered || empty( $this->captured ) || ! $this->is_apeiron_screen() ) {
 			return;
@@ -228,14 +174,12 @@ final class ElementorNoticeRelocator {
 	}
 
 	private function is_apeiron_screen(): bool {
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen check.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Hanya membaca halaman admin.
 
 		return 'apeiron-kit' === $page;
 	}
 
-	/**
-	 * @param callable $callback Hook callback.
-	 */
+	/** @param callable $callback Callback hook. */
 	private function is_owned_by_elementor( $callback ): bool {
 		$file = $this->resolve_callback_file( $callback );
 		if ( '' === $file ) {
@@ -251,11 +195,7 @@ final class ElementorNoticeRelocator {
 		return false;
 	}
 
-	/**
-	 * Absolute path of the file declaring a callback, or '' when undeterminable.
-	 *
-	 * @param callable $callback Hook callback.
-	 */
+	/** @param callable $callback Callback yang dicari lokasi berkasnya. */
 	private function resolve_callback_file( $callback ): string {
 		try {
 			if ( is_string( $callback ) && function_exists( $callback ) ) {
@@ -279,9 +219,7 @@ final class ElementorNoticeRelocator {
 		return is_string( $file ) ? wp_normalize_path( $file ) : '';
 	}
 
-	/**
-	 * @return string[]
-	 */
+	/** @return string[] */
 	private function owner_dirs(): array {
 		if ( null !== $this->owner_dirs ) {
 			return $this->owner_dirs;
@@ -300,12 +238,7 @@ final class ElementorNoticeRelocator {
 			$dirs[]     = $plugin_dir . 'elementor-pro/';
 		}
 
-		/**
-		 * Filter the directories whose admin notices are relocated into the
-		 * Apeiron Kit layout.
-		 *
-		 * @param string[] $dirs Absolute, trailing-slashed, normalised paths.
-		 */
+		/** @param string[] $dirs Direktori notice Elementor yang telah dinormalisasi. */
 		$dirs = (array) apply_filters( 'apeiron_kit_relocated_notice_dirs', array_values( array_unique( $dirs ) ) );
 
 		return $this->owner_dirs = array_filter( array_map( 'strval', $dirs ) );

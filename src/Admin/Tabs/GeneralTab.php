@@ -5,37 +5,28 @@ namespace ApeironKit\Admin\Tabs;
 use ApeironKit\Admin\WidgetCatalog;
 use ApeironKit\Support\WidgetRegistry;
 
-/**
- * Widgets settings tab.
- */
+/** Tab pengaturan widget. */
 class GeneralTab extends AbstractTab {
 
 	/**
-	 * Widget definitions used by cards and toggles.
-	 *
+	 * Definisi widget untuk kartu dan toggle.
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function get_features(): array {
 		return WidgetCatalog::get_features();
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function get_slug(): string {
 		return 'widgets';
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function get_title(): string {
 		return __( 'Beranda', 'apeiron-kit' );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function render(): void {
 		$disabled = WidgetRegistry::disabled_slugs();
 
@@ -50,7 +41,6 @@ class GeneralTab extends AbstractTab {
 		) );
 		$all_toggleable_enabled = count( array_intersect( $disabled, $toggleable_slugs ) ) === 0;
 
-		// Collect unique groups for filter dropdown
 		$groups = [];
 		foreach ( $features as $feature ) {
 			$groups[ $feature['group_key'] ] = $feature['group'];
@@ -65,17 +55,14 @@ class GeneralTab extends AbstractTab {
 	}
 
 	/**
-	 * Render the EA-inspired elements/widget section.
-	 *
-	 * @param array<int,array<string,mixed>>  $features Widget definitions.
-	 * @param array<int,string>               $disabled Disabled widget slugs.
-	 * @param array<string,string>            $groups   Unique group key => label map.
-	 * @param bool                            $all_toggleable_enabled Whether all selectable widgets are active.
+	 * @param array<int,array<string,mixed>> $features Definisi widget.
+	 * @param array<int,string> $disabled Slug widget nonaktif.
+	 * @param array<string,string> $groups Kelompok widget.
+	 * @param bool $all_toggleable_enabled Status seluruh widget yang dapat diaktifkan.
 	 */
 	private function render_elements_section( array $features, array $disabled, array $groups, bool $all_toggleable_enabled ): void {
 		?>
 		<section class="apeiron-elements-section apeiron-widget-toggle-section" id="apeiron-widgets">
-			<!-- Toolbar: Title + Search + Filter + Enable All -->
 			<div class="apeiron-elements-toolbar">
 				<h2 class="apeiron-elements-toolbar__title"><?php esc_html_e( 'Widgets', 'apeiron-kit' ); ?></h2>
 
@@ -116,7 +103,6 @@ class GeneralTab extends AbstractTab {
 				</label>
 			</div>
 
-			<!-- Widget Grid: 3 columns, EA pattern -->
 			<div class="apeiron-elements-content apeiron-widgets-content">
 				<div class="apeiron-elements-grid" id="apeiron-elements-grid">
 					<?php foreach ( $features as $feature ) :
@@ -178,13 +164,9 @@ class GeneralTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Render runtime mounts and boot config for widget interactions.
-	 */
 	private function render_widget_runtime(): void {
 		$nonce = wp_create_nonce( \ApeironKit\Admin\Ajax\WidgetToggleHandler::get_nonce_action() );
 
-		// Build widget label map for modal display
 		$widget_labels = [];
 		foreach ( $this->get_features() as $feature ) {
 			$widget_labels[ $feature['slug'] ] = $feature['label'];
@@ -207,7 +189,7 @@ class GeneralTab extends AbstractTab {
 				'bulkEnabled'      => __( '%d widget berhasil diaktifkan.', 'apeiron-kit' ),
 				'bulkDisabled'     => __( '%d widget berhasil dinonaktifkan.', 'apeiron-kit' ),
 				'bulkToggleError'  => __( 'Perubahan bulk gagal. Semua toggle dikembalikan ke status sebelumnya.', 'apeiron-kit' ),
-				/* translators: 1: number of widgets, 2: total page references. */
+				/* translators: 1: jumlah widget, 2: jumlah halaman yang menggunakan widget. */
 				'bulkUsageSummary' => __( '%1$d widget yang akan dinonaktifkan digunakan pada %2$d halaman:', 'apeiron-kit' ),
 				'visibleWidgets'  => __( 'widget tampil', 'apeiron-kit' ),
 				'noChanges'       => __( 'Tidak ada perubahan', 'apeiron-kit' ),
@@ -216,7 +198,6 @@ class GeneralTab extends AbstractTab {
 
 		?>
 
-		<!-- Widget Usage Warning Modal -->
 		<div id="apeiron-usage-modal" class="apeiron-modal" style="display:none">
 			<div class="apeiron-modal__backdrop"></div>
 			<div class="apeiron-modal__dialog">
@@ -234,7 +215,6 @@ class GeneralTab extends AbstractTab {
 			</div>
 		</div>
 
-		<!-- Toast Notification -->
 		<div id="apeiron-toast" class="apeiron-toast-container"></div>
 
 		<?php $this->render_config_payload( 'widgets', $runtime_config ); ?>

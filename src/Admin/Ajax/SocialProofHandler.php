@@ -292,7 +292,7 @@ class SocialProofHandler {
 		wp_send_json_success(
 			[
 				'message'       => sprintf(
-					/* translators: %s: restored activity count. */
+					/* translators: %s: jumlah aktivitas yang dipulihkan. */
 					_n( '%s aktivitas berhasil dipulihkan.', '%s aktivitas berhasil dipulihkan.', $entries_count, 'apeiron-kit' ),
 					number_format_i18n( $entries_count )
 				),
@@ -447,7 +447,7 @@ class SocialProofHandler {
 				return new \WP_Error(
 					'invalid_entry',
 					sprintf(
-						/* translators: %d: activity number. */
+						/* translators: %d: nomor aktivitas. */
 						__( 'Aktivitas #%d pada backup tidak valid.', 'apeiron-kit' ),
 						$index + 1
 					)
@@ -477,7 +477,7 @@ class SocialProofHandler {
 			return new \WP_Error(
 				'incomplete_entry',
 				sprintf(
-					/* translators: %d: activity number. */
+					/* translators: %d: nomor aktivitas. */
 					__( 'Aktivitas #%d wajib memiliki nama, produk, dan tanggal/waktu.', 'apeiron-kit' ),
 					$index + 1
 				)
@@ -488,7 +488,7 @@ class SocialProofHandler {
 			return new \WP_Error(
 				'invalid_datetime',
 				sprintf(
-					/* translators: %d: activity number. */
+					/* translators: %d: nomor aktivitas. */
 					__( 'Tanggal/waktu aktivitas #%d tidak valid.', 'apeiron-kit' ),
 					$index + 1
 				)

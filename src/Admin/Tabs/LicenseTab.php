@@ -4,9 +4,7 @@ namespace ApeironKit\Admin\Tabs;
 
 use ApeironKit\Core\LicenseManager;
 
-/**
- * License management tab.
- */
+/** Tab pengelolaan lisensi. */
 class LicenseTab extends AbstractTab {
 
 	private LicenseManager $license_manager;
@@ -15,23 +13,17 @@ class LicenseTab extends AbstractTab {
 		$this->license_manager = $license_manager ?? LicenseManager::instance();
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function get_slug(): string {
 		return 'license';
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function get_title(): string {
 		return __( 'Lisensi', 'apeiron-kit' );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function render(): void {
 		$license          = $this->license_manager->get_license();
 		$status_display   = $this->license_manager->get_status_display();
@@ -64,9 +56,7 @@ class LicenseTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Get masked License Key for display.
-	 */
+	/** Samarkan kunci lisensi aktif saat ditampilkan. */
 	private function get_license_key_display( array $license, bool $is_license_active ): string {
 		if ( empty( $license['key'] ) ) {
 			return '';
@@ -85,9 +75,6 @@ class LicenseTab extends AbstractTab {
 		return $license['key'];
 	}
 
-	/**
-	 * Normalize the license state for shared admin status colors.
-	 */
 	private function get_status_state( array $license, array $status_display ): string {
 		if ( ! empty( $license['key'] ) && ! empty( $status_display['is_valid'] ) ) {
 			return 'active';
@@ -100,9 +87,6 @@ class LicenseTab extends AbstractTab {
 		return 'inactive';
 	}
 
-	/**
-	 * Human-readable status label.
-	 */
 	private function get_status_label( array $license, array $status_display ): string {
 		if ( empty( $license['key'] ) ) {
 			return __( 'Belum Aktif', 'apeiron-kit' );
@@ -115,9 +99,6 @@ class LicenseTab extends AbstractTab {
 		return $status_display['info']['label'] ?? __( 'Perlu Validasi', 'apeiron-kit' );
 	}
 
-	/**
-	 * Short status copy for the license status card.
-	 */
 	private function get_status_description( array $license, array $status_display ): string {
 		if ( empty( $license['key'] ) ) {
 			return __( 'Masukkan License Key untuk mengaktifkan Apeiron Kit.', 'apeiron-kit' );
@@ -130,9 +111,6 @@ class LicenseTab extends AbstractTab {
 		return __( 'Periksa status atau aktifkan ulang lisensi untuk memastikan akses tetap berjalan.', 'apeiron-kit' );
 	}
 
-	/**
-	 * Registered domain display.
-	 */
 	private function get_domain_display( array $license ): string {
 		if ( empty( $license['key'] ) ) {
 			return __( 'Belum terdaftar', 'apeiron-kit' );
@@ -146,8 +124,7 @@ class LicenseTab extends AbstractTab {
 			return $site_url;
 		}
 
-		// Subfolder installs share a host, so the port and path are what tell one
-		// registered installation apart from another.
+		// Sertakan port dan path agar instalasi di subfolder tetap berbeda.
 		if ( ! empty( $parts['port'] ) ) {
 			$host .= ':' . $parts['port'];
 		}
@@ -155,9 +132,6 @@ class LicenseTab extends AbstractTab {
 		return $host . untrailingslashit( $parts['path'] ?? '' );
 	}
 
-	/**
-	 * License expiration display.
-	 */
 	private function get_expiration_display( array $license, array $status_display ): string {
 		if ( empty( $license['key'] ) ) {
 			return __( 'Belum tersedia', 'apeiron-kit' );
@@ -180,9 +154,6 @@ class LicenseTab extends AbstractTab {
 		return date_i18n( get_option( 'date_format' ), $expires );
 	}
 
-	/**
-	 * Activation usage display.
-	 */
 	private function get_activation_display( array $license, array $status_display ): string {
 		if ( empty( $license['key'] ) ) {
 			return __( 'Belum aktif', 'apeiron-kit' );
@@ -190,7 +161,7 @@ class LicenseTab extends AbstractTab {
 
 		if ( (int) $status_display['limit'] > 0 ) {
 			return sprintf(
-				/* translators: 1: current activations, 2: activation limit */
+				/* translators: 1: aktivasi saat ini, 2: batas aktivasi. */
 				__( '%1$s dari %2$s', 'apeiron-kit' ),
 				number_format_i18n( (int) $status_display['activations'] ),
 				number_format_i18n( (int) $status_display['limit'] )
@@ -200,9 +171,6 @@ class LicenseTab extends AbstractTab {
 		return __( 'Tanpa batas', 'apeiron-kit' );
 	}
 
-	/**
-	 * Last check display.
-	 */
 	private function get_last_check_display( array $status_display ): string {
 		if ( empty( $status_display['last_check'] ) ) {
 			return __( 'Belum pernah', 'apeiron-kit' );
@@ -211,9 +179,7 @@ class LicenseTab extends AbstractTab {
 		return wp_date( 'j F Y, H.i \W\I\B', (int) $status_display['last_check'], $this->get_license_display_timezone() );
 	}
 
-	/**
-	 * License timestamps use WIB by default so admin time matches the local product audience.
-	 */
+	/** Gunakan WIB sebagai zona waktu baku tampilan lisensi. */
 	private function get_license_display_timezone(): \DateTimeZone {
 		$timezone = apply_filters( 'apeiron_kit_license_display_timezone', 'Asia/Jakarta' );
 
@@ -232,16 +198,10 @@ class LicenseTab extends AbstractTab {
 		return wp_timezone();
 	}
 
-	/**
-	 * Plugin version display.
-	 */
 	private function get_plugin_version(): string {
 		return defined( 'APEIRON_KIT_VERSION' ) ? APEIRON_KIT_VERSION : '1.0.0';
 	}
 
-	/**
-	 * Render section toolbar.
-	 */
 	private function render_toolbar( string $status_state, array $license, array $status_display ): void {
 		$status_icon = 'active' === $status_state ? 'dashicons-yes-alt' : ( 'warning' === $status_state ? 'dashicons-warning' : 'dashicons-lock' );
 		?>
@@ -264,9 +224,6 @@ class LicenseTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Render license status card.
-	 */
 	private function render_status_card( array $license, array $status_display, bool $is_license_active, bool $is_lifetime, string $license_key_display, string $status_state ): void {
 		$status_label   = $this->get_status_label( $license, $status_display );
 		$status_icon    = $is_license_active ? 'dashicons-yes-alt' : ( ! empty( $license['key'] ) ? 'dashicons-warning' : 'dashicons-lock' );
@@ -287,12 +244,6 @@ class LicenseTab extends AbstractTab {
 				</div>
 			</div>
 
-			<?php
-			/*
-			 * The summary block below states the same status with the same icon at a
-			 * larger size, so a chip in the card header only repeated it.
-			 */
-			?>
 			<div class="apeiron-license-summary">
 				<div class="apeiron-license-summary__main">
 					<div class="apeiron-license-summary__icon is-<?php echo esc_attr( $status_state ); ?>">
@@ -348,9 +299,6 @@ class LicenseTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Render License Key management card.
-	 */
 	private function render_license_key_card( array $license, bool $is_license_active, string $license_key_display ): void {
 		?>
 		<div class="apeiron-card apeiron-license-manage-card">
@@ -459,9 +407,6 @@ class LicenseTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Render API Key configuration card.
-	 */
 	private function render_api_key_card( bool $api_key_auto, bool $has_api_key ): void {
 		$api_key_ready = $api_key_auto || $has_api_key;
 		?>
@@ -556,9 +501,6 @@ class LicenseTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Expose dynamic data to the external license runtime.
-	 */
 	private function render_runtime_config( bool $api_key_auto, array $license ): void {
 		$activate_text = empty( $license['key'] ) ? __( 'Aktifkan', 'apeiron-kit' ) : __( 'Simpan', 'apeiron-kit' );
 

@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/** Cover type library. */
+/** Pustaka jenis sampul. */
 class CoverTab extends AbstractTab {
 
 	private const ELEMENTOR_META_KEY = '_elementor_data';
@@ -61,9 +61,8 @@ class CoverTab extends AbstractTab {
 	}
 
 	/**
-	 * Count distinct Elementor documents per rendered Cover type.
-	 *
-	 * @return array<string,int>|null Null means the usage query could not run safely.
+	 * Hitung dokumen Elementor per jenis sampul.
+	 * @return array<string,int>|null Null jika penggunaan tidak dapat dihitung.
 	 */
 	private function get_usage_counts(): ?array {
 		global $wpdb;
@@ -114,12 +113,8 @@ class CoverTab extends AbstractTab {
 	}
 
 	/**
-	 * Resolve persisted Cover widgets exactly as the frontend registry does.
-	 *
-	 * Missing or unavailable values therefore count toward Classic because that
-	 * is the type those legacy widgets actually render.
-	 *
-	 * @param mixed $elementor_data Raw Elementor document data.
+	 * Jenis tidak tersedia dihitung sebagai Classic sesuai hasil render widget lama.
+	 * @param mixed $elementor_data Data dokumen Elementor.
 	 * @return string[]
 	 */
 	private static function extract_cover_types( $elementor_data ): array {

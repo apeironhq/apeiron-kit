@@ -4,28 +4,20 @@ namespace ApeironKit\Admin\Tabs;
 
 use ApeironKit\Elementor\Widgets\CommentDock\StickerLibrary;
 
-/**
- * Sticker management tab.
- */
+/** Tab pengelolaan stiker. */
 class StickerTab extends AbstractTab {
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function get_slug(): string {
 		return 'stickers';
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function get_title(): string {
 		return __( 'Stiker', 'apeiron-kit' );
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	public function render(): void {
 		$default_folder = StickerLibrary::DEFAULT_FOLDER;
 		$folder = isset( $_GET['folder'] ) ? sanitize_text_field( wp_unslash( $_GET['folder'] ) ) : $default_folder;
@@ -43,9 +35,6 @@ class StickerTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Render sticker management using the same section system as the widget tab.
-	 */
 	private function render_sticker_section( array $stickers, int $total, int $images, int $videos ): void {
 		?>
 		<section class="apeiron-elements-section apeiron-sticker-section">
@@ -137,9 +126,6 @@ class StickerTab extends AbstractTab {
 		<?php
 	}
 
-	/**
-	 * Render runtime config for sticker interactions.
-	 */
 	private function render_runtime_config( string $folder ): void {
 		$runtime_config = [
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),

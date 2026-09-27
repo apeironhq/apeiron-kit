@@ -54,7 +54,7 @@ final class CoverAssetManager {
 		?>
 		<style id="apeiron-cover-boot-css">html.apeiron-cover-booting::after{content:"";position:fixed;inset:0;z-index:2147483001;background:var(--apeiron-cover-boot-bg,#bcaf93)}html.apeiron-cover-booting,html.apeiron-cover-booting body{overflow:hidden!important}</style>
 		<script id="apeiron-cover-boot-js">
-		(function(w,d,c){var r=d.documentElement,x=Math.max(r.clientWidth||0,w.innerWidth||0),show=x>=1025?c.showDesktop:(x>=768?c.showTablet:c.showMobile),seen=false,t;if(c.firstVisitOnly){try{seen=w.localStorage.getItem(c.storageKey)==='1';}catch(e){}}if(!show||seen){return;}r.style.setProperty('--apeiron-cover-boot-bg',c.background);r.classList.add('apeiron-cover-booting');function release(){w.clearTimeout(t);r.classList.remove('apeiron-cover-booting');r.style.removeProperty('--apeiron-cover-boot-bg');}w.ApeironCoverBoot={release:release};function check(){if(!d.querySelector('[data-apeiron-cover="yes"]')){release();}}if(d.readyState==='loading'){d.addEventListener('DOMContentLoaded',check,{once:true});}else{check();}t=w.setTimeout(function(){d.querySelectorAll('[data-apeiron-cover="yes"]').forEach(function(el){el.classList.add('is-complete');});release();},10000);}(window,document,<?php echo wp_json_encode( $config ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON-encoded scalar configuration. ?>));
+		(function(w,d,c){var r=d.documentElement,x=Math.max(r.clientWidth||0,w.innerWidth||0),show=x>=1025?c.showDesktop:(x>=768?c.showTablet:c.showMobile),seen=false,t;if(c.firstVisitOnly){try{seen=w.localStorage.getItem(c.storageKey)==='1';}catch(e){}}if(!show||seen){return;}r.style.setProperty('--apeiron-cover-boot-bg',c.background);r.classList.add('apeiron-cover-booting');function release(){w.clearTimeout(t);r.classList.remove('apeiron-cover-booting');r.style.removeProperty('--apeiron-cover-boot-bg');}w.ApeironCoverBoot={release:release};function check(){if(!d.querySelector('[data-apeiron-cover="yes"]')){release();}}if(d.readyState==='loading'){d.addEventListener('DOMContentLoaded',check,{once:true});}else{check();}t=w.setTimeout(function(){d.querySelectorAll('[data-apeiron-cover="yes"]').forEach(function(el){el.classList.add('is-complete');});release();},10000);}(window,document,<?php echo wp_json_encode( $config ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Data skalar telah dienkode JSON. ?>));
 		</script>
 		<?php
 	}
@@ -76,7 +76,7 @@ final class CoverAssetManager {
 	}
 
 	/**
-	 * @param string[] $handles Style handles.
+	 * @param string[] $handles Handle style.
 	 * @return string[]
 	 */
 	private function sort_style_handles( array $handles ): array {
@@ -101,7 +101,7 @@ final class CoverAssetManager {
 	}
 
 	/**
-	 * @param string[] $handles Style handles.
+	 * @param string[] $handles Handle style.
 	 */
 	private function enqueue_style_handles( array $handles ): void {
 		foreach ( array_unique( $handles ) as $handle ) {
@@ -112,7 +112,7 @@ final class CoverAssetManager {
 	}
 
 	/**
-	 * @param string[] $handles Script handles.
+	 * @param string[] $handles Handle script.
 	 */
 	private function enqueue_script_handles( array $handles ): void {
 		foreach ( array_unique( $handles ) as $handle ) {

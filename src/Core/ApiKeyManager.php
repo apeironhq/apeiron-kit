@@ -3,10 +3,7 @@
 namespace ApeironKit\Core;
 
 /**
- * API Key Manager
- * 
- * Handles encrypted API key storage and retrieval
- * API key is encrypted using WordPress options API with additional obfuscation
+ * Penyimpanan dan pengambilan API key terenkripsi.
  */
 class ApiKeyManager {
 	private const AEAD_CONTEXT = 'apeiron-kit/api-key/v1';
@@ -15,9 +12,9 @@ class ApiKeyManager {
 	private string $salt_option = 'apeiron_kit_api_salt';
 
 	/**
-	 * Get encrypted API key
+	 * Ambil API key.
 	 *
-	 * @return string|null Decrypted API key or null
+	 * @return string|null API key hasil dekripsi atau null.
 	 */
 	public function get_api_key(): ?string {
 		$encrypted = get_option( $this->option_name );
@@ -47,24 +44,21 @@ class ApiKeyManager {
 	}
 
 	/**
-	 * Set and encrypt API key
+	 * Simpan API key terenkripsi.
 	 *
-	 * @param string $api_key API key to encrypt and store
-	 * @return bool Success
+	 * @param string $api_key API key yang disimpan.
+	 * @return bool Status penyimpanan.
 	 */
 	public function set_api_key( string $api_key ): bool {
-		// Trim whitespace first, then sanitize
 		$api_key = trim( $api_key );
 		$api_key = sanitize_text_field( $api_key );
 
-		// Trim again after sanitize to be safe
 		$api_key = trim( $api_key );
 
 		if ( empty( $api_key ) ) {
 			return false;
 		}
 
-		// Generate salt if not exists
 		$salt = $this->get_salt();
 		if ( empty( $salt ) ) {
 			$salt = $this->generate_salt();
@@ -78,14 +72,13 @@ class ApiKeyManager {
 			return false;
 		}
 
-		// Store encrypted key
 		return update_option( $this->option_name, $encrypted, false );
 	}
 
 	/**
-	 * Delete API key
-	 * 
-	 * @return bool Success
+	 * Hapus API key.
+	 *
+	 * @return bool Status penghapusan.
 	 */
 	public function delete_api_key(): bool {
 		delete_option( $this->salt_option );
@@ -93,18 +86,18 @@ class ApiKeyManager {
 	}
 
 	/**
-	 * Check if API key is set
-	 * 
-	 * @return bool True if API key exists
+	 * Periksa keberadaan API key.
+	 *
+	 * @return bool Benar jika API key tersedia.
 	 */
 	public function has_api_key(): bool {
 		return ! empty( $this->get_api_key() );
 	}
 
 	/**
-	 * Get or generate salt
-	 * 
-	 * @return string Salt
+	 * Ambil atau buat salt.
+	 *
+	 * @return string Salt.
 	 */
 	private function get_salt(): string {
 		$salt = get_option( $this->salt_option );
@@ -118,12 +111,11 @@ class ApiKeyManager {
 	}
 
 	/**
-	 * Generate random salt
-	 * 
-	 * @return string Salt
+	 * Buat salt acak.
+	 *
+	 * @return string Salt.
 	 */
 	private function generate_salt(): string {
-		// Use WordPress salt + additional randomness
 		$wp_salt = defined( 'AUTH_SALT' ) ? AUTH_SALT : wp_generate_password( 32, true, true );
 		$random = wp_generate_password( 16, true, true );
 		
@@ -131,14 +123,13 @@ class ApiKeyManager {
 	}
 
 	/**
-	 * Derive encryption key from salt
-	 * 
-	 * @param string $salt Salt
-	 * @return string Derived key
+	 * Turunkan kunci enkripsi dari salt.
+	 *
+	 * @param string $salt Salt.
+	 * @return string Kunci turunan.
 	 */
 	private function derive_key( string $salt ): string {
-		// Use stable sources for key derivation
-		// NOTE: admin_email removed - too volatile, causes key loss on email change
+		// Jangan gunakan email admin: perubahan email dapat memutus dekripsi.
 		$sources = [
 			$salt,
 			defined( 'AUTH_KEY' ) ? AUTH_KEY : '',
@@ -155,15 +146,11 @@ class ApiKeyManager {
 	}
 
 	/**
-	 * Legacy XOR decrypt (kept for backward compatibility during migration)
-	 */
-
-	/**
-	 * XOR decrypt
-	 * 
-	 * @param string $encrypted Encrypted data (base64 encoded)
-	 * @param string $key Decryption key
-	 * @return string Decrypted data
+	 * Dekripsi format XOR lama untuk kompatibilitas.
+	 *
+	 * @param string $encrypted Data terenkripsi dalam base64.
+	 * @param string $key Kunci dekripsi.
+	 * @return string Data hasil dekripsi.
 	 */
 	private function xor_decrypt( string $encrypted, string $key ): string {
 		return Crypto::xor_decrypt( $encrypted, $key );

@@ -5,7 +5,7 @@ declare( strict_types=1 );
 namespace ApeironKit\Core;
 
 /**
- * Small crypto primitives shared by the license and API-key stores.
+ * Kriptografi bersama untuk penyimpanan lisensi dan API key.
  */
 final class Crypto {
 
@@ -133,9 +133,7 @@ final class Crypto {
 		return false === $decrypted ? '' : $decrypted;
 	}
 
-	/**
-	 * Decode the legacy XOR format during migration only.
-	 */
+	/** Baca format XOR lama saat migrasi. */
 	public static function xor_decrypt( string $encoded, string $key ): string {
 		$data = base64_decode( $encoded, true );
 		if ( false === $data || '' === $key ) {

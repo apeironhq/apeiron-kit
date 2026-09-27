@@ -11,11 +11,7 @@ class Requirements {
 	private array $requirements = [];
 
 	/**
-	 * Build the requirements at check time instead of construction time.
-	 *
-	 * Elementor can finish loading after this plugin has been instantiated. A
-	 * cached result from an earlier lifecycle phase would otherwise prevent the
-	 * widget hooks from ever being registered.
+	 * Periksa persyaratan saat dipakai agar Elementor sempat dimuat.
 	 *
 	 * @return array<int,array{check:string,passed:bool,message:string}>
 	 */
@@ -32,7 +28,7 @@ class Requirements {
 				'check'   => 'elementor_version',
 				'passed'  => $elementor_loaded && $this->check_elementor_version(),
 				'message' => sprintf(
-					/* translators: %s: required Elementor version */
+					/* translators: %s: versi minimum Elementor */
 					__( 'Apeiron Kit membutuhkan Elementor versi %s atau lebih baru.', 'apeiron-kit' ),
 					$this->min_elementor
 				),
@@ -41,7 +37,7 @@ class Requirements {
 				'check'  => 'php_version',
 				'passed' => version_compare( PHP_VERSION, $this->min_php, '>=' ),
 				'message' => sprintf(
-					/* translators: %s: required PHP version */
+					/* translators: %s: versi minimum PHP */
 					__( 'Apeiron Kit membutuhkan PHP %s atau lebih baru.', 'apeiron-kit' ),
 					$this->min_php
 				),
@@ -50,7 +46,7 @@ class Requirements {
 				'check'  => 'wp_version',
 				'passed' => $this->check_wp_version(),
 				'message' => sprintf(
-					/* translators: %s: required WordPress version */
+					/* translators: %s: versi minimum WordPress */
 					__( 'Apeiron Kit membutuhkan WordPress %s atau lebih baru.', 'apeiron-kit' ),
 					$this->min_wp
 				),
@@ -59,13 +55,7 @@ class Requirements {
 	}
 
 	/**
-	 * Check if Elementor is loaded and available.
-	 *
-	 * Uses `elementor/loaded` first because Elementor fires it only after its own
-	 * dependencies and Plugin instance are fully ready. Checking only `is_plugin_active()`
-	 * treated "plugin file present" as "running", which let Apeiron boot against an
-	 * Elementor installation that had aborted its own bootstrap (e.g. on an
-	 * unsupported WordPress release).
+	 * Pastikan Elementor selesai dimuat, bukan sekadar aktif di daftar plugin.
 	 */
 	private function check_elementor(): bool {
 		if ( did_action( 'elementor/loaded' ) ) {

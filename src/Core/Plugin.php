@@ -46,12 +46,7 @@ class Plugin {
 		$this->requirements = new Requirements();
 	}
 
-	/**
-	 * Lazily build the SettingsPage and its admin/AJAX dependencies.
-	 *
-	 * Admin page and AJAX routing dependencies are unnecessary on frontend,
-	 * REST, and cron requests.
-	 */
+	/** Muat dependensi admin hanya saat diperlukan. */
 	private function settings(): SettingsPage {
 		if ( null === $this->settings ) {
 			$this->settings = new SettingsPage();
@@ -61,10 +56,7 @@ class Plugin {
 	}
 
 	public function boot(): void {
-		// Attach Elementor hooks only after requirements have been verified. Attaching
-		// them earlier produced a half-boot state where widgets registered despite a
-		// failing/unavailable Elementor, while missing assets, REST, license, and
-		// comment-dock services left the plugin in an inconsistent partial-initialisation.
+		// Daftarkan hook Elementor hanya jika persyaratan terpenuhi.
 		if ( ! $this->requirements->passes() ) {
 			$this->requirements->register_notice();
 			return;
@@ -91,7 +83,6 @@ class Plugin {
 			( new StickerManager() )->register();
 		}
 
-		// Admin hooks are only meaningful in wp-admin or admin-ajax.
 		if ( ( is_admin() && ! wp_doing_ajax() )
 			|| ( wp_doing_ajax() && in_array( $this->request_action(), self::SETTINGS_AJAX_ACTIONS, true ) )
 		) {
@@ -103,16 +94,12 @@ class Plugin {
 		}
 	}
 
-	/**
-	 * Register REST routes without loading the controller on non-REST requests.
-	 */
+	/** Daftarkan rute hanya pada permintaan REST. */
 	public function register_rest_routes(): void {
 		( new CommentsController() )->register_routes();
 	}
 
-	/**
-	 * Load the asset service only when one of its hooks can run.
-	 */
+	/** Daftarkan aset hanya saat hook terkait dapat berjalan. */
 	private function register_asset_bootstrap_hooks(): void {
 		if ( $this->is_rest_request() || wp_doing_cron() ) {
 			return;
@@ -127,9 +114,7 @@ class Plugin {
 		}
 	}
 
-	/**
-	 * Instantiate AssetManager at the last responsible lifecycle hook.
-	 */
+	/** Muat pengelola aset saat dibutuhkan. */
 	public function register_assets(): void {
 		if ( null !== $this->assets || ! $this->should_register_assets() ) {
 			return;

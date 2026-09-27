@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * WordPress hook facade for the plugin asset services.
+ * Penghubung hook WordPress untuk layanan aset plugin.
  */
 class AssetManager {
 
@@ -66,8 +66,8 @@ class AssetManager {
 	}
 
 	/**
-	 * @param array<string,mixed> $response Heartbeat response data.
-	 * @param array<string,mixed> $data     Heartbeat request data.
+	 * @param array<string,mixed> $response Data respons heartbeat.
+	 * @param array<string,mixed> $data     Data permintaan heartbeat.
 	 * @return array<string,mixed>
 	 */
 	public function heartbeat_received( array $response, array $data ): array {

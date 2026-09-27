@@ -9,9 +9,7 @@ class Activator {
 	public static function activate(): void {
 		self::seed_options();
 
-		// Schedule the first daily license check at activation so the next request is not
-		// responsible for creating the schedule (which previously caused a small race on
-		// the first page view after activation). The event itself still fires tomorrow.
+		// Jadwalkan pemeriksaan lisensi pertama untuk besok.
 		if ( ! wp_next_scheduled( 'apeiron_kit_check_license' ) ) {
 			wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', 'apeiron_kit_check_license' );
 		}

@@ -2,17 +2,15 @@
 
 namespace ApeironKit\Core;
 
-/**
- * License Manager untuk handle remote license validation
- */
+/** Kelola validasi lisensi melalui server. */
 class LicenseManager {
 
 	private static ?LicenseManager $instance = null;
 
-	/** In-memory license data cache (avoids repeated PBKDF2 decrypts per request). */
+	/** Cache lisensi selama satu permintaan. */
 	private ?array $license_cache = null;
 
-	/** In-memory is_valid result cache (avoids repeated transient/option reads). */
+	/** Cache hasil validasi selama satu permintaan. */
 	private ?bool $valid_cache = null;
 
 	private string $option_name = 'apeiron_kit_license';
@@ -23,28 +21,17 @@ class LicenseManager {
 	private string $product_id = 'apeiron-kit';
 	private ApiKeyManager $api_key_manager;
 
-	/**
-	 * Max consecutive check failures before deactivating license
-	 */
+	/** Batas kegagalan pemeriksaan berturut-turut. */
 	private const MAX_CHECK_FAILURES = 3;
 	private const NONCE_ACTION       = 'apeiron_license_management';
 	private const AEAD_CONTEXT       = 'apeiron-kit/license-key/v1';
 
-	/**
-	 * Persistent cache duration in seconds (7 days)
-	 */
+	/** Masa berlaku cache tetap: tujuh hari. */
 	private const PERSISTENT_CACHE_TTL = 604800;
 
-	/**
-	 * Default license server URL (hardcoded for security)
-	 */
+	/** Alamat baku server lisensi. */
 	private const DEFAULT_API_URL = 'https://server-apeiron.web.id/api';
 
-	/**
-	 * Get singleton instance.
-	 *
-	 * @return self
-	 */
 	public static function instance(): self {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -53,14 +40,12 @@ class LicenseManager {
 	}
 
 	private function __construct() {
-		// Don't resolve API URL here - wait until register() or first use
-		// This avoids race condition where filter is not yet registered
+		// Tunggu filter terdaftar sebelum menentukan URL API.
 		$this->api_url = '';
 		$this->api_url_resolved = false;
 		
 		$this->api_key_manager = new ApiKeyManager();
 		
-		// Auto-set API Key dari constant jika ada dan belum ada saved key
 		if ( defined( 'APEIRON_KIT_LICENSE_API_KEY' ) && ! empty( APEIRON_KIT_LICENSE_API_KEY ) ) {
 			if ( ! $this->api_key_manager->has_api_key() ) {
 				$this->api_key_manager->set_api_key( APEIRON_KIT_LICENSE_API_KEY );
@@ -68,46 +53,35 @@ class LicenseManager {
 		}
 	}
 
-	/**
-	 * Register license management hooks
-	 */
 	public function register(): void {
-		// Register filter to allow saved API URL to override default/constant
 		add_filter( 'apeiron_kit_license_api_url', [ $this, 'filter_api_url_from_option' ], 10 );
 
-		// Schedule periodic license check — defer the first run by one day so
-		// the activation request itself never blocks on a synchronous HTTP
-		// probe to the license server. The daily recurrence continues afterwards.
+		// Pemeriksaan pertama dijadwalkan besok agar aktivasi tidak menunggu server.
 		if ( ! wp_next_scheduled( 'apeiron_kit_check_license' ) ) {
 			wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', 'apeiron_kit_check_license' );
 		}
 		add_action( 'apeiron_kit_check_license', [ $this, 'check_license_status' ] );
 
-		// Register AJAX handlers
 		add_action( 'wp_ajax_apeiron_activate_license', [ $this, 'handle_activate' ] );
 		add_action( 'wp_ajax_apeiron_deactivate_license', [ $this, 'handle_deactivate' ] );
 		add_action( 'wp_ajax_apeiron_check_license', [ $this, 'handle_check' ] );
 		add_action( 'wp_ajax_apeiron_save_server_config', [ $this, 'handle_save_server_config' ] );
 		add_action( 'wp_ajax_apeiron_test_server_connection', [ $this, 'handle_test_connection' ] );
 
-		// Surface configuration/licensing issues in dashboard
 		add_action( 'admin_notices', [ $this, 'render_admin_notices' ] );
 	}
 
 	/**
-	 * Filter to get API URL from saved option if available
-	 * This allows the saved URL to override the default/constant
+	 * Pilih URL API tersimpan jika tidak ditetapkan melalui konstanta.
 	 *
-	 * @param string $default_url Default URL from constant or hardcoded default
-	 * @return string API URL to use
+	 * @param string $default_url URL baku.
+	 * @return string URL API yang digunakan.
 	 */
 	public function filter_api_url_from_option( string $default_url ): string {
-		// If constant is defined and not empty, use it (highest priority)
 		if ( defined( 'APEIRON_KIT_LICENSE_API_URL' ) && ! empty( APEIRON_KIT_LICENSE_API_URL ) ) {
 			return $default_url;
 		}
 
-		// Otherwise, try to get from saved option
 		$saved_url = get_option( 'apeiron_kit_license_api_url', '' );
 		if ( ! empty( $saved_url ) ) {
 			return $this->sanitize_api_url( $saved_url );
@@ -116,9 +90,7 @@ class LicenseManager {
 		return $default_url;
 	}
 
-	/**
-	 * Helper: sanitized License Server URL.
-	 */
+	/** Validasi URL server lisensi. */
 	private function sanitize_api_url( string $url ): string {
 		$url = esc_url_raw( untrailingslashit( trim( $url ) ) );
 
@@ -138,20 +110,8 @@ class LicenseManager {
 	}
 
 	/**
-	 * Deterministic destination check for the license server, resolved purely by
-	 * parsing — never by DNS.
-	 *
-	 * `wp_http_validate_url()` used to guard this path, but it resolves the host
-	 * with `gethostbyname()`: an IPv4-only lookup with no timeout control. On
-	 * hosting whose resolver is slow, restricted, or IPv6-first, that lookup fails
-	 * or stalls and the request is rejected before a single packet is sent — the
-	 * license server never even sees it. Its actual protection here was blocking a
-	 * destination that resolves somewhere private, which is redundant for a
-	 * destination pinned to an exact hostname allowlist: reaching a private address
-	 * would require controlling DNS for our own domain.
-	 *
-	 * Every request on this path must pass through here first. A URL that fails is
-	 * never sent — there is no "validation failed, try anyway" fallback.
+	 * Batasi tujuan ke hostname HTTPS yang diizinkan tanpa pencarian DNS.
+	 * URL yang gagal validasi tidak pernah dikirim.
 	 */
 	private function is_allowed_license_url( string $url ): bool {
 		$parts = wp_parse_url( $url );
@@ -160,7 +120,6 @@ class LicenseManager {
 			return false;
 		}
 
-		// Credentials in the URL are a classic way to disguise the real host.
 		if ( isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
 			return false;
 		}
@@ -169,13 +128,11 @@ class LicenseManager {
 			return false;
 		}
 
-		// Only the default HTTPS port, stated or omitted.
 		if ( isset( $parts['port'] ) && 443 !== (int) $parts['port'] ) {
 			return false;
 		}
 
-		// Exact hostname match after lowercasing — never a substring test, so
-		// server-apeiron.web.id.evil.com and evil.com/server-apeiron.web.id both fail.
+		// Cocokkan hostname secara utuh, bukan sebagian.
 		$host = strtolower( rtrim( (string) $parts['host'], '.' ) );
 
 		return '' !== $host && in_array( $host, $this->get_allowed_api_hosts( $url ), true );
@@ -206,10 +163,7 @@ class LicenseManager {
 		);
 	}
 
-	/**
-	 * Resolve API URL lazily (after filters are registered)
-	 * Priority: constant > saved option > hardcoded default
-	 */
+	/** Prioritas URL: konstanta, opsi tersimpan, lalu alamat baku. */
 	private function resolve_api_url(): string {
 		if ( $this->api_url_resolved ) {
 			return $this->api_url;
@@ -217,13 +171,10 @@ class LicenseManager {
 		
 		$this->api_url_resolved = true;
 		
-		// Priority 1: Constant
 		if ( defined( 'APEIRON_KIT_LICENSE_API_URL' ) && ! empty( APEIRON_KIT_LICENSE_API_URL ) ) {
 			$url = APEIRON_KIT_LICENSE_API_URL;
 		} else {
-			// Priority 2: Saved option
 			$saved = get_option( 'apeiron_kit_license_api_url', '' );
-			// Priority 3: Hardcoded default
 			$url = ! empty( $saved ) ? $saved : self::DEFAULT_API_URL;
 		}
 		
@@ -231,7 +182,6 @@ class LicenseManager {
 			apply_filters( 'apeiron_kit_license_api_url', $url )
 		);
 		
-		// Final fallback: if everything fails, use hardcoded default
 		if ( empty( $this->api_url ) ) {
 			$this->api_url = $this->sanitize_api_url( self::DEFAULT_API_URL );
 		}
@@ -251,11 +201,7 @@ class LicenseManager {
 		return ! empty( $this->resolve_api_url() ) && $this->api_key_manager->has_api_key();
 	}
 
-	/**
-	 * Get license data
-	 */
 	public function get_license(): array {
-		// Serve from in-memory cache so PBKDF2 decrypt only runs once per request.
 		if ( null !== $this->license_cache ) {
 			return $this->license_cache;
 		}
@@ -273,11 +219,9 @@ class LicenseManager {
 		$license = get_option( $this->option_name, [] );
 		$license = wp_parse_args( $license, $default );
 		
-		// Decrypt license key if encrypted
 		if ( ! empty( $license['key'] ) && ! empty( $license['key_encrypted'] ) ) {
 			$decrypted_key = $this->decrypt_license_key( $license['key'] );
 			
-			// If decryption failed (empty result), log error but keep original
 			if ( empty( $decrypted_key ) && ! empty( $license['key'] ) ) {
 				if ( class_exists( '\ApeironKit\Support\ErrorLogger' ) ) {
 					\ApeironKit\Support\ErrorLogger::error( 'Failed to decrypt license key. Salt, AUTH_KEY, or siteurl may have changed.' );
@@ -291,9 +235,6 @@ class LicenseManager {
 return $this->license_cache = $license;
 	}
 
-	/**
-	 * Save license data
-	 */
 	private function save_license( array $license ): void {
 		if ( ! empty( $license['key'] ) ) {
 			$encrypted = $this->encrypt_license_key( $license['key'] );
@@ -311,9 +252,7 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Reset all in-request caches so the next is_valid()/get_license() reads
-	 * fresh from the database. Called after any mutation that clears the
-	 * transient.
+	 * Hapus cache permintaan setelah data lisensi berubah.
 	 */
 	private function invalidate_caches(): void {
 		$this->license_cache = null;
@@ -321,37 +260,28 @@ return $this->license_cache = $license;
 		delete_transient( 'apeiron_kit_license_valid' );
 	}
 
-	/**
-	 * Check if license is active
-	 */
 	public function is_active(): bool {
 		$license = $this->get_license();
 		return 'active' === $license['status'];
 	}
 
 	/**
-	 * Check if license is valid (active and not expired)
-	 * Uses cache to improve performance
+	 * Periksa masa berlaku lisensi dengan cache.
 	 */
 	public function is_valid(): bool {
-		// In-memory guard: within a single request the answer never changes.
 		if ( null !== $this->valid_cache ) {
 			return $this->valid_cache;
 		}
 
-		// Check transient first (12 hour cache — reduces periodic PBKDF2 hits).
 		$cached = get_transient( 'apeiron_kit_license_valid' );
 		if ( $cached !== false ) {
 			return $this->valid_cache = (bool) $cached;
 		}
 
-		// Perform actual validation
 		if ( ! $this->is_active() ) {
-			// Before returning false, check persistent cache
-			// License might be active but status was corrupted by a failed check
+			// Periksa cache tetap sebelum menyatakan lisensi tidak aktif.
 			$persistent = $this->get_persistent_cache();
 			if ( $persistent !== null && ( $persistent['status'] ?? '' ) === 'active' ) {
-				// Persistent cache says license is active — trust it
 				set_transient( 'apeiron_kit_license_valid', 1, 12 * HOUR_IN_SECONDS );
 				return $this->valid_cache = true;
 			}
@@ -362,16 +292,7 @@ return $this->license_cache = $license;
 
 		$license = $this->get_license();
 
-		// Entitlement is only ever as fresh as the last time the licence server
-		// actually answered. `last_check` advances on activation and on an
-		// authoritative check and is deliberately left alone by the
-		// transient-failure path, which makes it the verification anchor. Records
-		// written before it existed fall back to the persistent cache, which
-		// validates that it belongs to this installation before handing back a
-		// timestamp. With no trustworthy timestamp the install counts as
-		// unverified rather than entitled — an unreachable server must not become
-		// a permanent licence. The stored key, site and activation identity are
-		// untouched either way, so recovery is a check, never a new seat.
+		// Gunakan waktu verifikasi terakhir; gangguan jaringan tidak memperpanjang lisensi.
 		$verified_at = (int) $license['last_check'];
 		if ( $verified_at <= 0 ) {
 			$persistent  = $this->get_persistent_cache();
@@ -383,28 +304,20 @@ return $this->license_cache = $license;
 			return $this->valid_cache = false;
 		}
 
-		// If no expiration date, consider it valid if active
 		if ( empty( $license['expires'] ) ) {
 			set_transient( 'apeiron_kit_license_valid', 1, 12 * HOUR_IN_SECONDS );
 			return $this->valid_cache = true;
 		}
 
-		// Check if expired
 		$expires = strtotime( $license['expires'] );
-		// Malformed expiration values previously unlocked the license: when `strtotime()` failed
-		// it returned `false`, which the old branch treated as "valid forever". Treat a
-		// non-empty but unparsable expiration as invalid so the user must re-validate.
+		// Tanggal kedaluwarsa yang tidak valid tidak boleh meloloskan lisensi.
 		$is_valid = false !== $expires && $expires > time();
 
-		// Cache result
 		set_transient( 'apeiron_kit_license_valid', $is_valid ? 1 : 0, 12 * HOUR_IN_SECONDS );
 
 		return $this->valid_cache = $is_valid;
 	}
 
-	/**
-	 * Activate license via remote API
-	 */
 	public function activate( string $license_key ): array {
 		$license_key = sanitize_text_field( trim( $license_key ) );
 
@@ -434,22 +347,17 @@ return $this->license_cache = $license;
 			];
 			$this->save_license( $license_data );
 			
-			// Save persistent cache — protects license during server downtime
+			// Pertahankan status lisensi saat server tidak tersedia.
 			$this->save_persistent_cache( $license_data );
 			
-			// Reset failure counter on successful activation
 			delete_option( 'apeiron_kit_check_fail_count' );
 			
-			// Clear validation cache to re-evaluate
 			$this->invalidate_caches();
 		}
 
 		return $response;
 	}
 
-	/**
-	 * Deactivate license via remote API
-	 */
 	public function deactivate(): array {
 		$license = $this->get_license();
 
@@ -460,9 +368,7 @@ return $this->license_cache = $license;
 			];
 		}
 
-		// Release the seat that was actually recorded at activation. home_url() can
-		// drift afterwards (HTTPS migration, host or path change) and would target
-		// an activation record the server does not have, orphaning the seat.
+		// Lepas aktivasi berdasarkan URL yang tersimpan, bukan URL situs yang mungkin berubah.
 		$activated_site = ! empty( $license['site_url'] ) ? $license['site_url'] : home_url();
 
 		$response = $this->api_request( 'deactivate', [
@@ -472,9 +378,7 @@ return $this->license_cache = $license;
 		] );
 
 		if ( $response['success'] ) {
-			// Clear license data
 			delete_option( $this->option_name );
-			// Clear all caches
 			$this->invalidate_caches();
 			$this->clear_persistent_cache();
 			delete_option( 'apeiron_kit_check_fail_count' );
@@ -483,9 +387,6 @@ return $this->license_cache = $license;
 		return $response;
 	}
 
-	/**
-	 * Check license status via remote API
-	 */
 	public function check_license_status(): array {
 		$license = $this->get_license();
 
@@ -503,7 +404,7 @@ return $this->license_cache = $license;
 			'product_id'  => $this->product_id,
 		], $fresh );
 
-		// Cached success is not a new verification and must not renew either anchor.
+		// Respons cache tidak memperbarui waktu verifikasi.
 		if ( $response['success'] && ! $fresh ) {
 			return $response;
 		}
@@ -521,16 +422,13 @@ return $this->license_cache = $license;
 			];
 			$this->save_license( $license_data );
 			
-			// Update persistent cache on successful check
 			$this->save_persistent_cache( $license_data );
 			
-			// Reset failure counter on success
 			delete_option( 'apeiron_kit_check_fail_count' );
 			
-			// Clear validation cache to re-evaluate
 			$this->invalidate_caches();
 		} else {
-			// Don't immediately deactivate — use grace period
+			// Gangguan sementara tidak langsung menonaktifkan lisensi.
 			$fail_count = (int) get_option( 'apeiron_kit_check_fail_count', 0 );
 			$fail_count++;
 			update_option( 'apeiron_kit_check_fail_count', $fail_count, false );
@@ -543,29 +441,23 @@ return $this->license_cache = $license;
 				] );
 			}
 			
-			// A licence is retired by the licence server, never by the network in
-			// between. Unless the server actually delivered a verdict about this
-			// licence, leave the stored activation exactly as it is: the failure
-			// counter above is enough to surface the outage.
+			// Hanya keputusan server yang boleh mengubah status aktivasi.
 			if ( ! $this->is_authoritative_license_failure( $response ) ) {
 				return $response;
 			}
 
-			// Try to restore from persistent cache first
 			$cached = $this->get_persistent_cache();
 			if ( $cached !== null && ( $cached['status'] ?? '' ) === 'active' ) {
-				// Keep license active from persistent cache
 				if ( class_exists( '\ApeironKit\Support\ErrorLogger' ) ) {
 					\ApeironKit\Support\ErrorLogger::info(
 						'License kept active from persistent cache (fail #' . $fail_count . ')'
 					);
 				}
 				
-				// Only deactivate after MAX consecutive failures AND cache expired
+				// Nonaktifkan hanya setelah batas kegagalan dan masa cache terlampaui.
 				if ( $fail_count >= self::MAX_CHECK_FAILURES ) {
 					$cache_age = time() - ( $cached['cached_at'] ?? 0 );
 					if ( $cache_age > self::PERSISTENT_CACHE_TTL ) {
-						// Cache too old + max failures = deactivate
 						$license['status'] = 'inactive';
 						$license['last_check'] = time();
 						$this->save_license( $license );
@@ -577,10 +469,8 @@ return $this->license_cache = $license;
 							);
 						}
 					}
-					// else: cache still valid, keep license active
 				}
 			} else {
-				// No persistent cache and check failed — only deactivate after MAX failures
 				if ( $fail_count >= self::MAX_CHECK_FAILURES && $this->is_active() ) {
 					$license['status'] = 'inactive';
 					$license['last_check'] = time();
@@ -594,19 +484,8 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Whether a failed response is the licence server's own verdict about this
-	 * licence, rather than something that merely prevented us from asking.
-	 *
-	 * Only a verdict may retire a stored activation. Transport classes
-	 * (`APEIRON_*`), HTTP 5xx, malformed replies and client-side configuration
-	 * problems such as a missing or rejected API key say nothing about whether
-	 * the customer's licence is still valid.
-	 *
-	 * `api/check.php` reports expiry, suspension and an unregistered site through
-	 * a *successful* response carrying `data.status`, so the failure path sees a
-	 * verdict only when the licence record itself is gone or refused outright.
-	 * The codes below are the ones the server actually defines in
-	 * `includes/exceptions.php`.
+	 * Bedakan keputusan lisensi dari gangguan jaringan atau konfigurasi.
+	 * Hanya kode resmi server yang dapat menonaktifkan aktivasi.
 	 */
 	private function is_authoritative_license_failure( array $response ): bool {
 		return in_array(
@@ -617,16 +496,12 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Transport error classes. Kept separate from the business error codes the
-	 * server returns (LICENSE_EXPIRED, ACTIVATION_LIMIT_REACHED, …) so support can
-	 * tell "we could not reach the server" apart from "the server said no".
+	 * Pisahkan kegagalan transport dari penolakan lisensi oleh server.
 	 */
 	private function classify_transport_error( \WP_Error $error ): string {
 		$message = strtolower( $error->get_error_message() );
 
 		if ( false !== strpos( $message, 'valid url was not provided' ) || false !== strpos( $message, 'url yang sah' ) ) {
-			// WordPress refused the URL before sending anything: its safe-request
-			// pre-check resolves the host with an IPv4-only lookup that some hosts fail.
 			return 'APEIRON_DNS_FAILURE';
 		}
 		if ( false !== strpos( $message, 'could not resolve host' ) || false !== strpos( $message, 'name or service not known' ) ) {
@@ -651,7 +526,7 @@ return $this->license_cache = $license;
 		return 'APEIRON_SERVER_UNREACHABLE';
 	}
 
-	/** Transport failures worth exactly one more attempt. */
+	/** Gangguan transport yang boleh dicoba ulang sekali. */
 	private function is_retryable_transport_error( string $class ): bool {
 		return in_array(
 			$class,
@@ -661,20 +536,11 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * One POST, plus at most one retry for a transient transport failure.
-	 *
-	 * The licence host publishes both A and AAAA records. On hosting where IPv6 is
-	 * configured but not routed, the first attempt can burn its whole budget on a
-	 * connection that will never complete, so the retry pins itself to IPv4. The
-	 * cURL filter is scoped to this exact URL and removed immediately, so no other
-	 * plugin's requests are affected. Business errors never reach this method —
-	 * they arrive as an HTTP response, not as a WP_Error.
+	 * Coba ulang sekali melalui IPv4 untuk gangguan transport sementara.
+	 * Filter cURL dibatasi pada URL lisensi dan segera dilepas.
 	 */
 	private function send_with_one_retry( string $url, array $args ) {
-		// Last gate before the wire. wp_remote_post() is used instead of the "safe"
-		// variant so WordPress does not gate the request behind its IPv4-only DNS
-		// pre-check; that is only sound because the destination is pinned here to an
-		// exact hostname allowlist rather than being an arbitrary user-supplied URL.
+		// Validasi hostname sebelum POST tanpa pemeriksaan DNS IPv4 WordPress.
 		if ( ! $this->is_allowed_license_url( $url ) ) {
 			return new \WP_Error( 'apeiron_license_url_not_allowed', __( 'License server URL tidak diizinkan.', 'apeiron-kit' ) );
 		}
@@ -702,12 +568,8 @@ return $this->license_cache = $license;
 		return $retry;
 	}
 
-	/**
-	 * Make API request to license server
-	 */
 	private function api_request( string $action, array $data, bool &$fresh = false ): array {
 		$fresh = false;
-		// Resolve API URL lazily (ensures filter + option + fallback are all applied)
 		$api_url = $this->resolve_api_url();
 
 		if ( empty( $api_url ) ) {
@@ -724,7 +586,6 @@ return $this->license_cache = $license;
 			];
 		}
 
-		// Get API key
 		$api_key = $this->api_key_manager->get_api_key();
 		if ( empty( $api_key ) ) {
 			return $this->get_cached_response( $action, [
@@ -735,8 +596,6 @@ return $this->license_cache = $license;
 
 		$url = trailingslashit( $api_url ) . $action . '.php';
 
-		// URL already validated by resolve_api_url() + sanitize_api_url()
-
 		$args = [
 			'timeout'     => 15,
 			'redirection' => 0,
@@ -746,10 +605,10 @@ return $this->license_cache = $license;
 				'X-API-Key'    => $api_key,
 				'User-Agent'   => 'ApeironKit/' . APEIRON_KIT_VERSION . '; ' . home_url(),
 			],
-			'sslverify' => true, // Verify SSL certificate
+			'sslverify' => true,
 		];
 
-		// Debug logging (guarded — strips sensitive data)
+		// Catat metadata permintaan tanpa data sensitif.
 		if ( class_exists( '\ApeironKit\Support\ErrorLogger' ) ) {
 			\ApeironKit\Support\ErrorLogger::info( 'License API request', [
 				'url'       => $url,
@@ -759,12 +618,10 @@ return $this->license_cache = $license;
 
 		$response = $this->send_with_one_retry( $url, $args );
 
-		// Handle connection errors - use cache if available
 		if ( is_wp_error( $response ) ) {
 			$error_message = $response->get_error_message();
 			$error_code = $this->classify_transport_error( $response );
 			
-			// Log connection error
 			if ( class_exists( '\ApeironKit\Support\ErrorLogger' ) ) {
 				\ApeironKit\Support\ErrorLogger::error( 
 					'License server connection error',
@@ -777,7 +634,6 @@ return $this->license_cache = $license;
 				);
 			}
 			
-			// Try cache on connection error (only for check action)
 			if ( $action === 'check' ) {
 				$cached = $this->get_cached_response( $action );
 				if ( $cached !== null ) {
@@ -790,8 +646,6 @@ return $this->license_cache = $license;
 				}
 			}
 			
-			// Customers see a plain sentence; the classification code carries the
-			// detail that support actually needs.
 			$user_message = __( 'Tidak dapat terhubung ke server lisensi. Silakan coba kembali beberapa saat lagi.', 'apeiron-kit' )
 				. ' ' . sprintf( __( 'Kode: %s', 'apeiron-kit' ), $error_code );
 
@@ -812,7 +666,6 @@ return $this->license_cache = $license;
 		$code = wp_remote_retrieve_response_code( $response );
 
 		if ( $code !== 200 ) {
-			// Log error for debugging
 			$error_details = [
 				'code' => $code,
 				'body' => $body,
@@ -820,7 +673,6 @@ return $this->license_cache = $license;
 				'action' => $action,
 			];
 			
-			// Try to parse error message from response body
 			$error_message = '';
 			$error_code = '';
 			if ( ! empty( $body ) ) {
@@ -833,7 +685,6 @@ return $this->license_cache = $license;
 				}
 			}
 			
-			// Log error with context
 			if ( class_exists( '\ApeironKit\Support\ErrorLogger' ) ) {
 				\ApeironKit\Support\ErrorLogger::error( 
 					'License server returned error',
@@ -841,7 +692,6 @@ return $this->license_cache = $license;
 				);
 			}
 			
-			// Try cache on server error (only for check action, not activate/deactivate)
 			if ( $action === 'check' ) {
 				$cached = $this->get_cached_response( $action );
 				if ( $cached !== null ) {
@@ -854,15 +704,12 @@ return $this->license_cache = $license;
 				}
 			}
 			
-			// Build user-friendly error message
 			$user_message = sprintf( __( 'License server mengembalikan error: %d', 'apeiron-kit' ), $code );
 			
-			// Add error message from server if available
 			if ( ! empty( $error_message ) ) {
 				$user_message .= '. ' . esc_html( $error_message );
 			}
 			
-			// Add helpful troubleshooting tips for 500 error
 			if ( $code === 500 ) {
 				$user_message .= ' ' . __( 'Kemungkinan masalah: (1) Server license sedang maintenance, (2) Database error, (3) Konfigurasi server tidak benar. Silakan cek log server atau hubungi administrator.', 'apeiron-kit' );
 			}
@@ -884,14 +731,8 @@ return $this->license_cache = $license;
 			];
 		}
 
-		// Expected response format:
-		// { "success": true, "data": { "status": "active", "expires": "2024-12-31", ... } }
-		// or
-		// { "success": false, "message": "Error message" }
-
 		if ( isset( $response_data['success'] ) && $response_data['success'] ) {
 			$fresh = true;
-			// Cache successful response
 			$this->cache_response( $action, $response_data['data'] ?? [] );
 			
 			return [
@@ -901,11 +742,9 @@ return $this->license_cache = $license;
 			];
 		}
 
-		// Handle specific error codes
 		$error_code = $response_data['error_code'] ?? '';
 		$error_message = $response_data['message'] ?? __( 'License validation gagal.', 'apeiron-kit' );
 
-		// Customize error message for specific error codes
 		if ( $error_code === 'INVALID_API_KEY' || strpos( $error_message, 'API key' ) !== false ) {
 			$error_message = __( 'API Key tidak valid. Silakan cek kembali API Key yang Anda masukkan atau hubungi administrator.', 'apeiron-kit' );
 		} elseif ( $error_code === 'SINGLE_DOMAIN_VIOLATION' ) {
@@ -938,10 +777,10 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Cache API response for offline use
-	 * 
-	 * @param string $action Action name
-	 * @param array $data Response data
+	 * Simpan respons API untuk penggunaan saat offline.
+	 *
+	 * @param string $action Nama aksi.
+	 * @param array $data Data respons.
 	 * @return void
 	 */
 	private function cache_response( string $action, array $data ): void {
@@ -954,11 +793,11 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Get cached API response
-	 * 
-	 * @param string $action Action name
-	 * @param array|null $fallback Fallback response if cache expired
-	 * @return array|null Cached data or null
+	 * Ambil respons API dari cache.
+	 *
+	 * @param string $action Nama aksi.
+	 * @param array|null $fallback Respons cadangan saat cache kedaluwarsa.
+	 * @return array|null Data cache atau null.
 	 */
 	private function get_cached_response( string $action, ?array $fallback = null ): ?array {
 		$cache = get_option( $this->cache_option, [] );
@@ -970,14 +809,13 @@ return $this->license_cache = $license;
 		$cached = $cache[ $action ];
 		$age = time() - ( $cached['timestamp'] ?? 0 );
 		
-		// Cache valid for 24 hours
 		if ( $age > 86400 ) {
 			return $fallback;
 		}
 		
 		$data = $cached['data'] ?? $fallback;
 		if ( 'check' === $action && is_array( $data ) ) {
-			// Accept stored success envelopes as well as the normal raw data shape.
+			// Terima format respons tersimpan maupun data mentah.
 			if ( isset( $data['success'] ) ) {
 				if ( ! $data['success'] ) {
 					return $fallback;
@@ -996,19 +834,15 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Save persistent license cache (long-term protection against server downtime)
-	 * 
-	 * This cache survives server errors and prevents license from being deactivated
-	 * when the license server is temporarily unavailable.
-	 * 
-	 * @param array $license_data License data to cache
+	 * Simpan cache tetap untuk gangguan server sementara.
+	 *
+	 * @param array $license_data Data lisensi untuk cache.
 	 * @return void
 	 */
 	private function save_persistent_cache( array $license_data ): void {
 		$cache_data = $license_data;
 
-		// Never persist the decrypted license key in plaintext. Keep only the metadata
-		// required by the silence-during-outage grace period.
+		// Jangan simpan kunci lisensi hasil dekripsi di cache.
 		unset( $cache_data['key'] );
 
 		$cache_data['cached_at'] = time();
@@ -1025,11 +859,9 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Get persistent license cache
-	 * 
-	 * Returns cached license data if still within TTL and from same site.
-	 * 
-	 * @return array|null Cached license data or null if expired/invalid
+	 * Ambil cache tetap yang belum kedaluwarsa untuk situs ini.
+	 *
+	 * @return array|null Data cache yang valid atau null.
 	 */
 	private function get_persistent_cache(): ?array {
 		$cached = get_option( $this->persistent_cache_option, null );
@@ -1038,34 +870,26 @@ return $this->license_cache = $license;
 			return null;
 		}
 
-		// Validate cache is from same site. Compared in normalized form so a bare
-		// scheme or trailing-slash difference — home_url() follows the scheme of the
-		// current request — does not throw away the outage grace period.
+		// Bandingkan URL yang dinormalisasi agar perubahan skema tidak membuang cache.
 		$cached_site = $cached['cached_site_url'] ?? '';
 		if ( ! empty( $cached_site ) && $this->normalize_site_url( $cached_site ) !== $this->normalize_site_url( home_url() ) ) {
-			// Site URL changed (migration) — cache invalid
 			delete_option( $this->persistent_cache_option );
 			return null;
 		}
 
-		// Check TTL
 		$cache_age = time() - ( $cached['cached_at'] ?? 0 );
 		if ( $cache_age > self::PERSISTENT_CACHE_TTL ) {
-			return null; // Expired
+			return null;
 		}
 
-		// Do not expose a decrypted license key from the persistent cache. The store used
-		// to mirror `license_data['key']` decrypted, which is plaintext at-rest; expose
-		// only the metadata the grace-period logic actually needs.
+		// Cache tetap hanya mengembalikan metadata, bukan kunci hasil dekripsi.
 		unset( $cached['key'] );
 
 		return $cached;
 	}
 
 	/**
-	 * Comparable form of an installation URL. Used only for local comparisons —
-	 * the value transmitted to the license server is deliberately left verbatim so
-	 * existing activation records keep matching.
+	 * Normalisasi URL hanya untuk perbandingan lokal, bukan untuk permintaan server.
 	 */
 	private function normalize_site_url( string $url ): string {
 		$url = strtolower( trim( $url ) );
@@ -1075,8 +899,7 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * License data safe to hand back to the browser. The admin UI masks the key
-	 * once a license is active, so the AJAX payload must not carry it either.
+	 * Hilangkan kunci lisensi sebelum data dikirim ke browser.
 	 */
 	private function get_license_for_response(): array {
 		$license = $this->get_license();
@@ -1085,18 +908,15 @@ return $this->license_cache = $license;
 		return $license;
 	}
 
-	/**
-	 * Clear persistent cache (called on deactivate)
-	 */
 	private function clear_persistent_cache(): void {
 		delete_option( $this->persistent_cache_option );
 	}
 
 	/**
-	 * Encrypt license key using versioned authenticated storage.
+	 * Enkripsi kunci lisensi dengan format berversi.
 	 *
-	 * @param string $key License key to encrypt
-	 * @return string Versioned encrypted license key
+	 * @param string $key Kunci lisensi yang dienkripsi.
+	 * @return string Kunci lisensi terenkripsi.
 	 */
 	private function encrypt_license_key( string $key ): string {
 		$salt = get_option( 'apeiron_kit_license_salt' );
@@ -1118,10 +938,10 @@ return $this->license_cache = $license;
 	}
 
 	/**
-	 * Decrypt authenticated storage with legacy fallback.
+	 * Dekripsi kunci dengan fallback format lama.
 	 *
-	 * @param string $encrypted Encrypted license key
-	 * @return string Decrypted license key
+	 * @param string $encrypted Kunci lisensi terenkripsi.
+	 * @return string Kunci lisensi hasil dekripsi.
 	 */
 	private function decrypt_license_key( string $encrypted ): string {
 		$salt = get_option( 'apeiron_kit_license_salt' );
@@ -1132,11 +952,9 @@ return $this->license_cache = $license;
 		$wp_key = defined( 'AUTH_KEY' ) ? AUTH_KEY : wp_generate_password( 32, true, true );
 		$site_url = get_option( 'siteurl' );
 		
-		// Derive encryption key using PBKDF2 (must match encryption method)
 		$encryption_key = Crypto::derive_pbkdf2_key( $salt . $wp_key . $site_url, 'apeiron_kit_salt' );
 		$decrypted      = Crypto::decrypt_aes_cbc( $encrypted, $encryption_key );
 		if ( '' === $decrypted ) {
-			// Try old XOR format for backward compatibility
 			return $this->decrypt_license_key_xor( $encrypted );
 		}
 		
@@ -1149,10 +967,10 @@ return $this->license_cache = $license;
 	}
 	
 	/**
-	 * Legacy XOR decryption for backward compatibility
-	 * 
-	 * @param string $encrypted Encrypted license key
-	 * @return string Decrypted license key
+	 * Dekripsi XOR lama untuk kompatibilitas.
+	 *
+	 * @param string $encrypted Kunci lisensi terenkripsi.
+	 * @return string Kunci lisensi hasil dekripsi.
 	 */
 	private function decrypt_license_key_xor( string $encrypted ): string {
 		$salt = get_option( 'apeiron_kit_license_salt' );
@@ -1164,17 +982,12 @@ return $this->license_cache = $license;
 		return Crypto::xor_decrypt( $encrypted, $encryption_key );
 	}
 
-	/**
-	 * Handle AJAX activate license
-	 */
 	public function handle_activate(): void {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), self::NONCE_ACTION ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
@@ -1194,17 +1007,12 @@ return $this->license_cache = $license;
 		}
 	}
 
-	/**
-	 * Handle AJAX deactivate license
-	 */
 	public function handle_deactivate(): void {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), self::NONCE_ACTION ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
@@ -1219,17 +1027,12 @@ return $this->license_cache = $license;
 		}
 	}
 
-	/**
-	 * Handle AJAX check license
-	 */
 	public function handle_check(): void {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), self::NONCE_ACTION ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
@@ -1247,17 +1050,12 @@ return $this->license_cache = $license;
 		}
 	}
 
-	/**
-	 * Handle AJAX save server configuration
-	 */
 	public function handle_save_server_config(): void {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), self::NONCE_ACTION ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
@@ -1265,7 +1063,7 @@ return $this->license_cache = $license;
 
 		$api_key = isset( $_POST['api_key'] ) ? sanitize_text_field( trim( wp_unslash( $_POST['api_key'] ) ) ) : '';
 
-		// Determine API URL: constant > POST > saved option > default
+		// Prioritas URL: konstanta, POST, opsi tersimpan, lalu alamat baku.
 		if ( defined( 'APEIRON_KIT_LICENSE_API_URL' ) && ! empty( APEIRON_KIT_LICENSE_API_URL ) ) {
 			$api_url = APEIRON_KIT_LICENSE_API_URL;
 		} else {
@@ -1282,14 +1080,11 @@ return $this->license_cache = $license;
 			return;
 		}
 
-		// Save API URL to option (can be filtered later)
 		update_option( 'apeiron_kit_license_api_url', $api_url, false );
 
-		// Update API URL in instance
 		$this->api_url = $api_url;
 		$this->api_url_resolved = true;
 
-		// Save API Key if provided
 		if ( ! empty( $api_key ) ) {
 			if ( ! $this->api_key_manager->set_api_key( $api_key ) ) {
 				wp_send_json_error( [ 'message' => __( 'Gagal menyimpan API Key.', 'apeiron-kit' ) ] );
@@ -1302,29 +1097,21 @@ return $this->license_cache = $license;
 		] );
 	}
 
-	/**
-	 * Handle AJAX test server connection
-	 */
 	public function handle_test_connection(): void {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), self::NONCE_ACTION ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Get current API URL (refresh from source)
 		$api_url = $this->get_api_url();
 
-		// Get API key
 		$api_key = $this->api_key_manager->get_api_key();
 
-		// Check server configuration
 		if ( empty( $api_url ) ) {
 			wp_send_json_error( [
 				'message' => __( 'License Server URL belum dikonfigurasi.', 'apeiron-kit' ),
@@ -1341,7 +1128,6 @@ return $this->license_cache = $license;
 			return;
 		}
 
-		// Test connection using health.php endpoint (no auth required for basic check)
 		$url = trailingslashit( $api_url ) . 'health.php';
 
 		$args = [
@@ -1354,8 +1140,7 @@ return $this->license_cache = $license;
 			'sslverify' => true,
 		];
 
-		// Same destination rule as the licence endpoints: pinned by the allowlist,
-		// so it does not need WordPress's DNS-resolving pre-check either.
+		// Endpoint health memakai batasan hostname yang sama.
 		if ( ! $this->is_allowed_license_url( $url ) ) {
 			$response = new \WP_Error( 'apeiron_license_url_not_allowed', __( 'License server URL tidak diizinkan.', 'apeiron-kit' ) );
 		} else {
@@ -1384,7 +1169,6 @@ return $this->license_cache = $license;
 			$error_message = __( 'Koneksi gagal.', 'apeiron-kit' );
 			$error_code = 'HTTP_' . $code;
 			
-			// Try to get error message from response body
 			$response_data = json_decode( $body, true );
 			if ( is_array( $response_data ) && isset( $response_data['message'] ) ) {
 				$error_message = $response_data['message'];
@@ -1400,9 +1184,6 @@ return $this->license_cache = $license;
 		}
 	}
 
-	/**
-	 * Get license status for display
-	 */
 	public function get_status_display(): array {
 		$license = $this->get_license();
 		$status = $license['status'];
@@ -1444,9 +1225,6 @@ return $this->license_cache = $license;
 		];
 	}
 
-	/**
-	 * Show admin notices for missing configuration or invalid license
-	 */
 	public function render_admin_notices(): void {
 		if ( ! is_admin() || wp_doing_ajax() || ! current_user_can( 'manage_options' ) ) {
 			return;

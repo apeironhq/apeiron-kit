@@ -9,24 +9,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 use ApeironKit\Support\ErrorLogger;
 use ApeironKit\Elementor\Widgets\CommentDock\StickerLibrary;
 
-/**
- * Class untuk menangani upload dan delete stiker
- */
+/** Kelola unggah dan hapus stiker. */
 class StickerManager {
 
-	/**
-	 * Register AJAX handlers
-	 */
 	public function register(): void {
 		add_action( 'wp_ajax_apeiron_upload_sticker', [ $this, 'handle_upload' ] );
 		add_action( 'wp_ajax_apeiron_delete_sticker', [ $this, 'handle_delete' ] );
 	}
 
-	/**
-	 * Handle upload stiker
-	 */
 	public function handle_upload(): void {
-		// Debug logging (safe — no raw data dumped)
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 			ErrorLogger::info( 'Sticker upload handler started', [
 				'folder' => isset( $_POST['folder'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['folder'] ) ) : 'n/a',
@@ -34,13 +25,11 @@ class StickerManager {
 			] );
 		}
 
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), 'apeiron_sticker_management' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed. Refresh halaman dan coba lagi.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities (admin only for file operations)
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
@@ -58,7 +47,6 @@ class StickerManager {
 		$base_root = $resolved_directory['base'];
 		$base_path = $resolved_directory['absolute'];
 
-		// Create folder if not exists.
 		if ( ! is_dir( $base_path ) && ! wp_mkdir_p( $base_path ) ) {
 			wp_send_json_error( [ 'message' => __( 'Folder stiker tidak dapat dibuat.', 'apeiron-kit' ) ] );
 			return;
@@ -71,13 +59,11 @@ class StickerManager {
 		}
 		$base_path = wp_normalize_path( $resolved_base_path );
 
-		// Check if folder is writable
 		if ( ! is_writable( $base_path ) ) {
 			wp_send_json_error( [ 'message' => __( 'Folder tidak dapat ditulis. Pastikan folder memiliki permission yang tepat.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Process uploaded files
 		if ( ! isset( $_FILES['sticker_files'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Tidak ada file yang diupload.', 'apeiron-kit' ) ] );
 			return;
@@ -87,7 +73,6 @@ class StickerManager {
 		$uploaded_count = 0;
 		$errors = [];
 
-		// Handle multiple files
 		$file_count = is_array( $files['name'] ) ? count( $files['name'] ) : 1;
 
 		for ( $i = 0; $i < $file_count; $i++ ) {
@@ -96,13 +81,11 @@ class StickerManager {
 			$file_error = is_array( $files['error'] ) ? $files['error'][ $i ] : $files['error'];
 			$file_size = is_array( $files['size'] ) ? $files['size'][ $i ] : $files['size'];
 
-			// Check for upload errors
 			if ( $file_error !== UPLOAD_ERR_OK ) {
 				$errors[] = sprintf( __( 'Error upload file %s: %s', 'apeiron-kit' ), $file_name, $this->get_upload_error_message( $file_error ) );
 				continue;
 			}
 
-			// Validate file extension
 			$ext = strtolower( pathinfo( $file_name, PATHINFO_EXTENSION ) );
 			$allowed_extensions = $allow_video
 				? [ 'png', 'jpg', 'jpeg', 'gif', 'webp', 'webm', 'mp4' ]
@@ -113,7 +96,6 @@ class StickerManager {
 				continue;
 			}
 
-			// Validate MIME type for better security
 			$file_type = wp_check_filetype( $file_name, $allow_video
 				? [ 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp', 'webm' => 'video/webm', 'mp4' => 'video/mp4' ]
 				: [ 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp' ]
@@ -124,7 +106,6 @@ class StickerManager {
 				continue;
 			}
 
-			// Enhanced file content validation
 			$file_info = wp_check_filetype_and_ext( $file_tmp, $file_name, $allow_video
 				? [ 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp', 'webm' => 'video/webm', 'mp4' => 'video/mp4' ]
 				: [ 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp' ]
@@ -135,7 +116,6 @@ class StickerManager {
 				continue;
 			}
 
-			// Validate image content for image files
 			if ( in_array( $ext, [ 'png', 'jpg', 'jpeg', 'gif', 'webp' ], true ) ) {
 				$image_size = @getimagesize( $file_tmp );
 				if ( $image_size === false ) {
@@ -144,20 +124,17 @@ class StickerManager {
 				}
 			}
 
-			// Validate file size (max 10MB)
-			$max_size = 10 * 1024 * 1024; // 10MB
+			$max_size = 10 * 1024 * 1024;
 			if ( $file_size > $max_size ) {
 				$errors[] = sprintf( __( 'File %s terlalu besar (maksimal 10MB).', 'apeiron-kit' ), $file_name );
 				continue;
 			}
 
-			// Validate minimum file size (prevent empty files)
-			if ( $file_size < 100 ) { // At least 100 bytes
+			if ( $file_size < 100 ) {
 				$errors[] = sprintf( __( 'File %s terlalu kecil atau corrupt.', 'apeiron-kit' ), $file_name );
 				continue;
 			}
 
-			// Sanitize filename
 			$sanitized_name = sanitize_file_name( $file_name );
 			if ( empty( $sanitized_name ) ) {
 				$errors[] = sprintf( __( 'Nama file %s tidak valid.', 'apeiron-kit' ), $file_name );
@@ -170,7 +147,6 @@ class StickerManager {
 				continue;
 			}
 
-			// Move uploaded file
 			if ( move_uploaded_file( $file_tmp, $target_path ) ) {
 				$uploaded_count++;
 			} else {
@@ -208,23 +184,17 @@ class StickerManager {
 		}
 	}
 
-	/**
-	 * Handle delete stiker
-	 */
 	public function handle_delete(): void {
-		// Verify nonce
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( (string) wp_unslash( $_POST['nonce'] ), 'apeiron_sticker_management' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Nonce verification failed.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Check user capabilities
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( [ 'message' => __( 'Anda tidak memiliki izin untuk melakukan aksi ini.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Get sticker path
 		$sticker_path = isset( $_POST['sticker_path'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['sticker_path'] ) ) : '';
 
 		if ( empty( $sticker_path ) ) {
@@ -232,7 +202,6 @@ class StickerManager {
 			return;
 		}
 
-		// Validate path
 		$allowed_ext = [ 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'webm', 'mp4' ];
 		$ext         = strtolower( pathinfo( $sticker_path, PATHINFO_EXTENSION ) );
 		if ( ! in_array( $ext, $allowed_ext, true ) ) {
@@ -247,13 +216,11 @@ class StickerManager {
 		}
 		$real_file_path = $resolved['absolute'];
 
-		// Check if file exists
 		if ( ! file_exists( $real_file_path ) ) {
 			wp_send_json_error( [ 'message' => __( 'File stiker tidak ditemukan.', 'apeiron-kit' ) ] );
 			return;
 		}
 
-		// Delete file with proper error handling
 		if ( ! is_file( $real_file_path ) ) {
 			wp_send_json_error( [ 'message' => __( 'File stiker tidak ditemukan.', 'apeiron-kit' ) ] );
 			return;
@@ -274,13 +241,10 @@ class StickerManager {
 	}
 
 	/**
-	 * Sanitize SVG file content to prevent XSS.
+	 * Bersihkan elemen SVG berbahaya untuk mencegah XSS.
 	 *
-	 * Removes script tags, event handler attributes, external references,
-	 * and other potentially dangerous SVG content.
-	 *
-	 * @param string $file_path Absolute path to the SVG file.
-	 * @return bool True if sanitized successfully, false if file is rejected.
+	 * @param string $file_path Lokasi absolut berkas SVG.
+	 * @return bool Benar jika sanitasi berhasil.
 	 */
 	public static function sanitize_svg_file( string $file_path ): bool {
 		$content = @file_get_contents( $file_path );
@@ -288,53 +252,42 @@ class StickerManager {
 			return false;
 		}
 
-		// Reject files with PHP tags
 		if ( preg_match( '/<\?php/i', $content ) ) {
 			return false;
 		}
 
-		// Remove XML processing instructions (except XML declaration)
 		$content = preg_replace( '/<\?(?!xml\b)[^?]*\?>/i', '', $content );
 
-		// Remove script tags and their content
 		$content = preg_replace( '/<script[^>]*>.*?<\/script>/si', '', $content );
 		$content = preg_replace( '/<script[^>]*\/>/si', '', $content );
 
-		// Remove all event handler attributes (on*)
 		$content = preg_replace( '/\s+on\w+\s*=\s*(["\']).*?\1/si', '', $content );
 		$content = preg_replace( '/\s+on\w+\s*=\s*[^\s>]+/si', '', $content );
 
-		// Remove javascript: and data: URIs from href/src/xlink:href attributes
 		$content = preg_replace( '/(href|src|xlink:href)\s*=\s*(["\'])\s*(javascript|data)\s*:/si', '$1=$2#blocked:', $content );
 
-		// Remove <use> elements with external references
 		$content = preg_replace( '/<use[^>]+xlink:href\s*=\s*(["\'])https?:\/\/.*?\1[^>]*\/?>/si', '', $content );
 
-		// Remove <foreignObject> elements (can embed HTML/JS)
 		$content = preg_replace( '/<foreignObject[^>]*>.*?<\/foreignObject>/si', '', $content );
 		$content = preg_replace( '/<foreignObject[^>]*\/>/si', '', $content );
 
-		// Remove <iframe>, <embed>, <object> elements
 		$content = preg_replace( '/<(iframe|embed|object)[^>]*>.*?<\/\1>/si', '', $content );
 		$content = preg_replace( '/<(iframe|embed|object)[^>]*\/>/si', '', $content );
 
-		// Remove set/animate elements that could execute scripts
 		$content = preg_replace( '/<(set|animate)[^>]*attributeName\s*=\s*(["\'])on\w+\2[^>]*\/?>/si', '', $content );
 
-		// Ensure the file still contains valid SVG content after sanitization
 		if ( ! preg_match( '/<svg[\s>]/i', $content ) ) {
 			return false;
 		}
 
-		// Write sanitized content back
 		$written = @file_put_contents( $file_path, $content, LOCK_EX );
 		return false !== $written;
 	}
 
 	/**
-	 * Resolve sticker upload directory and enforce base-path safety.
+	 * Pastikan direktori stiker tetap berada dalam lokasi yang diizinkan.
 	 *
-	 * @param string $folder Requested folder path.
+	 * @param string $folder Lokasi folder yang diminta.
 	 * @return array<string,string>|null
 	 */
 	private function resolve_sticker_directory( string $folder ): ?array {
@@ -359,10 +312,10 @@ class StickerManager {
 	}
 
 	/**
-	 * Check whether a path is inside a specific base path.
+	 * Periksa apakah lokasi berada dalam direktori dasar.
 	 *
-	 * @param string $path Path to verify.
-	 * @param string $base Base path.
+	 * @param string $path Lokasi yang diperiksa.
+	 * @param string $base Direktori dasar.
 	 * @return bool
 	 */
 	private function is_path_within_base( string $path, string $base ): bool {
@@ -371,9 +324,6 @@ class StickerManager {
 		return $path === $base || 0 === strpos( $path, $base . '/' );
 	}
 
-	/**
-	 * Get upload error message
-	 */
 	private function get_upload_error_message( int $error_code ): string {
 		switch ( $error_code ) {
 			case UPLOAD_ERR_INI_SIZE:

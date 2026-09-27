@@ -70,13 +70,13 @@ class GuestInvitationManager extends BaseWidget {
 		];
 
 		/**
-		 * Filter the render context before markup is emitted.
+		 * Filter konteks sebelum markup dirender.
 		 *
 		 * @since 1.1.0
 		 *
-		 * @param array $context  Render context passed to the partial.
-		 * @param array $settings Full settings array.
-		 * @param self  $widget   Widget instance.
+		 * @param array $context  Konteks untuk partial.
+		 * @param array $settings Seluruh pengaturan.
+		 * @param self  $widget   Instans widget.
 		 */
 		$context = (array) apply_filters(
 			'apeiron_guest_invitation_render_context',

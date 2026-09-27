@@ -12,9 +12,7 @@ use ApeironKit\Support\WidgetRegistry;
 
 class WidgetManager {
 
-	/**
-	 * Whether Elementor hooks have already been attached.
-	 */
+	/** Status pendaftaran hook Elementor. */
 	private bool $registered = false;
 
 	public function register(): void {
@@ -72,9 +70,7 @@ class WidgetManager {
 			$this->register_widget_class( $manager, $widget_class, $map[ $widget_class ] ?? '', $disabled );
 		}
 
-		// Legacy aliases: hidden from the panel but still registered so
-		// pages saved with deprecated widget types (e.g. `apeiron-pulse-countdown`)
-		// keep rendering after the canonical rename.
+		// Alias lama tetap terdaftar agar dokumen tersimpan tetap dirender.
 		foreach ( WidgetRegistry::legacy_widget_classes() as $widget_class ) {
 			$canonical_slug = $map[ $widget_class ] ?? '';
 			$this->register_widget_class( $manager, $widget_class, $canonical_slug, $disabled );
@@ -82,8 +78,7 @@ class WidgetManager {
 	}
 
 	/**
-	 * Register one widget without allowing a broken optional widget to abort
-	 * registration of every other widget.
+	 * Kegagalan satu widget tidak menghentikan pendaftaran widget lainnya.
 	 *
 	 * @param class-string $widget_class
 	 * @param string[]     $disabled

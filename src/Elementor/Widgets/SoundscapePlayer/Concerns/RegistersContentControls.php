@@ -60,6 +60,7 @@ trait RegistersContentControls {
 				'type'        => Controls_Manager::URL,
 				'description' => __( 'Opsional. Dynamic Tag yang valid menggantikan File Audio; jika kosong atau tidak valid, File Audio tetap digunakan.', 'apeiron-kit' ),
 				'show_external' => false,
+				'options'     => false,
 				'condition'   => [
 					'src_type' => 'upload',
 				],
@@ -74,6 +75,7 @@ trait RegistersContentControls {
 				'type'           => Controls_Manager::URL,
 				'placeholder'    => __( 'https://example.com/music-name.mp3', 'apeiron-kit' ),
 				'show_external'  => false,
+				'options'        => false,
 				'default'        => [
 					'url'         => '',
 					'is_external' => false,
@@ -199,6 +201,52 @@ trait RegistersContentControls {
 				'return_value' => 'yes',
 				'default'      => 'yes',
 				'description'  => __( 'Matikan opsi ini jika audio boleh tetap berjalan saat pengunjung pindah tab.', 'apeiron-kit' ),
+			]
+		);
+
+		$this->add_control(
+			'video_sync_enabled',
+			[
+				'label'        => __( 'Sinkronisasi Video', 'apeiron-kit' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Ya', 'apeiron-kit' ),
+				'label_off'    => __( 'Tidak', 'apeiron-kit' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'Sinkronkan musik dengan video konten bersuara. Video latar dan video muted diabaikan. Embed YouTube/Vimeo memerlukan status pemutaran dari API player.', 'apeiron-kit' ),
+			]
+		);
+
+		$this->add_control(
+			'video_sync_mode',
+			[
+				'label'     => __( 'Mode Sinkronisasi', 'apeiron-kit' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'pause',
+				'options'   => [
+					'pause' => __( 'Pause Musik Otomatis', 'apeiron-kit' ),
+					'duck'  => __( 'Turunkan Volume Musik', 'apeiron-kit' ),
+				],
+				'condition' => [
+					'video_sync_enabled' => 'yes',
+				],
+			]
+		);
+
+		$this->add_control(
+			'video_sync_duck_volume',
+			[
+				'label'       => __( 'Volume Musik Saat Video (%)', 'apeiron-kit' ),
+				'type'        => Controls_Manager::NUMBER,
+				'default'     => 20,
+				'min'         => 0,
+				'max'         => 100,
+				'step'        => 1,
+				'description' => __( 'Batas volume musik saat video bersuara diputar. Volume yang sudah lebih rendah tidak dinaikkan.', 'apeiron-kit' ),
+				'condition'   => [
+					'video_sync_enabled' => 'yes',
+					'video_sync_mode'    => 'duck',
+				],
 			]
 		);
 

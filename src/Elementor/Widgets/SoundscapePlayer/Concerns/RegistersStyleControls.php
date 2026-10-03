@@ -405,9 +405,13 @@ trait RegistersStyleControls {
 			[
 				'label'     => __( 'Rotasi Ikon', 'apeiron-kit' ),
 				'type'      => Controls_Manager::SLIDER,
+				'size_units' => [ 'deg' ],
+				'range'     => [
+					'deg' => [ 'min' => -360, 'max' => 360 ],
+				],
 				'default'   => [ 'size' => 0, 'unit' => 'deg' ],
 				'selectors' => [
-					'{{WRAPPER}} .apeiron-soundscape-icon i, {{WRAPPER}} .apeiron-soundscape-icon svg' => 'transform: rotate({{SIZE}}{{UNIT}});',
+					'{{WRAPPER}} .apeiron-soundscape-icon i, {{WRAPPER}} .apeiron-soundscape-icon svg' => 'transform: rotate({{SIZE}}deg);',
 				],
 			]
 		);

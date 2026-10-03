@@ -103,6 +103,10 @@ class SoundscapePlayer extends BaseWidget {
 			'is_autoplay'       => 'yes' === ( $settings['autoplay'] ?? '' ),
 			'pause_hidden'      => 'yes' === ( $settings['pause_hidden'] ?? 'yes' ),
 			'cover_music_start' => 'cover_click' === ( $settings['cover_music_start'] ?? '' ) ? 'cover_click' : 'cover_opened',
+			'video_sync_enabled' => 'yes' === ( $settings['video_sync_enabled'] ?? '' ),
+			'video_sync_mode'    => 'duck' === ( $settings['video_sync_mode'] ?? '' ) ? 'duck' : 'pause',
+			'video_sync_duck_volume' => is_numeric( $settings['video_sync_duck_volume'] ?? null )
+				? max( 0, min( 100, (float) $settings['video_sync_duck_volume'] ) ) : 20,
 			'start_sec'         => (string) ( $settings['start'] ?? '' ),
 			'end_sec'           => (string) ( $settings['end'] ?? '' ),
 			'empty_message'     => (string) ( $settings['empty_message'] ?? __( 'Pilih audio terlebih dahulu.', 'apeiron-kit' ) ),
@@ -143,6 +147,10 @@ class SoundscapePlayer extends BaseWidget {
 		$is_autoplay       = (bool) $context['is_autoplay'];
 		$pause_hidden      = (bool) $context['pause_hidden'];
 		$cover_music_start = (string) $context['cover_music_start'];
+		$video_sync_enabled = (bool) ( $context['video_sync_enabled'] ?? false );
+		$video_sync_mode    = 'duck' === ( $context['video_sync_mode'] ?? '' ) ? 'duck' : 'pause';
+		$video_sync_duck_volume = is_numeric( $context['video_sync_duck_volume'] ?? null )
+			? max( 0, min( 100, (float) $context['video_sync_duck_volume'] ) ) : 20;
 		$start_sec         = (string) $context['start_sec'];
 		$end_sec           = (string) $context['end_sec'];
 		$empty_message     = (string) $context['empty_message'];

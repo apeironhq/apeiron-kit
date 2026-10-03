@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use ApeironKit\Admin\SettingsPage;
 use ApeironKit\Elementor\WidgetManager;
 use ApeironKit\Rest\CommentsController;
+use ApeironKit\Rest\FormOrderController;
 use ApeironKit\Support\AssetManager;
 use ApeironKit\Support\CommentDockSettingsStore;
 use ApeironKit\Support\LegacyContentCleanup;
@@ -28,6 +29,8 @@ class Plugin {
 		'widget_bulk_toggle'    => 'apeiron_bulk_toggle_widgets',
 		'widget_usage'          => 'apeiron_check_widget_usage',
 		'ucapan_tamu_save'      => 'apeiron_save_ucapan_tamu',
+		'form_order_save'       => 'apeiron_save_form_order',
+		'form_order_test'       => 'apeiron_test_form_order',
 	];
 
 	private const LICENSE_AJAX_ACTIONS = [
@@ -97,6 +100,7 @@ class Plugin {
 	/** Daftarkan rute hanya pada permintaan REST. */
 	public function register_rest_routes(): void {
 		( new CommentsController() )->register_routes();
+		( new FormOrderController() )->register_routes();
 	}
 
 	/** Daftarkan aset hanya saat hook terkait dapat berjalan. */

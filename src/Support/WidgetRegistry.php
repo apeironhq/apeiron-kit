@@ -10,6 +10,7 @@ use ApeironKit\Elementor\Widgets\CommentDock\CommentDock;
 use ApeironKit\Elementor\Widgets\Countdown\Countdown;
 use ApeironKit\Elementor\Widgets\Countdown\LegacyPulseCountdown;
 use ApeironKit\Elementor\Widgets\Cover\Cover;
+use ApeironKit\Elementor\Widgets\FormOrder\FormOrder;
 use ApeironKit\Elementor\Widgets\GuestInvitationManager\GuestInvitationManager;
 use ApeironKit\Elementor\Widgets\PageLoader\PageLoader;
 use ApeironKit\Elementor\Widgets\SignalForm\SignalForm;
@@ -64,6 +65,15 @@ final class WidgetRegistry {
 			'css_file' => 'apeiron-signal-form',
 			'js_file'  => 'widgets/signal-form',
 			'js_deps'  => [],
+		],
+		'form_order'    => [
+			'class' => FormOrder::class,
+			'type' => 'apeiron-form-order',
+			'css' => 'apeiron-kit-form-order',
+			'js' => 'apeiron-kit-form-order-js',
+			'css_file' => 'apeiron-form-order',
+			'js_file' => 'widgets/form-order',
+			'js_deps' => [],
 		],
 		'clipboard_tap' => [
 			'class' => ClipboardTap::class,
@@ -157,6 +167,7 @@ final class WidgetRegistry {
 		'countdown',
 		'soundscape',
 		'signal_form',
+		'form_order',
 		'clipboard_tap',
 		'comment_dock',
 		'guest_manager',
@@ -178,6 +189,7 @@ final class WidgetRegistry {
 		'clipboard_tap',
 		'soundscape',
 		'signal_form',
+		'form_order',
 		'social_proof',
 		'autoscroll',
 		'page_loader',
@@ -195,6 +207,7 @@ final class WidgetRegistry {
 		'countdown',
 		'soundscape',
 		'signal_form',
+		'form_order',
 		'clipboard_tap',
 		'comment_dock',
 		'social_proof',
@@ -469,6 +482,14 @@ final class WidgetRegistry {
 				'description' => __( 'Form singkat yang mengarahkan pesan ke nomor WhatsApp.', 'apeiron-kit' ),
 				'group'       => __( 'Konversi', 'apeiron-kit' ),
 				'group_key'   => 'konversi',
+			],
+			'form_order'    => [
+				'icon' => 'feedback',
+				'color' => 'green',
+				'label' => __( 'Form Order', 'apeiron-kit' ),
+				'description' => __( 'Form pemesanan undangan bertahap.', 'apeiron-kit' ),
+				'group' => __( 'Konversi', 'apeiron-kit' ),
+				'group_key' => 'konversi',
 			],
 			'social_proof'  => [
 				'icon'        => 'megaphone',

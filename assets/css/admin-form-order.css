@@ -1,0 +1,41 @@
+.apeiron-form-order-admin__heading { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.apeiron-form-order-admin__description { margin: 0; color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-body); line-height: var(--apeiron-line-height-help); }
+.apeiron-form-order-admin .apeiron-card { width: 100%; min-width: 0; max-width: none; margin: 0; padding: 0; overflow: hidden; }
+.apeiron-form-order-admin__tabs { display: flex; min-width: 0; overflow-x: auto; border-bottom: 1px solid var(--apeiron-border-soft); scrollbar-width: thin; }
+.apeiron-form-order-admin__tab { flex: 1 0 140px; min-height: var(--apeiron-control-height); margin: 0; padding: 8px 16px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: #fff; color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-ui); line-height: var(--apeiron-line-height-ui); text-align: center; white-space: nowrap; box-shadow: none; cursor: pointer; }
+.apeiron-form-order-admin__tab:hover { background: var(--apeiron-surface-soft); color: var(--apeiron-text); }
+.apeiron-form-order-admin__tab.is-active, .apeiron-form-order-admin__tab.is-active:hover { border-bottom-color: var(--apeiron-primary); background: var(--apeiron-primary-soft); color: var(--apeiron-primary); font-weight: var(--apeiron-font-weight-title); }
+.apeiron-form-order-admin__tab:focus-visible { outline: 2px solid var(--apeiron-border-hover); outline-offset: -4px; }
+.apeiron-form-order-admin__panel[hidden] { display: none; }
+.apeiron-form-order-admin fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.apeiron-form-order-admin legend { margin-bottom: var(--apeiron-space-4); padding: 0; color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-title); font-weight: var(--apeiron-font-weight-title); line-height: var(--apeiron-line-height-ui); }
+.apeiron-form-order-admin__intro { max-width: 860px; margin: 0 0 var(--apeiron-space-4); color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); line-height: var(--apeiron-line-height-body); }
+.apeiron-form-order-admin__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--apeiron-space-4); max-width: 860px; }
+.apeiron-form-order-admin .apeiron-form-group { min-width: 0; margin-bottom: 0; }
+.apeiron-form-order-admin__field--wide { grid-column: 1 / -1; }
+.apeiron-form-order-admin .apeiron-label { display: block; margin: 0 0 6px; color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-ui); line-height: var(--apeiron-line-height-ui); }
+.apeiron-form-order-admin .apeiron-input, .apeiron-form-order-admin .apeiron-select { width: 100%; max-width: none; min-height: var(--apeiron-control-height); border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); background-color: var(--apeiron-surface-soft); color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-body); line-height: var(--apeiron-line-height-ui); box-shadow: none; }
+.apeiron-form-order-admin .apeiron-input { padding: 0 12px; }
+.apeiron-form-order-admin .apeiron-select { padding: 0 34px 0 12px; }
+.apeiron-settings-wrap .apeiron-form-order-admin input.apeiron-input, .apeiron-settings-wrap .apeiron-form-order-admin select.apeiron-select { box-sizing: border-box; height: var(--apeiron-control-height); min-height: var(--apeiron-control-height); margin: 0; font-size: var(--apeiron-font-size-body); line-height: var(--apeiron-line-height-ui); }
+.apeiron-form-order-admin textarea.apeiron-input { min-height: 96px; padding: 10px 12px; }
+.apeiron-form-order-admin .apeiron-input:hover, .apeiron-form-order-admin .apeiron-select:hover { border-color: var(--apeiron-border-hover); }
+.apeiron-form-order-admin .apeiron-input:focus, .apeiron-form-order-admin .apeiron-select:focus { border-color: var(--apeiron-border-hover); background-color: #fff; box-shadow: none; }
+.apeiron-form-order-admin__check { display: flex; align-items: center; justify-content: space-between; gap: var(--apeiron-space-4); max-width: 860px; margin: 0 0 var(--apeiron-space-4); padding: 12px 14px; border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-ui); line-height: var(--apeiron-line-height-ui); cursor: pointer; }
+.apeiron-form-order-admin .apeiron-hint { max-width: 860px; margin: 6px 0 0; font-style: normal; }
+.apeiron-form-order-admin fieldset > .apeiron-hint { margin: 8px 0 16px; }
+.apeiron-form-order-admin__actions { margin-top: var(--apeiron-space-4); padding-top: var(--apeiron-space-4); }
+.apeiron-form-order-admin #apeiron-form-order-feedback:empty { display: none; }
+.apeiron-form-order-admin #apeiron-form-order-feedback:not(:empty) { margin: 12px 0 0; }
+.apeiron-form-order-admin__setup { max-width: 860px; margin: 8px 0 var(--apeiron-space-4); padding: 12px 14px; border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); }
+.apeiron-form-order-admin__setup summary { cursor: pointer; font-weight: var(--apeiron-font-weight-ui); }
+.apeiron-form-order-admin__setup ol { margin: 12px 0; padding-left: 24px; }
+.apeiron-form-order-admin__setup li { margin-bottom: 8px; }
+.apeiron-form-order-admin__setup textarea { box-sizing: border-box; display: block; width: 100%; min-height: 260px; margin: 0 0 12px; padding: 10px; font-family: monospace; font-size: 12px; white-space: pre; scrollbar-width: none; -ms-overflow-style: none; }
+.apeiron-form-order-admin__setup textarea::-webkit-scrollbar { display: none; }
+.apeiron-form-order-admin__setup #apeiron-form-order-copy-feedback:not(:empty) { margin: 8px 0 0; }
+@media (max-width: 782px) {
+	.apeiron-form-order-admin__grid { grid-template-columns: minmax(0, 1fr); }
+	.apeiron-form-order-admin__field--wide { grid-column: auto; }
+	.apeiron-form-order-admin__actions .apeiron-btn { width: 100%; }
+}

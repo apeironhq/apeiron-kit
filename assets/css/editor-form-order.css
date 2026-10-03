@@ -1,0 +1,49 @@
+.elementor-control-order_fields .elementor-repeater-fields:has(.apeiron-form-order-editor-group) {
+	position: relative;
+	margin-top: 40px;
+}
+
+.elementor-control-order_fields .apeiron-form-order-editor-group {
+	display: block;
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 0;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0 4px 6px;
+	border-bottom: 1px solid var(--e-a-border-color-bold, #d5dbe2);
+	color: var(--e-a-color-txt, #495157);
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.4;
+	text-align: left;
+	white-space: normal;
+	pointer-events: none;
+}
+
+.elementor-control-order_fields .apeiron-form-order-editor-empty {
+	margin: 18px 0 8px;
+	padding: 8px 4px;
+	border-top: 1px solid var(--e-a-border-color-bold, #d5dbe2);
+	color: var(--e-a-color-txt, #495157);
+	font-size: 12px;
+	text-align: left;
+}
+
+.elementor-control-order_fields .apeiron-form-order-editor-empty > div {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 8px 0;
+}
+
+.elementor-control-order_fields .apeiron-form-order-editor-empty button {
+	padding: 5px 8px;
+	border: 1px solid var(--e-a-border-color-bold, #d5dbe2);
+	border-radius: 3px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}

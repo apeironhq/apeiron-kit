@@ -35,7 +35,7 @@ class GithubReleaseUpdater {
 		return [
 			'slug'        => dirname( $plugin_file ),
 			'version'     => $release['version'],
-			'url'         => $release['url'],
+			'url'         => 'https://apeiron.id/',
 			'package'     => $release['package'],
 			'requires_php' => $plugin_data['RequiresPHP'] ?? '',
 		];
@@ -61,7 +61,7 @@ class GithubReleaseUpdater {
 			'slug'          => dirname( plugin_basename( APEIRON_KIT_FILE ) ),
 			'version'       => $release['version'],
 			'author'        => 'Apeiron.ID',
-			'homepage'      => 'https://github.com/' . self::REPOSITORY,
+			'homepage'      => 'https://apeiron.id/',
 			'external'      => true,
 			'download_link' => $release['package'],
 			'requires'      => $requirements['wp'],

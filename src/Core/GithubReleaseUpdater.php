@@ -12,6 +12,7 @@ class GithubReleaseUpdater {
 	private const CACHE_KEY = 'apeiron_kit_github_release';
 
 	public function register(): void {
+		add_filter( 'update_plugins_apeiron.id', [ $this, 'check_update' ], 10, 4 );
 		add_filter( 'update_plugins_github.com', [ $this, 'check_update' ], 10, 4 );
 		add_filter( 'plugins_api', [ $this, 'plugin_information' ], 10, 3 );
 		add_filter( 'upgrader_source_selection', [ $this, 'check_package_structure' ], 10, 4 );
@@ -101,7 +102,12 @@ class GithubReleaseUpdater {
 	private function get_release(): ?array {
 		$cached = get_site_transient( self::CACHE_KEY );
 		if ( is_array( $cached ) ) {
-			return $cached['release'] ?? null;
+			$release = $cached['release'] ?? null;
+			if ( is_array( $release ) ) {
+				$release['url'] = 'https://apeiron.id/';
+				return $release;
+			}
+			return null;
 		}
 
 		$response = wp_safe_remote_get( self::RELEASE_API, [
@@ -158,7 +164,7 @@ class GithubReleaseUpdater {
 
 		return [
 			'version' => $match[1],
-			'url' => 'https://github.com/' . self::REPOSITORY . '/releases/tag/' . $tag,
+			'url' => 'https://apeiron.id/',
 			'package' => $packages[0],
 			'notes' => is_string( $data['body'] ?? null ) ? $data['body'] : '',
 		];

@@ -10,7 +10,7 @@
  * Author:      Apeiron.ID
  * Author URI:  https://apeiron.id/
  * Text Domain: apeiron-kit
- * Update URI:  https://github.com/apeironhq/apeiron-kit
+ * Update URI:  https://apeiron.id/
  */
 
 if (!defined('ABSPATH')) {

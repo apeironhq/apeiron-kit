@@ -89,5 +89,27 @@ trait RegistersContentControls {
 			'default' => __( 'Periksa field yang wajib diisi atau format yang belum valid.', 'apeiron-kit' ),
 		] );
 		$this->end_controls_section();
+
+		$this->start_controls_section( 'section_draft', [ 'label' => __( 'Draft / Auto Save', 'apeiron-kit' ) ] );
+		$this->add_control( 'draft_auto_save', [ 'label' => __( 'Simpan Draft Otomatis', 'apeiron-kit' ),
+			'type' => Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => '',
+		] );
+		foreach ( [
+			'draft_restore' => __( 'Pulihkan Data Setelah Reload', 'apeiron-kit' ),
+			'draft_save_step' => __( 'Simpan Step Terakhir', 'apeiron-kit' ),
+			'draft_clear_success' => __( 'Hapus Draft Setelah Submit Berhasil', 'apeiron-kit' ),
+			'draft_show_notice' => __( 'Tampilkan Notifikasi Draft Dipulihkan', 'apeiron-kit' ),
+		] as $id => $label ) {
+			$this->add_control( $id, [ 'label' => $label, 'type' => Controls_Manager::SWITCHER,
+				'return_value' => 'yes', 'default' => 'yes', 'condition' => [ 'draft_auto_save' => 'yes' ],
+			] );
+		}
+		$this->add_control( 'draft_retention_days', [ 'label' => __( 'Masa Penyimpanan Draft', 'apeiron-kit' ),
+			'type' => Controls_Manager::SELECT, 'default' => '7', 'condition' => [ 'draft_auto_save' => 'yes' ],
+			'options' => [ '1' => __( '1 hari', 'apeiron-kit' ), '3' => __( '3 hari', 'apeiron-kit' ),
+				'7' => __( '7 hari', 'apeiron-kit' ), '14' => __( '14 hari', 'apeiron-kit' ), '30' => __( '30 hari', 'apeiron-kit' ),
+			],
+		] );
+		$this->end_controls_section();
 	}
 }

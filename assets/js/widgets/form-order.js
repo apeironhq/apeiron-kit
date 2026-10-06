@@ -18,6 +18,16 @@
 		var completed = null;
 		var submissionId = '';
 		var submissionFields = '';
+		var draftSettings = config.draft || {};
+		var draftStorage = null;
+		var draftKey = '';
+		var draftTimer = null;
+		var draftDirty = false;
+		var restoringDraft = true;
+		var draftMessage = form.querySelector('[data-order-draft-message]');
+		var draftClear = root.querySelector('[data-order-draft-clear]');
+		var draftPanel = form.querySelector('.apeiron-form-order__draft');
+		var draftDays = [1, 3, 7, 14, 30].indexOf(Number(draftSettings.days)) === -1 ? 7 : Number(draftSettings.days);
 		initialized.set(root, form);
 		form.querySelectorAll('[data-order-optional]').forEach(function (group) {
 			group.querySelectorAll('input, select, textarea').forEach(function (input) { input.disabled = group.hidden; });
@@ -152,26 +162,183 @@
 				removeStory.closest('[data-order-story-extra]').remove();
 				addButton.focus();
 			}
+			if (toggle || close || add || removeButton || addJourney || removeStory) { queueDraft(); }
 		});
 
-		function message(text, isError, link, isSuccess) {
+		function stopDraft() {
+			clearTimeout(draftTimer);
+			draftTimer = null;
+			window.removeEventListener('pagehide', flushDraft);
+			document.removeEventListener('visibilitychange', hiddenDraft);
+		}
+
+		function draftStatus(text) {
+			if (draftPanel) { draftPanel.classList.toggle('has-message', !!text); }
+			if (draftMessage) { draftMessage.textContent = text; }
+		}
+
+		function draftUnavailable() {
+			stopDraft();
+			draftStorage = null;
+			draftStatus('Draft tidak dapat disimpan di browser ini.');
+		}
+
+		function draftInputs() {
+			return form.querySelectorAll('.apeiron-form-order__field input[name]:not([type="hidden"]):not([type="password"]):not([type="file"]), .apeiron-form-order__field select[name], .apeiron-form-order__field textarea[name]');
+		}
+
+		function inputKey(input) { return input.name.replace(/\[\]$/, ''); }
+
+		function clearDraft() {
+			clearTimeout(draftTimer);
+			draftTimer = null;
+			draftDirty = false;
+			if (draftStorage) {
+				try { draftStorage.removeItem(draftKey); } catch (error) { draftUnavailable(); }
+			}
+		}
+
+		function flushDraft() {
+			clearTimeout(draftTimer);
+			draftTimer = null;
+			if (!form.isConnected) { stopDraft(); return; }
+			if (!draftStorage || restoringDraft || completed || !draftDirty) { return; }
+			var values = Object.create(null);
+			var optional = [];
+			draftInputs().forEach(function (input) {
+				var key = inputKey(input);
+				if (key === 'website') { return; }
+				if (input.type === 'checkbox') {
+					if (!values[key]) { values[key] = []; }
+					if (input.checked) { values[key].push(input.value); }
+				} else if (input.type === 'radio') {
+					if (!Object.prototype.hasOwnProperty.call(values, key)) { values[key] = ''; }
+					if (input.checked) { values[key] = input.value; }
+				} else { values[key] = input.value; }
+				var group = input.closest('[data-order-optional]');
+				if (group && !group.hidden && optional.indexOf(key) === -1) { optional.push(key); }
+			});
+			var now = Date.now();
+			var draft = { version: 1, updatedAt: now, expiresAt: now + draftDays * 86400000, fields: values, optional: optional };
+			if (draftSettings.saveStep) { draft.step = steps[current].getAttribute('data-order-step-key'); }
+			try { draftStorage.setItem(draftKey, JSON.stringify(draft)); draftDirty = false; }
+			catch (error) { draftUnavailable(); }
+		}
+
+		function queueDraft() {
+			if (!draftStorage || restoringDraft || completed) { return; }
+			draftDirty = true;
+			clearTimeout(draftTimer);
+			draftTimer = setTimeout(flushDraft, 400);
+		}
+
+		function hiddenDraft() { if (document.visibilityState === 'hidden') { flushDraft(); } }
+
+		function restoreDraft() {
+			if (!draftSettings.enabled || !config.postId || !config.documentId || !config.elementId ||
+				(window.elementorFrontend && typeof window.elementorFrontend.isEditMode === 'function' && window.elementorFrontend.isEditMode())) { return 0; }
+			draftKey = 'apeiron:form-order:draft:v1:' + [config.postId, config.documentId, config.elementId].map(function (id) { return encodeURIComponent(String(id)); }).join(':');
+			var raw;
+			try { draftStorage = window.localStorage; raw = draftStorage.getItem(draftKey); }
+			catch (error) { draftUnavailable(); return 0; }
+			window.addEventListener('pagehide', flushDraft);
+			document.addEventListener('visibilitychange', hiddenDraft);
+			if (!raw) { return 0; }
+			var draft;
+			try { draft = JSON.parse(raw); } catch (error) { clearDraft(); return 0; }
+			if (!draft || draft.version !== 1 || !draft.fields || typeof draft.fields !== 'object' || Array.isArray(draft.fields) ||
+				!Number.isFinite(draft.updatedAt) || !Number.isFinite(draft.expiresAt) || draft.expiresAt <= draft.updatedAt ||
+				Date.now() >= Math.min(draft.expiresAt, draft.updatedAt + draftDays * 86400000)) { clearDraft(); return 0; }
+			if (!draftSettings.restore) { return 0; }
+			// Recreate only the built-in repeatable rows, using their field keys rather than row positions.
+			[
+				{ button: '[data-order-add-account]', row: '[data-order-account-row]', field: '[name^="bank_account_"]', pattern: /^bank_account_([3-9]|10)$/, prefix: 'bank_account_', suffix: '', start: 3, end: 10 },
+				{ button: '[data-order-add-journey]', row: '[data-order-story-extra]', field: '[name$="_title"]', pattern: /^love_extra_([1-9]|10)_title$/, prefix: 'love_extra_', suffix: '_title', start: 1, end: 10 }
+			].forEach(function (type) {
+				var button = form.querySelector(type.button);
+				if (!button) { return; }
+				var numbers = Object.keys(draft.fields).filter(function (key) { return type.pattern.test(key); }).map(function (key) { return Number(key.match(type.pattern)[1]); });
+				var maximum = Math.max.apply(Math, [0].concat(numbers));
+				for (var number = type.start; number <= maximum && number <= type.end; number++) {
+					if (!form.querySelector('[name="' + type.prefix + number + type.suffix + '"]')) { button.click(); }
+				}
+				form.querySelectorAll(type.row).forEach(function (row) {
+					var input = row.querySelector(type.field);
+					if (input && numbers.indexOf(Number(input.name.match(type.pattern)[1])) === -1) { row.remove(); }
+				});
+			});
+			var restored = false;
+			draftInputs().forEach(function (input) {
+				var key = inputKey(input);
+				if (key === 'website' || !Object.prototype.hasOwnProperty.call(draft.fields, key)) { return; }
+				var value = draft.fields[key];
+				if (input.type === 'checkbox' && Array.isArray(value)) { input.checked = value.indexOf(input.value) !== -1; }
+				else if (input.type === 'radio' && typeof value === 'string') { input.checked = value === input.value; }
+				else if (typeof value === 'string' && input.type !== 'radio' && input.type !== 'checkbox') {
+					if (input.tagName === 'SELECT' && !Array.prototype.some.call(input.options, function (option) { return option.value === value; })) { return; }
+					input.value = value;
+				} else { return; }
+				restored = true;
+				if (input.hasAttribute('data-order-story-title')) { input.dispatchEvent(new Event('input', { bubbles: true })); }
+			});
+			form.querySelectorAll('[data-order-optional]').forEach(function (group) {
+				var open = Array.isArray(draft.optional) && Array.prototype.some.call(group.querySelectorAll('[name]'), function (input) { return draft.optional.indexOf(inputKey(input)) !== -1; });
+				group.hidden = !open;
+				group.querySelectorAll('input, select, textarea').forEach(function (input) { input.disabled = !open; });
+				var trigger = form.querySelector('[data-order-toggle-group="' + group.id + '"]');
+				if (trigger) { trigger.hidden = open; trigger.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+			});
+			if (restored && draftSettings.showNotice) { draftStatus('Data sebelumnya berhasil dipulihkan.'); }
+			var index = draftSettings.saveStep && typeof draft.step === 'string' ? steps.findIndex(function (step) { return step.getAttribute('data-order-step-key') === draft.step; }) : -1;
+			return index < 0 ? 0 : index;
+		}
+
+		if (draftSettings.enabled && draftClear) {
+			draftClear.addEventListener('click', function () {
+				if (busy || completed) { return; }
+				restoringDraft = true;
+				clearDraft();
+				form.querySelectorAll('[data-order-account-row], [data-order-story-extra]').forEach(function (row) { row.remove(); });
+				form.reset();
+				form.querySelectorAll('[aria-invalid]').forEach(function (input) { input.removeAttribute('aria-invalid'); });
+				form.querySelectorAll('[data-order-optional]').forEach(function (group) {
+					group.hidden = true;
+					group.querySelectorAll('input, select, textarea').forEach(function (input) { input.disabled = true; });
+					var trigger = form.querySelector('[data-order-toggle-group="' + group.id + '"]');
+					if (trigger) { trigger.hidden = false; trigger.setAttribute('aria-expanded', 'false'); }
+				});
+				form.querySelectorAll('[data-order-story-title]').forEach(function (input) { input.dispatchEvent(new Event('input', { bubbles: true })); });
+				if (draftStorage) { draftStatus(''); }
+				show(0);
+				restoringDraft = false;
+			});
+			form.addEventListener('change', function (event) { if (event.target.closest('.apeiron-form-order__field')) { queueDraft(); } });
+		}
+
+		function successIcon(doc, className) {
+			var icon = doc.createElement('span');
+			icon.className = className;
+			icon.setAttribute('aria-hidden', 'true');
+			var check = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+			check.setAttribute('viewBox', '0 0 24 24');
+			check.setAttribute('focusable', 'false');
+			var tick = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+			tick.setAttribute('d', 'M6 12l4 4 8-8');
+			check.appendChild(tick);
+			icon.appendChild(check);
+			return icon;
+		}
+
+		function message(text, isError, link, isSuccess, isLoading) {
 			notice.textContent = text;
 			notice.hidden = !text;
 			notice.classList.toggle('is-error', !!isError);
 			notice.classList.toggle('is-success', !!isSuccess);
+			notice.classList.toggle('is-loading', !!isLoading);
 			var content = notice;
-			if (isSuccess && text) {
-				var icon = document.createElement('span');
-				icon.className = 'apeiron-form-order__success-icon';
-				icon.setAttribute('aria-hidden', 'true');
-				var check = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-				check.setAttribute('viewBox', '0 0 24 24');
-				check.setAttribute('focusable', 'false');
-				var tick = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-				tick.setAttribute('d', 'M6 12l4 4 8-8');
-				tick.setAttribute('pathLength', '1');
-				check.appendChild(tick);
-				icon.appendChild(check);
+			if ((isSuccess || isLoading) && text) {
+				var icon = isSuccess ? successIcon(document, 'apeiron-form-order__success-icon') : document.createElement('span');
+				if (isLoading) { icon.className = 'apeiron-form-order__loading-icon'; icon.setAttribute('aria-hidden', 'true'); }
 				content = document.createElement('div');
 				content.className = 'apeiron-form-order__success-content';
 				content.textContent = text;
@@ -192,18 +359,16 @@
 
 		function waitingTab(tab) {
 			var doc = tab.document;
+			doc.open();
+			doc.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body></body></html>');
+			doc.close();
 			doc.title = 'Pesanan sedang diproses';
-			doc.documentElement.lang = 'id';
-			var viewport = doc.createElement('meta');
-			viewport.name = 'viewport';
-			viewport.content = 'width=device-width, initial-scale=1';
-			doc.head.appendChild(viewport);
 			var stylesheet = document.querySelector('link[rel="stylesheet"][href*="/apeiron-form-order"]');
 			if (stylesheet && stylesheet.sheet) {
 				var style = doc.createElement('style');
 				try {
 					Array.prototype.forEach.call(stylesheet.sheet.cssRules, function (rule) {
-						if (rule.cssText.indexOf('apeiron-form-order__waiting-') !== -1 || rule.cssText.indexOf('apeiron-order-waiting-spin') !== -1) {
+						if (rule.cssText.indexOf('apeiron-form-order__waiting-') !== -1 || rule.cssText.indexOf('apeiron-order-waiting-spin') !== -1 || rule.cssText.indexOf('apeiron-order-success-') !== -1) {
 							style.appendChild(doc.createTextNode(rule.cssText));
 						}
 					});
@@ -231,6 +396,26 @@
 			doc.body.appendChild(card);
 		}
 
+		function waitingSuccess(tab, text) {
+			var doc = tab.document;
+			doc.querySelector('.apeiron-form-order__waiting-spinner').replaceWith(successIcon(doc, 'apeiron-form-order__waiting-success'));
+			doc.title = 'Pesanan berhasil diproses';
+			doc.querySelector('h1').textContent = text || 'Pesanan berhasil diproses';
+			doc.querySelector('p').textContent = 'WhatsApp akan segera terbuka.';
+		}
+
+		function openWhatsApp(target, url) {
+			return new Promise(function (resolve, reject) {
+				setTimeout(function () {
+					try {
+						if (target && target.closed) { throw new Error('Tab WhatsApp ditutup.'); }
+						(target || window).location.assign(url);
+						resolve();
+					} catch (error) { reject(error); }
+				}, 550);
+			});
+		}
+
 		function show(index) {
 			current = index;
 			steps.forEach(function (step, i) { step.hidden = i !== current; });
@@ -242,7 +427,8 @@
 			form.querySelector('.apeiron-form-order__counter').textContent = 'Tahap ' + (current + 1) + ' dari ' + steps.length;
 			message('');
 			if (steps[current].querySelector('.apeiron-form-order__summary')) { buildSummary(steps[current]); }
-			if (index > 0) { steps[current].querySelector('h3').focus(); }
+			if (index > 0 && !restoringDraft) { steps[current].querySelector('h3').focus(); }
+			queueDraft();
 		}
 
 		function validateStep(step) {
@@ -279,6 +465,11 @@
 			if (selected.length) { return Array.prototype.map.call(selected, function (input) { return input.parentElement.textContent.trim(); }).join(', '); }
 			var control = field.querySelector('.apeiron-form-order__input');
 			if (!control) { return ''; }
+			if (control.type === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(control.value)) {
+				var dateParts = control.value.split('-');
+				var months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+				return Number(dateParts[2]) + ' ' + months[Number(dateParts[1]) - 1] + ' ' + dateParts[0];
+			}
 			return control.tagName === 'SELECT' && control.value ? control.options[control.selectedIndex].text : control.value;
 		}
 
@@ -343,10 +534,13 @@
 				var group = event.target.closest('[data-order-story-group]');
 				group.querySelector('.apeiron-form-order__heading').textContent = event.target.value.trim() || group.getAttribute('data-order-story-default-title') || '';
 			}
+			if (event.target.closest('.apeiron-form-order__field')) { queueDraft(); }
 		});
 		form.addEventListener('submit', function (event) {
 			event.preventDefault();
 			if (busy || completed) { return; }
+			queueDraft();
+			flushDraft();
 			for (var i = 0; i < steps.length; i++) {
 				if (!validateStep(steps[i])) { show(i); validateStep(steps[i]); return; }
 			}
@@ -385,7 +579,8 @@
 			}
 			submit.disabled = true;
 			back.disabled = true;
-			message('Mengirim pesanan...');
+			if (draftClear) { draftClear.disabled = true; }
+			message('Mengirim pesanan...', false, '', false, true);
 			var headers = { 'Content-Type': 'application/json', 'X-Apeiron-Nonce': config.nonce };
 			headers['X-Apeiron-Request-ID'] = submissionId;
 			if (config.restNonce) { headers['X-WP-Nonce'] = config.restNonce; }
@@ -403,17 +598,19 @@
 					return data;
 				});
 			}).then(function (data) {
+				if (draftSettings.clearSuccess) { clearDraft(); } else { flushDraft(); }
 				completed = data;
 				form.classList.add('is-complete');
 				if (data.whatsapp_url) {
 					if (data.whatsapp_behavior === 'same_tab') {
 						if (reservedTab && !reservedTab.closed) { reservedTab.close(); }
 						message(data.message || 'Pesanan berhasil diproses.', false, '', true);
-						window.location.assign(data.whatsapp_url);
+						return openWhatsApp(null, data.whatsapp_url);
 					}
 					else {
-						if (reservedTab && !reservedTab.closed) { reservedTab.location.assign(data.whatsapp_url); }
+						if (reservedTab && !reservedTab.closed) { waitingSuccess(reservedTab, data.message); }
 						message(reservedTab && !reservedTab.closed ? data.message : 'Pesanan berhasil diproses. Klik tautan untuk membuka WhatsApp.', false, reservedTab && !reservedTab.closed ? '' : data.whatsapp_url, true);
+						if (reservedTab && !reservedTab.closed) { return openWhatsApp(reservedTab, data.whatsapp_url); }
 					}
 				} else { if (reservedTab && !reservedTab.closed) { reservedTab.close(); } message(data.message || 'Pesanan berhasil dikirim.', false, '', true); }
 			}).catch(function (error) {
@@ -423,9 +620,11 @@
 				} else { message(error instanceof TypeError ? 'Koneksi gagal. Coba lagi.' : (error.message || 'Koneksi gagal. Coba lagi.'), true); }
 			}).finally(function () {
 				busy = false; submit.disabled = !!completed; back.disabled = !!completed;
+				if (draftClear) { draftClear.disabled = !!completed; }
 			});
 		});
-		show(0);
+		show(restoreDraft());
+		restoringDraft = false;
 	}
 
 	function initScope(scope) {

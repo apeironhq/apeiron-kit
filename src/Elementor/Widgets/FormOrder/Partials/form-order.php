@@ -3,16 +3,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 $title_id = 'apeiron-form-order-title-' . sanitize_key( (string) $element_id );
+$draft_ui = ! empty( $config['draft']['enabled'] ) || 'yes' === ( $settings['draft_auto_save'] ?? '' );
+$draft_preview = $draft_ui && empty( $config['draft']['enabled'] );
 ?>
 <div class="apeiron-form-order" data-apeiron-form-order="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+	<?php if ( $draft_ui ) : ?><div class="apeiron-form-order__header<?php echo empty( $settings['form_title'] ) ? ' is-untitled' : ''; ?>"><?php endif; ?>
 	<?php if ( ! empty( $settings['form_title'] ) ) : ?>
 		<h2 id="<?php echo esc_attr( $title_id ); ?>" class="apeiron-form-order__title"><?php echo esc_html( $settings['form_title'] ); ?></h2>
 	<?php endif; ?>
+	<?php if ( $draft_ui ) : ?>
+		<button type="button" class="apeiron-form-order__draft-clear" data-order-draft-clear aria-label="<?php esc_attr_e( 'Mulai ulang dan hapus draft', 'apeiron-kit' ); ?>" <?php echo $draft_preview ? 'disabled' : ''; ?>><?php esc_html_e( 'Mulai ulang', 'apeiron-kit' ); ?></button>
+	</div><?php endif; ?>
 	<form class="apeiron-form-order__form" aria-label="<?php esc_attr_e( 'Form Order Undangan', 'apeiron-kit' ); ?>" novalidate>
+		<?php if ( $draft_ui ) : ?>
+			<div class="apeiron-form-order__draft<?php echo $draft_preview ? ' has-message' : ''; ?>">
+				<div class="apeiron-form-order__draft-feedback">
+					<span data-order-draft-message role="status" aria-live="polite"><?php if ( $draft_preview ) { esc_html_e( 'Notifikasi pemulihan draft', 'apeiron-kit' ); } ?></span>
+				</div>
+			</div>
+		<?php endif; ?>
 		<div class="apeiron-form-order__progress" role="progressbar" aria-valuemin="1" aria-valuemax="<?php echo esc_attr( (string) count( $steps ) ); ?>" aria-valuenow="1" aria-label="<?php esc_attr_e( 'Tahap pengisian', 'apeiron-kit' ); ?>"><span class="apeiron-form-order__progress-fill"></span></div>
 		<p class="apeiron-form-order__counter" aria-live="polite"></p>
 		<?php foreach ( $steps as $index => $step ) : ?>
-			<section class="apeiron-form-order__step" data-order-step="<?php echo esc_attr( (string) $index ); ?>" <?php echo ! empty( $step['is_story'] ) ? 'data-order-story' : ''; ?> <?php echo $index ? 'hidden' : ''; ?>>
+			<section class="apeiron-form-order__step" data-order-step="<?php echo esc_attr( (string) $index ); ?>" data-order-step-key="<?php echo esc_attr( $step['key'] ); ?>" <?php echo ! empty( $step['is_story'] ) ? 'data-order-story' : ''; ?> <?php echo $index ? 'hidden' : ''; ?>>
 				<h3 class="apeiron-form-order__step-title" tabindex="-1"><?php echo esc_html( $step['title'] ); ?></h3>
 				<?php if ( ! empty( $step['is_story'] ) ) : ?><p class="apeiron-form-order__story-note"><?php esc_html_e( 'Isi cerita sesuai perjalanan Anda, atau lewati jika tidak diperlukan.', 'apeiron-kit' ); ?></p><?php endif; ?>
 				<?php if ( 'confirmation' === $step['kind'] ) : ?>

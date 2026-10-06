@@ -30,6 +30,8 @@ trait RegistersStyleControls {
 			'error' => [ __( 'Error', 'apeiron-kit' ), '.apeiron-form-order__notice.is-error' ],
 			'success' => [ __( 'Success Message', 'apeiron-kit' ), '.apeiron-form-order__notice:not(.is-error)' ],
 			'summary' => [ __( 'Ringkasan', 'apeiron-kit' ), '.apeiron-form-order__summary' ],
+			'draft_notice' => [ __( 'Notifikasi Draft', 'apeiron-kit' ), '.apeiron-form-order__draft' ],
+			'draft_reset' => [ __( 'Tombol Mulai Ulang', 'apeiron-kit' ), '.apeiron-form-order__draft-clear' ],
 		];
 		foreach ( $parts as $key => $part ) {
 			$selector = '{{WRAPPER}} ' . $part[1];

@@ -65,6 +65,13 @@ final class FieldSchema {
 		return $fields;
 	}
 
+	public static function display_date( string $value ): string {
+		$date = \DateTimeImmutable::createFromFormat( '!Y-m-d', $value );
+		if ( ! $date || $date->format( 'Y-m-d' ) !== $value ) { return $value; }
+		$months = [ 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember' ];
+		return $date->format( 'j' ) . ' ' . $months[ (int) $date->format( 'n' ) - 1 ] . ' ' . $date->format( 'Y' );
+	}
+
 	/** Default Elementor repeater rows; legacy IDs remain the submitted field keys. */
 	public static function defaults(): array {
 		$steps = [];
@@ -238,6 +245,7 @@ final class FieldSchema {
 			}
 			$kind = 'confirmation' === ( $row['kind'] ?? '' ) ? 'confirmation' : 'fields';
 			$step = [
+				'key' => sanitize_key( (string) ( $row['_id'] ?? '' ) ) ?: ( sanitize_key( (string) ( $row['step_key'] ?? '' ) ) ?: 'step_' . ( $step_index + 1 ) ),
 				'title' => self::text( $row['title'] ?? '', 120 ),
 				'kind' => $kind,
 				'is_story' => 'love_story' === ( $row['step_key'] ?? '' ),

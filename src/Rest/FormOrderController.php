@@ -70,6 +70,7 @@ final class FormOrderController {
 			return $this->error( 'invalid_fields', __( 'Data formulir tidak valid.', 'apeiron-kit' ), 422 );
 		}
 		$fields = [];
+		$sheet_fields = [];
 		$details = [];
 		$labels = [];
 		$label_contexts = [];
@@ -136,7 +137,12 @@ final class FormOrderController {
 				continue;
 			}
 			$fields[ $name ] = $value;
+			$sheet_fields[ $name ] = $value;
 			$display = is_array( $value ) ? $value : ( '' === $value ? [] : [ $value ] );
+			if ( 'date' === $definition['type'] && '' !== $value ) {
+				$display = [ FieldSchema::display_date( $value ) ];
+				$sheet_fields[ $name ] = "'" . $display[0];
+			}
 			if ( in_array( $definition['type'], [ 'select', 'radio', 'checkbox' ], true ) ) {
 				$display = array_map( static function ( $option ) use ( $definition ) { return $definition['options'][ $option ] ?? $option; }, $display );
 			}
@@ -165,7 +171,7 @@ final class FormOrderController {
 		$submission_id = is_string( $request_id ) && '' !== $request_id
 			? hash( 'sha256', wp_hash( 'apeiron-form-order-request|' . $post_id . '|' . $document_id . '|' . $element_id . '|' . $request_id . '|' . wp_json_encode( $fields ) ) )
 			: '';
-		if ( $send_sheet && ! FormOrderSettings::send_to_sheet( $fields, 'order', $sheet_failure, $labels, $sheet_version, $submission_id ) ) {
+		if ( $send_sheet && ! FormOrderSettings::send_to_sheet( $sheet_fields, 'order', $sheet_failure, $labels, $sheet_version, $submission_id ) ) {
 			return $this->error( 'sheet_failed', __( 'Gagal mengirim ke Google Spreadsheet. Data belum diteruskan ke WhatsApp; coba lagi atau hubungi pengelola.', 'apeiron-kit' ), 502 );
 		}
 		$result = [ 'message' => $settings['success_message'] ?? __( 'Pesanan berhasil diproses.', 'apeiron-kit' ), 'whatsapp_url' => '' ];

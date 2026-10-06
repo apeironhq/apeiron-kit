@@ -101,6 +101,7 @@ class FormOrder extends BaseWidget {
 		$document = method_exists( $this, 'get_document' ) ? $this->get_document() : null;
 		$document_id = is_object( $document ) && method_exists( $document, 'get_main_id' ) ? (int) $document->get_main_id() : $post_id;
 		$element_id = $this->get_id();
+		$draft_days = (int) ( $settings['draft_retention_days'] ?? 7 );
 		$config = [
 			'endpoint' => esc_url_raw( rest_url( 'apeiron-kit/v1/form-order' ) ),
 			'nonce' => wp_create_nonce( 'apeiron_form_order' ),
@@ -111,6 +112,14 @@ class FormOrder extends BaseWidget {
 			'targetToken' => wp_hash( 'apeiron-form-order|' . $post_id . '|' . $document_id . '|' . $element_id ),
 			'openNewTab' => in_array( $order_settings['delivery_target'], [ 'whatsapp', 'both' ], true ) && 'yes' === $order_settings['whatsapp_enabled'] && 'new_tab' === $order_settings['whatsapp_behavior'],
 			'validationMessage' => (string) ( $settings['validation_text'] ?? __( 'Periksa field yang wajib diisi atau format yang belum valid.', 'apeiron-kit' ) ),
+			'draft' => [
+				'enabled' => 'yes' === ( $settings['draft_auto_save'] ?? '' ) && ! $this->is_elementor_editor_preview(),
+				'restore' => 'yes' === ( $settings['draft_restore'] ?? 'yes' ),
+				'saveStep' => 'yes' === ( $settings['draft_save_step'] ?? 'yes' ),
+				'clearSuccess' => 'yes' === ( $settings['draft_clear_success'] ?? 'yes' ),
+				'showNotice' => 'yes' === ( $settings['draft_show_notice'] ?? 'yes' ),
+				'days' => in_array( $draft_days, [ 1, 3, 7, 14, 30 ], true ) ? $draft_days : 7,
+			],
 		];
 		require __DIR__ . '/Partials/form-order.php';
 	}

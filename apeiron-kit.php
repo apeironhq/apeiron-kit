@@ -3,7 +3,7 @@
  * Plugin Name: ApeironKit
  * Plugin URI:  https://apeiron.id/
  * Description: Ekstensi Elementor untuk membuat undangan pernikahan digital yang modern dan profesional.
- * Version:     1.2.5
+ * Version:     1.3.5
  * Requires PHP: 7.4
  * Requires at least: 6.0
  * Requires Plugins: elementor
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 define('APEIRON_KIT_FILE', __FILE__);
 define('APEIRON_KIT_PATH', plugin_dir_path(__FILE__));
 define('APEIRON_KIT_URL', plugin_dir_url(__FILE__));
-define('APEIRON_KIT_VERSION', '1.2.5');
+define('APEIRON_KIT_VERSION', '1.3.5');
 
 // License API URL - dapat di-override via filter 'apeiron_kit_license_api_url'
 // Default: endpoint produksi Apeiron

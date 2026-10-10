@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Elementor\Elements_Manager;
 use Elementor\Widgets_Manager;
+use Elementor\Core\DynamicTags\Manager as DynamicTagsManager;
 use ApeironKit\Support\WidgetRegistry;
 
 class WidgetManager {
@@ -24,6 +25,7 @@ class WidgetManager {
 
 		add_action( 'elementor/elements/categories_registered', [ $this, 'register_category' ] );
 		add_action( 'elementor/widgets/register', [ $this, 'register_widgets' ] );
+		add_action( 'elementor/dynamic_tags/register', [ $this, 'register_guest_name_parameter' ], 20 );
 
 		$this->register_if_elementor_already_initialized();
 	}
@@ -75,6 +77,39 @@ class WidgetManager {
 			$canonical_slug = $map[ $widget_class ] ?? '';
 			$this->register_widget_class( $manager, $widget_class, $canonical_slug, $disabled );
 		}
+	}
+
+	public function register_guest_name_parameter( DynamicTagsManager $manager ): void {
+		$class = '\\ElementorPro\\Modules\\DynamicTags\\Tags\\Request_Parameter';
+		if ( ! class_exists( $class ) ) {
+			return;
+		}
+		$tag = $manager->get_tag_info( 'request-arg' );
+		if ( ! $tag || ltrim( $tag['class'], '\\' ) !== ltrim( $class, '\\' ) ) {
+			return;
+		}
+
+		$manager->register( new class extends \ElementorPro\Modules\DynamicTags\Tags\Request_Parameter {
+			public function render() {
+				$settings = $this->get_settings();
+				if ( 'to' !== ( $settings['param_name'] ?? '' ) || 'GET' !== strtoupper( (string) ( $settings['request_type'] ?? 'get' ) ) ) {
+					parent::render();
+					return;
+				}
+				if ( isset( $_GET['to'] ) && ! is_scalar( $_GET['to'] ) ) {
+					return;
+				}
+
+				ob_start();
+				try {
+					parent::render();
+				} finally {
+					$value = (string) ob_get_clean();
+				}
+				// Pertahankan sanitasi tag, lalu escape teks tamu tanpa entity ganda.
+				echo esc_html( html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+			}
+		} );
 	}
 
 	/**

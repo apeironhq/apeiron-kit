@@ -97,6 +97,7 @@ class FormOrder extends BaseWidget {
 			return;
 		}
 		$order_settings = FormOrderSettings::get();
+		$uses_whatsapp = in_array( $order_settings['delivery_target'], [ 'whatsapp', 'both' ], true ) && 'yes' === $order_settings['whatsapp_enabled'];
 		$post_id = get_queried_object_id() ?: ( get_the_ID() ?: 0 );
 		$document = method_exists( $this, 'get_document' ) ? $this->get_document() : null;
 		$document_id = is_object( $document ) && method_exists( $document, 'get_main_id' ) ? (int) $document->get_main_id() : $post_id;

@@ -72,6 +72,11 @@ trait RegistersContentControls {
 		$this->start_controls_section( 'section_navigation', [ 'label' => __( 'Navigation', 'apeiron-kit' ) ] );
 		$this->add_control( 'next_text', [ 'label' => __( 'Tombol Lanjut', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Lanjut', 'apeiron-kit' ) ] );
 		$this->add_control( 'back_text', [ 'label' => __( 'Tombol Kembali', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Kembali', 'apeiron-kit' ) ] );
+		$this->add_control( 'mobile_navigation', [
+			'label' => __( 'Posisi Tombol di Mobile', 'apeiron-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'normal',
+			'options' => [ 'normal' => __( 'Normal', 'apeiron-kit' ), 'fixed' => __( 'Tetap di Bawah Layar', 'apeiron-kit' ) ],
+			'description' => __( 'Mode tetap menjaga tombol Kembali, Lanjut, dan Kirim terlihat saat isi form di-scroll pada mobile.', 'apeiron-kit' ),
+		] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_submit', [ 'label' => __( 'Submit', 'apeiron-kit' ) ] );
@@ -84,6 +89,10 @@ trait RegistersContentControls {
 		$this->start_controls_section( 'section_messages', [ 'label' => __( 'Messages', 'apeiron-kit' ) ] );
 		$this->add_control( 'confirmation_text', [ 'label' => __( 'Teks Konfirmasi', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT,
 			'default' => __( 'Periksa kembali seluruh data sebelum mengirim.', 'apeiron-kit' ),
+		] );
+		$this->add_control( 'confirmation_submit_hint', [ 'label' => __( 'Petunjuk Pengiriman di Tahap Akhir', 'apeiron-kit' ), 'type' => Controls_Manager::TEXTAREA,
+			'default' => __( 'Pesanan belum dikirim. Klik tombol “{submit}” di bawah untuk mengirim pesanan.', 'apeiron-kit' ),
+			'description' => __( '{submit} mengikuti teks tombol Kirim. Kosongkan untuk menyembunyikan petunjuk.', 'apeiron-kit' ),
 		] );
 		$this->add_control( 'validation_text', [ 'label' => __( 'Pesan Validasi', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT,
 			'default' => __( 'Periksa field yang wajib diisi atau format yang belum valid.', 'apeiron-kit' ),

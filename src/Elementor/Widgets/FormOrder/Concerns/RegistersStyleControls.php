@@ -117,5 +117,49 @@ trait RegistersStyleControls {
 			'selectors' => [ '{{WRAPPER}} .apeiron-form-order__grid' => '--order-field-gap: {{SIZE}}{{UNIT}};' ],
 		] );
 		$this->end_controls_section();
+
+		$mobile_navigation = '{{WRAPPER}} .apeiron-form-order.is-mobile-navigation-active .apeiron-form-order__mobile-navigation';
+		$mobile_buttons = $mobile_navigation . ' .apeiron-form-order__button';
+		$this->start_controls_section( 'style_mobile_navigation', [
+			'label' => __( 'Navigasi Menempel (Mobile)', 'apeiron-kit' ), 'tab' => Controls_Manager::TAB_STYLE,
+			'condition' => [ 'mobile_navigation' => 'fixed' ],
+		] );
+		$this->add_control( 'mobile_navigation_background', [
+			'label' => __( 'Latar Area Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::COLOR,
+			'selectors' => [ $mobile_navigation => 'background-color: {{VALUE}};' ],
+		] );
+		$this->add_group_control( Group_Control_Border::get_type(), [ 'name' => 'mobile_navigation_border', 'selector' => $mobile_navigation ] );
+		$this->add_responsive_control( 'mobile_navigation_padding', [
+			'label' => __( 'Padding Area Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::DIMENSIONS, 'size_units' => [ 'px', 'em' ],
+			'selectors' => [ $mobile_navigation => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} calc({{BOTTOM}}{{UNIT}} + env(safe-area-inset-bottom, 0px)) {{LEFT}}{{UNIT}};' ],
+		] );
+		$this->add_responsive_control( 'mobile_navigation_radius', [
+			'label' => __( 'Radius Area Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::DIMENSIONS, 'size_units' => [ 'px', '%' ],
+			'selectors' => [ $mobile_navigation => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ],
+		] );
+		$this->add_responsive_control( 'mobile_navigation_gap', [
+			'label' => __( 'Jarak Antar Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px', 'em' ],
+			'range' => [ 'px' => [ 'min' => 0, 'max' => 40 ], 'em' => [ 'min' => 0, 'max' => 3, 'step' => 0.1 ] ],
+			'selectors' => [ $mobile_navigation . ' .apeiron-form-order__actions' => 'gap: {{SIZE}}{{UNIT}};' ],
+		] );
+		$this->add_control( 'mobile_navigation_button_color', [
+			'label' => __( 'Warna Teks Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::COLOR,
+			'selectors' => [ $mobile_buttons => 'color: {{VALUE}};' ],
+		] );
+		$this->add_control( 'mobile_navigation_button_background', [
+			'label' => __( 'Latar Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::COLOR,
+			'selectors' => [ $mobile_buttons => 'background-color: {{VALUE}};' ],
+		] );
+		$this->add_group_control( Group_Control_Typography::get_type(), [ 'name' => 'mobile_navigation_button_typography', 'selector' => $mobile_buttons ] );
+		$this->add_group_control( Group_Control_Border::get_type(), [ 'name' => 'mobile_navigation_button_border', 'selector' => $mobile_buttons ] );
+		$this->add_responsive_control( 'mobile_navigation_button_padding', [
+			'label' => __( 'Padding Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::DIMENSIONS, 'size_units' => [ 'px', 'em' ],
+			'selectors' => [ $mobile_buttons => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ],
+		] );
+		$this->add_responsive_control( 'mobile_navigation_button_radius', [
+			'label' => __( 'Radius Tombol', 'apeiron-kit' ), 'type' => Controls_Manager::DIMENSIONS, 'size_units' => [ 'px', '%' ],
+			'selectors' => [ $mobile_buttons => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ],
+		] );
+		$this->end_controls_section();
 	}
 }

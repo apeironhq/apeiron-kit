@@ -78,6 +78,9 @@
 @media (prefers-reduced-motion: reduce) { .apeiron-form-order__notice.is-success .apeiron-form-order__success-icon, .apeiron-form-order__success-icon path, .apeiron-form-order__loading-icon, .apeiron-form-order__waiting-spinner, .apeiron-form-order__waiting-success, .apeiron-form-order__waiting-success path { animation: none; } .apeiron-form-order__success-icon path, .apeiron-form-order__waiting-success path { stroke-dashoffset: 0; } }
 .apeiron-form-order__notice a { color: inherit; text-decoration: underline; }
 .apeiron-form-order__summary { display: grid; gap: 16px; }
+.apeiron-form-order .apeiron-form-order__confirmation-hint { margin: 0 0 18px; color: var(--apeiron-dashboard-primary, #083c57); font-size: 13px; line-height: 1.5; white-space: pre-line; }
+.apeiron-form-order__confirmation-hint span { display: block; margin-top: 4px; color: var(--apeiron-dashboard-text-muted, #475467); }
+.apeiron-form-order__form.is-complete .apeiron-form-order__confirmation-hint { display: none; }
 .apeiron-form-order__summary section { padding: 18px; border: 1px solid #e5e7ef; border-radius: 8px; background: var(--apeiron-dashboard-surface, #fff); min-width: 0; }
 .apeiron-form-order .apeiron-form-order__summary h4 { margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid #e5e7ef; color: inherit; font-size: 16px; font-weight: 600; line-height: 1.45; }
 .apeiron-form-order__summary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; margin: 0; }
@@ -97,6 +100,12 @@
 	.apeiron-form-order :where(input, textarea, select).apeiron-form-order__input { min-height: 42px; padding: 10px 12px; }
 	.apeiron-form-order textarea.apeiron-form-order__input { min-height: 80px; }
 	.apeiron-form-order select.apeiron-form-order__input { padding-right: 2.35rem; background-position: right 12px center; }
+}
+@media (max-width: 767px) {
+	.apeiron-form-order[data-order-mobile-navigation="fixed"] .apeiron-form-order__form { padding-bottom: var(--order-mobile-navigation-height, 84px); }
+	.apeiron-form-order.is-mobile-navigation-active .apeiron-form-order__mobile-navigation { display: flex; flex-direction: column-reverse; gap: 10px; position: fixed; z-index: 30; left: var(--order-mobile-navigation-left, 0px); bottom: var(--order-mobile-navigation-bottom, 0px); width: var(--order-mobile-navigation-width, 100%); padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid #e5e7ef; background: var(--apeiron-dashboard-surface, #fff); }
+	.apeiron-form-order.is-mobile-navigation-active .apeiron-form-order__actions, .apeiron-form-order.is-mobile-navigation-active .apeiron-form-order__notice { margin-top: 0; }
+	.apeiron-form-order.is-mobile-navigation-active .apeiron-form-order__actions .apeiron-form-order__button { flex: 1; }
 }
 @media (max-width: 600px) {
 	.apeiron-form-order { padding: 16px; }

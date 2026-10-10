@@ -5,8 +5,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 $title_id = 'apeiron-form-order-title-' . sanitize_key( (string) $element_id );
 $draft_ui = ! empty( $config['draft']['enabled'] ) || 'yes' === ( $settings['draft_auto_save'] ?? '' );
 $draft_preview = $draft_ui && empty( $config['draft']['enabled'] );
+$confirmation_hint = str_replace( '{submit}', (string) ( $settings['submit_text'] ?? __( 'Kirim Pesanan', 'apeiron-kit' ) ), (string) ( $settings['confirmation_submit_hint'] ?? __( 'Pesanan belum dikirim. Klik tombol “{submit}” di bawah untuk mengirim pesanan.', 'apeiron-kit' ) ) );
+$mobile_navigation = 'fixed' === ( $settings['mobile_navigation'] ?? 'normal' );
 ?>
-<div class="apeiron-form-order" data-apeiron-form-order="<?php echo esc_attr( wp_json_encode( $config ) ); ?>">
+<div class="apeiron-form-order" data-apeiron-form-order="<?php echo esc_attr( wp_json_encode( $config ) ); ?>"<?php echo $mobile_navigation ? ' data-order-mobile-navigation="fixed"' : ''; ?>>
 	<?php if ( $draft_ui ) : ?><div class="apeiron-form-order__header<?php echo empty( $settings['form_title'] ) ? ' is-untitled' : ''; ?>"><?php endif; ?>
 	<?php if ( ! empty( $settings['form_title'] ) ) : ?>
 		<h2 id="<?php echo esc_attr( $title_id ); ?>" class="apeiron-form-order__title"><?php echo esc_html( $settings['form_title'] ); ?></h2>
@@ -30,6 +32,9 @@ $draft_preview = $draft_ui && empty( $config['draft']['enabled'] );
 				<?php if ( ! empty( $step['is_story'] ) ) : ?><p class="apeiron-form-order__story-note"><?php esc_html_e( 'Isi cerita sesuai perjalanan Anda, atau lewati jika tidak diperlukan.', 'apeiron-kit' ); ?></p><?php endif; ?>
 				<?php if ( 'confirmation' === $step['kind'] ) : ?>
 					<p><?php echo esc_html( $settings['confirmation_text'] ?? __( 'Periksa kembali seluruh data sebelum mengirim.', 'apeiron-kit' ) ); ?></p>
+					<?php if ( $index === count( $steps ) - 1 && '' !== trim( $confirmation_hint ) ) : ?>
+						<p class="apeiron-form-order__confirmation-hint"><?php echo esc_html( $confirmation_hint ); ?><?php if ( ! empty( $uses_whatsapp ) ) : ?><span><?php esc_html_e( 'Setelah WhatsApp terbuka, tekan Kirim agar pesan diterima admin.', 'apeiron-kit' ); ?></span><?php endif; ?></p>
+					<?php endif; ?>
 					<div class="apeiron-form-order__summary"></div>
 				<?php else : ?>
 				<?php foreach ( \ApeironKit\Elementor\Widgets\FormOrder\FieldSchema::layout_groups( $step['fields'] ) as $group_index => $group ) : ?>
@@ -79,11 +84,13 @@ $draft_preview = $draft_ui && empty( $config['draft']['enabled'] );
 			</section>
 		<?php endforeach; ?>
 		<div class="apeiron-form-order__honeypot" aria-hidden="true"><label for="apeiron-order-site-<?php echo esc_attr( $element_id ); ?>">Website</label><input id="apeiron-order-site-<?php echo esc_attr( $element_id ); ?>" type="text" name="website" tabindex="-1" autocomplete="off"></div>
+		<?php if ( $mobile_navigation ) : ?><div class="apeiron-form-order__mobile-navigation"><?php endif; ?>
 		<div class="apeiron-form-order__actions">
 			<button class="apeiron-form-order__button apeiron-form-order__button--back" type="button" hidden><?php echo esc_html( $settings['back_text'] ?? __( 'Kembali', 'apeiron-kit' ) ); ?></button>
 			<button class="apeiron-form-order__button apeiron-form-order__button--next" type="button"><?php echo esc_html( $settings['next_text'] ?? __( 'Lanjut', 'apeiron-kit' ) ); ?></button>
 			<button class="apeiron-form-order__button apeiron-form-order__button--submit" type="submit" hidden><?php echo esc_html( $settings['submit_text'] ?? __( 'Kirim Pesanan', 'apeiron-kit' ) ); ?></button>
 		</div>
 		<div class="apeiron-form-order__notice" role="status" aria-live="polite" hidden></div>
+		<?php if ( $mobile_navigation ) : ?></div><?php endif; ?>
 	</form>
 </div>

@@ -191,11 +191,6 @@ if ( '' !== $invitation_slug ) {
 						<p class="apeiron-create-status" id="create_status_<?php echo esc_attr( $widget_id ); ?>" role="status" aria-live="polite" hidden></p>
 					</div>
 					<?php endif; ?>
-					<div class="apeiron-form-actions">
-						<button type="button" class="apeiron-btn apeiron-guest-btn apeiron-btn-download" data-apeiron-action="clear-draft" data-widget-id="<?php echo esc_attr( $widget_id ); ?>">
-							<?php echo esc_html__( 'Hapus Draft', 'apeiron-kit' ); ?>
-						</button>
-					</div>
 				</div>
 
 			<?php if ( 'yes' === $show_guest_list ) : ?>

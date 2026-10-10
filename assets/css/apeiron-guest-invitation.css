@@ -176,7 +176,7 @@
 
 .elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-create,
 .elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-excel,
-.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-copy {
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container .apeiron-btn-copy {
 	color: #fff;
 	background-color: var(--apeiron-guest-invitation-primary);
 }
@@ -187,28 +187,28 @@
 	border-color: var(--apeiron-guest-invitation-border-color);
 }
 
-.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn {
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container .apeiron-btn {
 	border-width: 1px;
 	border-style: solid;
 	border-color: transparent;
 }
 
-.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-wa {
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container .apeiron-btn-wa {
 	color: #fff;
 	background-color: #16a34a;
 }
 
-.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-fb {
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container .apeiron-btn-fb {
 	color: #fff;
 	background-color: #1877f2;
 }
 
-.elementor-widget-apeiron-guest-invitation-manager .apeiron-btn-ig {
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container .apeiron-btn-ig {
 	color: #fff;
 	background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
 }
 
-.elementor-widget-apeiron-guest-invitation-manager .apeiron-action-btn {
+.elementor-widget-apeiron-guest-invitation-manager .apeiron-invitation-container .apeiron-action-btn {
 	border: 0 solid transparent;
 }
 
@@ -490,14 +490,14 @@
 	margin-bottom: 14px;
 }
 
-.apeiron-template-buttons .apeiron-btn {
+.apeiron-invitation-container .apeiron-template-buttons .apeiron-btn {
 	padding: 9px 14px;
 	font-size: var(--apeiron-guest-invitation-font-size-body, 14px);
 	border-radius: var(--apeiron-guest-invitation-control-radius, 10px);
 	font-weight: var(--apeiron-guest-invitation-font-weight-title, 500);
 }
 
-.apeiron-btn {
+.apeiron-invitation-container .apeiron-btn {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -584,7 +584,7 @@
 	box-shadow: none;
 }
 
-.apeiron-btn-template:hover {
+.apeiron-invitation-container .apeiron-btn-template:hover {
 	background: var(--apeiron-guest-invitation-surface-soft);
 	border-color: var(--apeiron-guest-invitation-border-strong-color);
 	color: var(--apeiron-guest-invitation-primary);
@@ -598,7 +598,7 @@
 	opacity: 1;
 }
 
-.apeiron-btn-create {
+.apeiron-invitation-container .apeiron-btn-create {
 	background: var(--apeiron-guest-invitation-primary);
 	color: #fff;
 	padding: 12px 22px;
@@ -606,7 +606,7 @@
 	font-weight: var(--apeiron-guest-invitation-font-weight-title, 500);
 }
 
-.apeiron-btn-create:hover {
+.apeiron-invitation-container .apeiron-btn-create:hover {
 	background: var(--apeiron-guest-invitation-primary-hover);
 }
 
@@ -652,7 +652,7 @@
 	color: #fff;
 }
 
-.apeiron-btn-excel:hover {
+.apeiron-invitation-container .apeiron-btn-excel:hover {
 	background: var(--apeiron-guest-invitation-primary-hover);
 }
 
@@ -898,7 +898,7 @@
 	margin-left: 8px;
 }
 
-.apeiron-action-btn {
+.apeiron-invitation-container .apeiron-action-btn {
 	padding: 0;
 	border: none;
 	border-radius: 8px;
@@ -986,6 +986,10 @@
 
 .apeiron-btn-copy:hover {
 	opacity: 0.75;
+}
+
+.apeiron-invitation-container .apeiron-action-buttons .apeiron-btn-delete {
+	background: var(--apeiron-guest-invitation-error-color);
 }
 
 .apeiron-toast-container {
@@ -1099,6 +1103,11 @@
 		min-width: 100%;
 	}
 
+	.apeiron-guest-table thead th:last-child,
+	.apeiron-guest-table tbody td:last-child {
+		width: 224px;
+	}
+
 	.apeiron-action-buttons {
 		flex-direction: row;
 	}
@@ -1148,7 +1157,7 @@
 		padding: 16px 14px;
 	}
 
-	.apeiron-btn-create {
+	.apeiron-invitation-container .apeiron-btn-create {
 		width: 100%;
 		padding: 11px 16px;
 		font-size: 14px;
@@ -1196,19 +1205,26 @@
 		padding: 26px 12px;
 	}
 
-	.apeiron-action-buttons {
+	.apeiron-invitation-container .apeiron-guest-table .apeiron-action-buttons {
+		display: grid;
+		grid-template-columns: repeat(2, 28px);
 		gap: 6px;
-		flex-wrap: wrap;
 		justify-content: flex-end;
-		width: auto;
+		width: max-content;
 		white-space: normal;
 	}
 
-	.apeiron-action-btn {
+	.apeiron-invitation-container .apeiron-guest-table .apeiron-action-btn {
 		width: 28px;
 		height: 28px;
 		min-width: 28px;
 		min-height: 28px;
+		padding: 0;
+	}
+
+	.apeiron-invitation-container .apeiron-guest-table .apeiron-btn-delete {
+		grid-column: 1 / -1;
+		justify-self: center;
 	}
 
 	.apeiron-action-btn svg {
@@ -1238,7 +1254,7 @@
 		font-size: 11px;
 	}
 
-	.apeiron-btn {
+	.apeiron-invitation-container .apeiron-btn {
 		padding: 10px 14px;
 		font-size: 13px;
 	}

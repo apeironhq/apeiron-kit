@@ -884,6 +884,9 @@
                     '</button>' +
                     '<button type="button" class="apeiron-action-btn apeiron-btn-copy" data-action="copy" data-widget="' + safeWidgetId + '" data-index="' + index + '" title="Salin pesan" aria-label="Salin pesan">' +
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
+                    '</button>' +
+                    '<button type="button" class="apeiron-action-btn apeiron-btn-delete" data-action="delete" data-widget="' + safeWidgetId + '" data-index="' + index + '" title="Hapus tamu" aria-label="Hapus tamu">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"></path></svg>' +
                     '</button>';
                 tdActions.appendChild(actionWrap);
                 tr.appendChild(tdActions);
@@ -942,6 +945,48 @@
         copyToClipboard(guest.message, 'Pesan berhasil disalin.');
     };
 
+    function removeGuestInputLines(value, removedGuest) {
+        return value.split('\n').filter(function (line) {
+            var guest = parseGuestInputLine(line);
+            return guest.name.toLowerCase() !== removedGuest.name.toLowerCase() || guest.phone !== removedGuest.phone;
+        }).join('\n');
+    }
+
+    window.apeironDeleteGuest = function (widgetId, guestIndex) {
+        var data = window.apeironInvitationData[widgetId];
+        var tbody = document.getElementById('guest_list_' + widgetId);
+        if (!data || !tbody || !Number.isInteger(guestIndex) || guestIndex < 0 || guestIndex >= data.guests.length) return;
+        var row = tbody.rows[guestIndex];
+        if (!row) return;
+        var removedGuest = data.guests[guestIndex];
+        var container = document.getElementById('apeiron-invitation-' + widgetId);
+        var state = widgetStates.get(container);
+        var names = document.getElementById('guest_names_' + widgetId);
+        if (names) names.value = removeGuestInputLines(names.value, removedGuest);
+        if (state && state.draft && state.draft.generated) {
+            state.draft.generated.guestNames = removeGuestInputLines(state.draft.generated.guestNames, removedGuest);
+        }
+        data.guests.splice(guestIndex, 1);
+        row.remove();
+        Array.from(tbody.rows).forEach(function (remainingRow, index) {
+            remainingRow.cells[0].textContent = index + 1;
+            remainingRow.querySelectorAll('.apeiron-action-btn[data-index]').forEach(function (button) {
+                button.setAttribute('data-index', index);
+            });
+        });
+        if (!data.guests.length && state && state.draft) tbody.innerHTML = state.draft.defaultList;
+        var status = document.getElementById('create_status_' + widgetId);
+        clearTimeout(createStatusTimers[widgetId]);
+        delete createStatusTimers[widgetId];
+        if (status) {
+            status.hidden = true;
+            status.textContent = '';
+        }
+        scheduleDraftSave(container);
+        saveDraft(container);
+        showToast('Tamu dihapus.', 'success');
+    };
+
     function copyToClipboard(text, successMessage) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function () {
@@ -991,6 +1036,9 @@
                 break;
             case 'copy':
                 window.apeironCopyMessage(widgetId, index);
+                break;
+            case 'delete':
+                window.apeironDeleteGuest(widgetId, index);
                 break;
         }
     });

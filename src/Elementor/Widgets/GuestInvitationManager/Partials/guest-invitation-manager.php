@@ -11,6 +11,18 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$invitation_url  = home_url( '/' );
+$invitation_slug = isset( $_GET['id'] ) && is_string( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
+if ( '' !== $invitation_slug ) {
+	$invitation = get_page_by_path( $invitation_slug, OBJECT, [ 'page', 'post' ] );
+	if ( $invitation && 'publish' === $invitation->post_status && (int) $invitation->ID !== get_queried_object_id() ) {
+		$permalink = get_permalink( $invitation );
+		if ( $permalink ) {
+			$invitation_url = $permalink;
+		}
+	}
+}
 ?>
 <div class="apeiron-invitation-container" id="<?php echo esc_attr( $unique_id ); ?>" data-import-mode="<?php echo esc_attr( $excel_import_mode ); ?>" data-skip-header="<?php echo esc_attr( $skip_excel_header ); ?>" data-show-results="<?php echo esc_attr( $show_guest_list ); ?>">
 			<?php if ( 'yes' === $settings['show_header'] ) : ?>
@@ -49,6 +61,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 							type="text" 
 							id="invitation_link_input_<?php echo esc_attr( $widget_id ); ?>"
 							class="apeiron-form-input apeiron-invitation-link-input" 
+							data-home-url="<?php echo esc_url( home_url( '/' ) ); ?>"
+							data-invitation-url="<?php echo esc_url( $invitation_url ); ?>"
 							placeholder="<?php echo esc_attr( ! empty( $settings['invitation_link_placeholder'] ) ? $settings['invitation_link_placeholder'] : __( 'Contoh: apeiron.id/ika-budi', 'apeiron-kit' ) ); ?>"
 							required
 						>
@@ -177,6 +191,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<p class="apeiron-create-status" id="create_status_<?php echo esc_attr( $widget_id ); ?>" role="status" aria-live="polite" hidden></p>
 					</div>
 					<?php endif; ?>
+					<div class="apeiron-form-actions">
+						<button type="button" class="apeiron-btn apeiron-guest-btn apeiron-btn-download" data-apeiron-action="clear-draft" data-widget-id="<?php echo esc_attr( $widget_id ); ?>">
+							<?php echo esc_html__( 'Hapus Draft', 'apeiron-kit' ); ?>
+						</button>
+					</div>
 				</div>
 
 			<?php if ( 'yes' === $show_guest_list ) : ?>

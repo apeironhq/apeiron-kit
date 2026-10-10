@@ -52,8 +52,220 @@
     var sheetJsPromise = null;
     var createStatusTimers = {};
     var widgetStates = new WeakMap();
+    var draftStates = new WeakMap();
     var MAX_IMPORT_FILE_BYTES = 10 * 1024 * 1024;
     var MAX_IMPORT_ROWS = 5000;
+    var DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+    var DRAFT_DEBOUNCE_MS = 400;
+    var DRAFT_FIELD_NAMES = ['invitationLink', 'guestNames', 'messageTemplate', 'templateId'];
+
+    function readDraftFields(container) {
+        var link = container.querySelector('.apeiron-invitation-link-input');
+        var names = container.querySelector('.apeiron-guest-names');
+        var template = container.querySelector('.apeiron-message-template');
+        var active = container.querySelector('.apeiron-btn-template.is-active');
+        return {
+            invitationLink: link ? link.value : '',
+            guestNames: names ? names.value : '',
+            messageTemplate: template ? template.value : '',
+            templateId: active ? active.getAttribute('data-template-id') || '' : ''
+        };
+    }
+
+    function copyDraftFields(fields) {
+        var copy = {};
+        DRAFT_FIELD_NAMES.forEach(function (name) { copy[name] = fields[name]; });
+        return copy;
+    }
+
+    function validDraftFields(fields) {
+        return fields && DRAFT_FIELD_NAMES.every(function (name) {
+            return typeof fields[name] === 'string' && fields[name].length <= 1024 * 1024;
+        });
+    }
+
+    function writeDraftFields(container, fields) {
+        var link = container.querySelector('.apeiron-invitation-link-input');
+        var names = container.querySelector('.apeiron-guest-names');
+        var template = container.querySelector('.apeiron-message-template');
+        if (link) link.value = fields.invitationLink;
+        if (names) names.value = fields.guestNames;
+        if (template) template.value = fields.messageTemplate;
+        var buttons = container.querySelectorAll('.apeiron-btn-template');
+        var selected = Array.from(buttons).find(function (button) {
+            return button.getAttribute('data-template-id') === fields.templateId;
+        });
+        if (selected) {
+            buttons.forEach(function (button) {
+                button.classList.toggle('is-active', button === selected);
+                button.setAttribute('aria-pressed', button === selected ? 'true' : 'false');
+            });
+        }
+    }
+
+    function restorableDraftLink(value, homeUrl, invitationUrl) {
+        var fallback = invitationUrl || homeUrl;
+        try {
+            var link = new URL(/^https?:\/\//i.test(value) ? value : 'https://' + value);
+            var home = new URL(homeUrl);
+            if (link.origin === home.origin && link.pathname.indexOf(home.pathname) === 0 && !link.username && !link.password) {
+                if (fallback !== homeUrl && link.href === home.href) return fallback;
+                return value;
+            }
+        } catch (error) {
+            return fallback;
+        }
+        return fallback;
+    }
+
+    function draftStorage(draft, action, value) {
+        if (!draft.enabled) return null;
+        try {
+            if (action === 'get') return window.localStorage.getItem(draft.key);
+            if (action === 'set') window.localStorage.setItem(draft.key, value);
+            if (action === 'remove') window.localStorage.removeItem(draft.key);
+            return true;
+        } catch (error) {
+            draft.enabled = false;
+            clearTimeout(draft.timer);
+            draft.dirty = false;
+            showToast('Draft tidak dapat disimpan di browser ini. Data masih dapat digunakan selama halaman terbuka.', 'warning');
+            return null;
+        }
+    }
+
+    function saveDraft(container) {
+        var state = widgetStates.get(container);
+        var draft = state && state.draft;
+        if (!draft) return;
+        clearTimeout(draft.timer);
+        draft.timer = null;
+        if (!draft.enabled || !draft.dirty || draft.restoring) return;
+        draft.dirty = false;
+        var fields = readDraftFields(container);
+        var generated = draft.generated ? copyDraftFields(draft.generated) : null;
+        fields.invitationLink = restorableDraftLink(fields.invitationLink, draft.homeUrl, draft.invitationUrl);
+        if (generated) generated.invitationLink = restorableDraftLink(generated.invitationLink, draft.homeUrl, draft.invitationUrl);
+        if (!validDraftFields(fields) || (generated && !validDraftFields(generated))) {
+            showToast('Draft terlalu besar untuk disimpan di browser.', 'warning');
+            return;
+        }
+        draftStorage(draft, 'set', JSON.stringify({
+            version: 1,
+            savedAt: Date.now(),
+            homeUrl: draft.homeUrl,
+            fields: fields,
+            generated: generated
+        }));
+    }
+
+    function scheduleDraftSave(container) {
+        var state = widgetStates.get(container);
+        var draft = state && state.draft;
+        if (!draft || !draft.enabled || draft.restoring) return;
+        draft.dirty = true;
+        clearTimeout(draft.timer);
+        draft.timer = setTimeout(function () { saveDraft(container); }, DRAFT_DEBOUNCE_MS);
+    }
+
+    function restoreDraft(container, state, canRestore) {
+        var draft = state.draft;
+        var raw = draftStorage(draft, 'get');
+        if (raw === null) return;
+        var saved;
+        try {
+            saved = JSON.parse(raw);
+        } catch (error) {
+            draftStorage(draft, 'remove');
+            return;
+        }
+        var now = Date.now();
+        if (!saved || saved.version !== 1 || saved.homeUrl !== draft.homeUrl ||
+            !Number.isFinite(saved.savedAt) || saved.savedAt > now || now - saved.savedAt >= DRAFT_TTL_MS ||
+            !validDraftFields(saved.fields) || (saved.generated !== null && !validDraftFields(saved.generated))) {
+            draftStorage(draft, 'remove');
+            return;
+        }
+        // Existing server/form values and populated tables take precedence over a local draft.
+        if (!canRestore) return;
+        var fields = copyDraftFields(saved.fields);
+        var restoreLink = draft.defaults.invitationLink === draft.invitationUrl;
+        fields.invitationLink = restoreLink ? restorableDraftLink(fields.invitationLink, draft.homeUrl, draft.invitationUrl) : draft.defaults.invitationLink;
+        draft.generated = saved.generated ? copyDraftFields(saved.generated) : null;
+        draft.restoring = true;
+        try {
+            if (draft.generated && draft.generated.guestNames.trim() && draft.generated.messageTemplate.trim() &&
+                container.querySelector('tbody')) {
+                var generated = copyDraftFields(draft.generated);
+                generated.invitationLink = restoreLink ? restorableDraftLink(generated.invitationLink, draft.homeUrl, draft.invitationUrl) : draft.defaults.invitationLink;
+                writeDraftFields(container, generated);
+                window.apeironCreateGuestList(state.widgetId);
+            }
+        } finally {
+            writeDraftFields(container, fields);
+            draft.restoring = false;
+        }
+    }
+
+    function initDraft(container, state, canRestore) {
+        var link = container.querySelector('.apeiron-invitation-link-input');
+        var page = new URL(window.location.href);
+        var homeUrl = link ? link.getAttribute('data-home-url') || page.origin + '/' : page.origin + '/';
+        var invitationUrl = link ? link.getAttribute('data-invitation-url') || homeUrl : homeUrl;
+        var table = container.querySelector('tbody');
+        var data = window.apeironInvitationData[state.widgetId];
+        var key = 'apeiron-guest-draft:v1:' + encodeURIComponent(JSON.stringify([
+            page.origin, homeUrl, page.pathname, page.searchParams.get('id') || '', state.widgetId
+        ]));
+        var previous = draftStates.get(container);
+        state.draft = previous && previous.key === key ? previous : {
+            key: key,
+            homeUrl: homeUrl,
+            invitationUrl: invitationUrl,
+            enabled: true,
+            dirty: false,
+            restoring: false,
+            timer: null,
+            generated: null,
+            defaults: readDraftFields(container),
+            defaultList: table ? table.innerHTML : '',
+            defaultGuests: data.guests.slice(),
+            defaultTemplate: data.template
+        };
+        draftStates.set(container, state.draft);
+        restoreDraft(container, state, canRestore);
+        state.draft.onInput = function (event) {
+            if (event.target.matches('.apeiron-invitation-link-input, .apeiron-guest-names, .apeiron-message-template')) {
+                scheduleDraftSave(container);
+            }
+        };
+        container.addEventListener('input', state.draft.onInput);
+        container.addEventListener('change', state.draft.onInput);
+    }
+
+    function resetDraft(container) {
+        var state = widgetStates.get(container);
+        var draft = state && state.draft;
+        if (!draft) return;
+        clearTimeout(draft.timer);
+        draft.timer = null;
+        draft.dirty = false;
+        draft.generated = null;
+        var removed = draftStorage(draft, 'remove');
+        writeDraftFields(container, draft.defaults);
+        window.apeironInvitationData[state.widgetId].guests = draft.defaultGuests.slice();
+        window.apeironInvitationData[state.widgetId].template = draft.defaultTemplate;
+        var table = container.querySelector('tbody');
+        if (table) table.innerHTML = draft.defaultList;
+        var status = document.getElementById('create_status_' + state.widgetId);
+        clearTimeout(createStatusTimers[state.widgetId]);
+        delete createStatusTimers[state.widgetId];
+        if (status) {
+            status.hidden = true;
+            status.textContent = '';
+        }
+        if (removed) showToast('Draft dihapus.', 'success');
+    }
 
     function getSheetJsUrl() {
         if (window.ApeironGuestManager && window.ApeironGuestManager.sheetjsUrl) {
@@ -330,6 +542,7 @@
                 buttonElement.setAttribute('aria-pressed', 'true');
             }
         }
+        if (textarea) scheduleDraftSave(textarea.closest('.apeiron-invitation-container'));
     };
 
     window.apeironImportExcel = function (widgetId) {
@@ -434,6 +647,7 @@
                     var separator = currentValue ? '\n' : '';
                     guestNamesTextarea.value = currentValue + separator + guestNames.join('\n');
                 }
+                scheduleDraftSave(widgetContainer);
 
                 var importMessage = guestNames.length + ' tamu diimpor';
                 if (phoneCount) {
@@ -621,6 +835,14 @@
 
         window.apeironInvitationData[widgetId].template = template;
 
+        var container = document.getElementById('apeiron-invitation-' + widgetId);
+        var state = widgetStates.get(container);
+        if (state && state.draft && !state.draft.restoring) {
+            state.draft.generated = readDraftFields(container);
+            state.draft.generated.invitationLink = baseInvitationLink;
+            scheduleDraftSave(container);
+        }
+
         // User data uses textContent; innerHTML below contains static SVG only.
         if (guestListTbody) {
             guestListTbody.innerHTML = '';
@@ -673,7 +895,7 @@
             return;
         }
 
-        if (createStatus) {
+        if (createStatus && !(state && state.draft && state.draft.restoring)) {
             createStatus.textContent = 'Berhasil membuat ' + guestRows.length + ' nama tamu' + (duplicateCount ? '. ' + duplicateCount + ' duplikat dilewati.' : '.');
             createStatus.hidden = false;
             createStatusTimers[widgetId] = setTimeout(function () {
@@ -786,6 +1008,8 @@
             window.apeironImportExcel(widgetId);
         } else if (action === 'create') {
             window.apeironCreateGuestList(widgetId);
+        } else if (action === 'clear-draft') {
+            resetDraft(document.getElementById('apeiron-invitation-' + widgetId));
         }
     });
 
@@ -806,6 +1030,11 @@
         var state = widgetStates.get(container);
         if (!state) return;
 
+        saveDraft(container);
+        if (state.draft) {
+            container.removeEventListener('input', state.draft.onInput);
+            container.removeEventListener('change', state.draft.onInput);
+        }
         destroyDropzones(state.dropzones);
         if (state.widgetId && createStatusTimers[state.widgetId]) {
             clearTimeout(createStatusTimers[state.widgetId]);
@@ -825,12 +1054,24 @@
             };
         }
 
+        var existing = readDraftFields(container);
+        var table = container.querySelector('tbody');
+        var canRestore = !existing.guestNames.trim() && !existing.messageTemplate.trim() &&
+            !window.apeironInvitationData[widgetId].guests.length &&
+            (!table || !table.querySelector('tr:not(.apeiron-empty-state)'));
+        var linkInput = container.querySelector('.apeiron-invitation-link-input');
+        if (linkInput && !linkInput.value.trim()) {
+            linkInput.value = linkInput.getAttribute('data-invitation-url') || linkInput.getAttribute('data-home-url') || '';
+        }
+
         initTemplateButtons(container);
         var dropzones = initDropzones(container);
-        widgetStates.set(container, {
+        var state = {
             widgetId: widgetId,
             dropzones: dropzones
-        });
+        };
+        widgetStates.set(container, state);
+        initDraft(container, state, canRestore);
     }
 
     function getWidgetContainers(scope) {
@@ -853,6 +1094,15 @@
             initWidget(container);
         });
     }
+
+    function flushDrafts() {
+        getWidgetContainers(document).forEach(saveDraft);
+    }
+
+    window.addEventListener('pagehide', flushDrafts);
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') flushDrafts();
+    });
 
     var api = {
         init: function () {

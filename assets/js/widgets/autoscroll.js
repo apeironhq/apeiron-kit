@@ -329,6 +329,7 @@
             var progressRing = container.querySelector('.apeiron-progress-ring .progress');
             var progressRingSvg = progressRing ? progressRing.closest('.apeiron-progress-ring') : null;
             var progressBar = container.querySelector('.apeiron-progress-bar .bar-fill');
+            var capsuleProgress = container.querySelector('.apeiron-capsule-progress');
             var speedMinus = container.querySelector('.speed-minus');
             var speedPlus = container.querySelector('.speed-plus');
 
@@ -1513,6 +1514,15 @@
 
                 if (progressBar) {
                     progressBar.style.transform = 'scaleX(' + progress + ')';
+                }
+
+                if (capsuleProgress) {
+                    var percent = getMaxScrollTop() <= END_THRESHOLD_PX || progress >= 1
+                        ? 100 : Math.max(1, Math.floor(progress * 100));
+                    var progressText = String(percent);
+                    if (capsuleProgress.textContent !== progressText) {
+                        capsuleProgress.textContent = progressText;
+                    }
                 }
             }
 

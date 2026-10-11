@@ -20,11 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$show_speed_control = 'yes' === ( $settings['show_speed_control'] ?? '' );
-$show_progress      = 'yes' === ( $settings['show_progress'] ?? '' );
+$is_simple_capsule  = 'simple-capsule' === ( $settings['skin'] ?? 'default' );
+$show_speed_control = ! $is_simple_capsule && 'yes' === ( $settings['show_speed_control'] ?? '' );
+$show_progress      = ! $is_simple_capsule && 'yes' === ( $settings['show_progress'] ?? '' );
 $progress_type      = (string) ( $settings['progress_type'] ?? 'circle' );
-$show_scroll_top    = 'yes' === ( $settings['show_scroll_top'] ?? '' );
-$ripple_enable      = 'yes' === ( $settings['ripple_enable'] ?? '' );
+$show_scroll_top    = ! $is_simple_capsule && 'yes' === ( $settings['show_scroll_top'] ?? '' );
+$ripple_enable      = ! $is_simple_capsule && 'yes' === ( $settings['ripple_enable'] ?? '' );
 $ripple_mode        = (string) ( $settings['ripple_mode'] ?? 'infinite' );
 $show_speed_arrows  = 'yes' === ( $settings['show_speed_arrows'] ?? '' );
 $speed_layout       = (string) ( $settings['speed_control_layout'] ?? 'vertical' );
@@ -34,7 +35,7 @@ $speed_slider_size  = (float) ( $settings['speed_slider_width']['size'] ?? 96 );
 $compact_speed_size = 'vertical' === $speed_layout && in_array( $speed_slider_size, [ 96.0, 132.0, 246.0 ], true );
 ?>
 <div
-	class="apeiron-kit-autoscroll apeiron-autoscroll-wrap <?php echo esc_attr( $position_class ); ?>"
+	class="apeiron-kit-autoscroll apeiron-autoscroll-wrap <?php echo esc_attr( $position_class ); ?><?php echo $is_simple_capsule ? ' skin-simple-capsule' : ''; ?>"
 	id="apeiron-autoscroll-<?php echo esc_attr( $widget_id ); ?>"
 	data-config="<?php echo esc_attr( (string) wp_json_encode( $config ) ); ?>"
 >
@@ -52,7 +53,16 @@ $compact_speed_size = 'vertical' === $speed_layout && in_array( $speed_slider_si
 			aria-label="<?php echo esc_attr( (string) $config['buttonStartLabel'] ); ?>"
 			aria-pressed="false"
 		>
-			<span class="btn-icon"><?php echo $icon_start; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG-aware sanitization is applied by RenderContext. ?></span>
+			<?php if ( $is_simple_capsule ) : ?>
+				<span class="btn-icon"><?php echo $config['iconStart']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitized by RenderContext. ?></span>
+				<span class="apeiron-capsule-label" aria-hidden="true">AutoScroll</span>
+				<span class="apeiron-capsule-progress" aria-hidden="true">1</span>
+				<svg class="apeiron-capsule-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+					<path d="<?php echo 'up' === $config['direction'] ? 'M12 19V5M6 11l6-6 6 6' : 'M12 5v14M6 13l6 6 6-6'; ?>" />
+				</svg>
+			<?php else : ?>
+				<span class="btn-icon"><?php echo $icon_start; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG-aware sanitization is applied by RenderContext. ?></span>
+			<?php endif; ?>
 		</button>
 
 		<?php if ( $ripple_enable ) : ?>

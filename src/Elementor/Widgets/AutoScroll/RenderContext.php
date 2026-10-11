@@ -97,6 +97,8 @@ final class RenderContext {
 	private const FALLBACK_MINUS_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12" /></svg>';
 	private const FALLBACK_PLUS_SVG  = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" stroke="currentColor" fill="none" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>';
 	private const FALLBACK_TOP_ICON  = '<i class="fas fa-chevron-up"></i>';
+	private const CAPSULE_PLAY_SVG   = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>';
+	private const CAPSULE_PAUSE_SVG  = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="currentColor"><path d="M7 5h3v14H7zM14 5h3v14h-3z" /></svg>';
 
 	/**
 	 * @param array<string,mixed>|null $icon
@@ -179,6 +181,13 @@ final class RenderContext {
 	 * @param array<string,mixed> $settings
 	 */
 	public static function resolve_position_class( array $settings ): string {
+		if ( 'simple-capsule' === ( $settings['skin'] ?? 'default' ) ) {
+			$position = self::enum_value( $settings['capsule_position'] ?? 'right-center', [ 'left-center', 'right-center', 'bottom-center' ], 'right-center' );
+			$axes     = self::BASE_POSITION_MAP[ $position ];
+
+			return 'pos-' . $axes['v'] . '-' . $axes['h'];
+		}
+
 		$base       = (string) ( $settings['button_position'] ?? 'bottom-right' );
 		$axes       = self::BASE_POSITION_MAP[ $base ] ?? self::BASE_POSITION_MAP['bottom-right'];
 		$position_v = self::enum_value(
@@ -263,6 +272,18 @@ final class RenderContext {
 			'rippleEnabled'                   => 'yes' === ( $settings['ripple_enable'] ?? '' ),
 			'isEditor'                        => ! empty( $runtime['isEditor'] ),
 		];
+
+		if ( 'simple-capsule' === ( $settings['skin'] ?? 'default' ) ) {
+			$config['iconStart']             = self::CAPSULE_PLAY_SVG;
+			$config['iconStop']              = self::CAPSULE_PAUSE_SVG;
+			$config['showSpeedControl']      = false;
+			$config['speedDraggable']        = false;
+			$config['showScrollTop']         = false;
+			$config['activeAnimation']       = 'none';
+			$config['rippleEnabled']         = false;
+			$config['buttonAppearAnimation'] = 'fade';
+			$config['buttonAppearDelay']     = 0;
+		}
 
 		return self::normalize_config( $config, $config );
 	}

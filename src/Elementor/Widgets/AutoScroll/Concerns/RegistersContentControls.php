@@ -28,6 +28,19 @@ trait RegistersContentControls {
 		);
 
 		$this->add_control(
+			'skin',
+			[
+				'label'   => __( 'Skin', 'apeiron-kit' ),
+				'type'    => Controls_Manager::SELECT,
+				'options' => [
+					'default'        => __( 'Default', 'apeiron-kit' ),
+					'simple-capsule' => __( 'Simple Capsule', 'apeiron-kit' ),
+				],
+				'default' => 'default',
+			]
+		);
+
+		$this->add_control(
 			'scroll_engine',
 			[
 				'label'       => __( 'Gaya Gerakan', 'apeiron-kit' ),
@@ -72,14 +85,14 @@ trait RegistersContentControls {
 		$this->add_control(
 			'scroll_speed',
 			[
-				'label'       => __( 'Kecepatan Scroll', 'apeiron-kit' ),
+				'label'       => __( 'Kecepatan Scroll (%)', 'apeiron-kit' ),
 				'type'        => Controls_Manager::SLIDER,
 				'dynamic'     => [ 'active' => true ],
 				'range'       => [
 					'px' => [ 'min' => 1, 'max' => 100, 'step' => 1 ],
 				],
 				'default'     => [ 'size' => 30 ],
-				'description' => __( 'Kecepatan utama untuk gerakan halus.', 'apeiron-kit' ),
+				'description' => __( 'Kecepatan utama 1–100% untuk gerakan halus.', 'apeiron-kit' ),
 				'condition'   => [ 'scroll_engine' => 'apeiron' ],
 			]
 		);
@@ -87,14 +100,14 @@ trait RegistersContentControls {
 		$this->add_control(
 			'step_scroll_speed',
 			[
-				'label'       => __( 'Kecepatan Scroll', 'apeiron-kit' ),
+				'label'       => __( 'Kecepatan Scroll (%)', 'apeiron-kit' ),
 				'type'        => Controls_Manager::SLIDER,
 				'dynamic'     => [ 'active' => true ],
 				'range'       => [
 					'px' => [ 'min' => 1, 'max' => 100, 'step' => 1 ],
 				],
 				'default'     => [ 'size' => 30 ],
-				'description' => __( 'Kecepatan dasar untuk scroll per bagian.', 'apeiron-kit' ),
+				'description' => __( 'Kecepatan dasar 1–100% untuk scroll per bagian.', 'apeiron-kit' ),
 				'condition'   => [ 'scroll_engine' => 'step' ],
 			]
 		);
@@ -307,6 +320,7 @@ trait RegistersContentControls {
 				'label'     => __( 'Panel Kecepatan', 'apeiron-kit' ),
 				'type'      => Controls_Manager::HEADING,
 				'separator' => 'before',
+				'condition' => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -319,6 +333,7 @@ trait RegistersContentControls {
 				'label_off'    => __( 'Tidak', 'apeiron-kit' ),
 				'return_value' => 'yes',
 				'default'      => '',
+				'condition'    => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -332,7 +347,7 @@ trait RegistersContentControls {
 					'vertical'   => __( 'Vertikal', 'apeiron-kit' ),
 				],
 				'default'   => 'vertical',
-				'condition' => [ 'show_speed_control' => 'yes' ],
+				'condition' => [ 'show_speed_control' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -350,7 +365,7 @@ trait RegistersContentControls {
 				],
 				'default'     => 'auto',
 				'description' => __( 'Posisi kontrol kecepatan relatif terhadap tombol utama', 'apeiron-kit' ),
-				'condition'   => [ 'show_speed_control' => 'yes' ],
+				'condition'   => [ 'show_speed_control' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -364,7 +379,7 @@ trait RegistersContentControls {
 				'return_value' => 'yes',
 				'default'      => '',
 				'description'  => __( 'Izinkan user menggeser posisi kontrol kecepatan', 'apeiron-kit' ),
-				'condition'    => [ 'show_speed_control' => 'yes' ],
+				'condition'    => [ 'show_speed_control' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -380,7 +395,7 @@ trait RegistersContentControls {
 					'slide'  => __( 'Slide', 'apeiron-kit' ),
 				],
 				'default'   => 'pulse',
-				'condition' => [ 'show_speed_control' => 'yes' ],
+				'condition' => [ 'show_speed_control' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -394,7 +409,7 @@ trait RegistersContentControls {
 				'return_value' => 'yes',
 				'default'      => 'yes',
 				'separator'    => 'before',
-				'condition'    => [ 'show_speed_control' => 'yes' ],
+				'condition'    => [ 'show_speed_control' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -410,6 +425,7 @@ trait RegistersContentControls {
 				'condition' => [
 					'show_speed_control' => 'yes',
 					'show_speed_arrows'  => 'yes',
+					'skin!'              => 'simple-capsule',
 				],
 			]
 		);
@@ -426,6 +442,7 @@ trait RegistersContentControls {
 				'condition' => [
 					'show_speed_control' => 'yes',
 					'show_speed_arrows'  => 'yes',
+					'skin!'              => 'simple-capsule',
 				],
 			]
 		);
@@ -437,7 +454,8 @@ trait RegistersContentControls {
 		$this->start_controls_section(
 			'section_button',
 			[
-				'label' => __( 'Tombol dan Posisi', 'apeiron-kit' ),
+				'label'     => __( 'Tombol dan Posisi', 'apeiron-kit' ),
+				'condition' => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -637,13 +655,74 @@ trait RegistersContentControls {
 		);
 
 		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_capsule_position',
+			[
+				'label'     => __( 'Posisi Kapsul', 'apeiron-kit' ),
+				'condition' => [ 'skin' => 'simple-capsule' ],
+			]
+		);
+
+		$this->add_control(
+			'capsule_position',
+			[
+				'label'   => __( 'Posisi', 'apeiron-kit' ),
+				'type'    => Controls_Manager::SELECT,
+				'options' => [
+					'left-center'   => __( 'Kiri', 'apeiron-kit' ),
+					'right-center'  => __( 'Kanan', 'apeiron-kit' ),
+					'bottom-center' => __( 'Tengah Bawah', 'apeiron-kit' ),
+				],
+				'default' => 'right-center',
+			]
+		);
+
+		$this->add_responsive_control(
+			'capsule_offset_x',
+			[
+				'label'      => __( 'Offset Horizontal', 'apeiron-kit' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => [ 'px', '%', 'vw' ],
+				'range'      => [
+					'px' => [ 'min' => -200, 'max' => 200 ],
+					'%'  => [ 'min' => -50, 'max' => 50 ],
+					'vw' => [ 'min' => -20, 'max' => 20 ],
+				],
+				'default'    => [ 'size' => 0, 'unit' => 'px' ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-widget-offset-x: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'capsule_offset_y',
+			[
+				'label'      => __( 'Offset Vertikal', 'apeiron-kit' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => [ 'px', '%', 'vh' ],
+				'range'      => [
+					'px' => [ 'min' => -300, 'max' => 300 ],
+					'%'  => [ 'min' => -50, 'max' => 50 ],
+					'vh' => [ 'min' => -30, 'max' => 30 ],
+				],
+				'default'    => [ 'size' => 0, 'unit' => 'px' ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-widget-offset-y: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
 	}
 
 	private function register_feedback_controls(): void {
 		$this->start_controls_section(
 			'section_feedback',
 			[
-				'label' => __( 'Indikator dan Pesan', 'apeiron-kit' ),
+				'label'     => __( 'Indikator dan Pesan', 'apeiron-kit' ),
+				'condition' => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -653,6 +732,7 @@ trait RegistersContentControls {
 				'label'     => __( 'Progress', 'apeiron-kit' ),
 				'type'      => Controls_Manager::HEADING,
 				'separator' => 'before',
+				'condition' => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -665,6 +745,7 @@ trait RegistersContentControls {
 				'label_off'    => __( 'Tidak', 'apeiron-kit' ),
 				'return_value' => 'yes',
 				'default'      => 'yes',
+				'condition'    => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -678,7 +759,7 @@ trait RegistersContentControls {
 					'bar'    => __( 'Bar (Garis)', 'apeiron-kit' ),
 				],
 				'default'   => 'circle',
-				'condition' => [ 'show_progress' => 'yes' ],
+				'condition' => [ 'show_progress' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 

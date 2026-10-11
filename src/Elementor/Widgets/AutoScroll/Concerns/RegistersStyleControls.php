@@ -19,6 +19,7 @@ trait RegistersStyleControls {
 	private function register_style_controls(): void {
 		$this->register_container_style_controls();
 		$this->register_button_style_controls();
+		$this->register_capsule_style_controls();
 		$this->register_progress_style_controls();
 
 		$this->register_speed_control_style_controls();
@@ -29,8 +30,9 @@ trait RegistersStyleControls {
 		$this->start_controls_section(
 			'section_style_container',
 			[
-				'label' => __( 'Container Lanjutan', 'apeiron-kit' ),
-				'tab'   => Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Container Lanjutan', 'apeiron-kit' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -102,8 +104,9 @@ trait RegistersStyleControls {
 		$this->start_controls_section(
 			'section_style_button',
 			[
-				'label' => __( 'Tombol Utama', 'apeiron-kit' ),
-				'tab'   => Controls_Manager::TAB_STYLE,
+				'label'     => __( 'Tombol Utama', 'apeiron-kit' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -339,6 +342,156 @@ trait RegistersStyleControls {
 		$this->end_controls_section();
 	}
 
+	private function register_capsule_style_controls(): void {
+		$this->start_controls_section(
+			'section_style_capsule',
+			[
+				'label'     => __( 'Kapsul', 'apeiron-kit' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'skin' => 'simple-capsule' ],
+			]
+		);
+
+		$this->add_control(
+			'capsule_background_color',
+			[
+				'label'     => __( 'Warna Kapsul', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#083c57',
+				'selectors' => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-bg: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'capsule_text_color',
+			[
+				'label'     => __( 'Warna Teks', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-text: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			[
+				'name'     => 'capsule_text_typography',
+				'label'    => __( 'Tipografi Teks AutoScroll', 'apeiron-kit' ),
+				'selector' => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-label',
+			]
+		);
+
+		$this->add_control(
+			'capsule_icon_color',
+			[
+				'label'     => __( 'Warna Icon / Panah', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-icon: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'capsule_icon_size',
+			[
+				'label'      => __( 'Ukuran Icon / Panah', 'apeiron-kit' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => [ 'px' ],
+				'range'      => [ 'px' => [ 'min' => 10, 'max' => 24 ] ],
+				'default'    => [ 'size' => 14, 'unit' => 'px' ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-icon-size: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'capsule_border_radius',
+			[
+				'label'      => __( 'Border Radius', 'apeiron-kit' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => [ 'px' ],
+				'range'      => [ 'px' => [ 'min' => 0, 'max' => 30 ] ],
+				'default'    => [ 'size' => 18, 'unit' => 'px' ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-radius: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			[
+				'name'     => 'capsule_border',
+				'selector' => '{{WRAPPER}} .skin-simple-capsule .apeiron-scroll-btn',
+			]
+		);
+
+		$this->add_control(
+			'heading_capsule_progress_style',
+			[
+				'label'     => __( 'Lingkaran Angka Progres', 'apeiron-kit' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'capsule_progress_color',
+			[
+				'label'     => __( 'Warna Angka Progres', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#083c57',
+				'selectors' => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-progress-color: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_control(
+			'capsule_progress_background_color',
+			[
+				'label'     => __( 'Warna Background Lingkaran', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'default'   => '#ffffff',
+				'selectors' => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-progress-bg: {{VALUE}};',
+				],
+			]
+		);
+
+		$this->add_group_control(
+			Group_Control_Typography::get_type(),
+			[
+				'name'           => 'capsule_progress_typography',
+				'label'          => __( 'Tipografi Angka Progres', 'apeiron-kit' ),
+				'selector'       => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-progress',
+				'fields_options' => [
+					'font_size' => [
+						'size_units' => [ 'px' ],
+						'range'      => [ 'px' => [ 'min' => 8, 'max' => 16, 'step' => 1 ] ],
+					],
+				],
+			]
+		);
+
+		$this->add_group_control(
+			Group_Control_Border::get_type(),
+			[
+				'name'     => 'capsule_progress_border',
+				'selector' => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-progress',
+			]
+		);
+
+		$this->end_controls_section();
+	}
+
 	private function register_ripple_controls(): void {
 		$this->add_control(
 			'heading_button_ripple_effect',
@@ -454,7 +607,7 @@ trait RegistersStyleControls {
 			[
 				'label'     => __( 'Indikator Progress', 'apeiron-kit' ),
 				'tab'       => Controls_Manager::TAB_STYLE,
-				'condition' => [ 'show_progress' => 'yes' ],
+				'condition' => [ 'show_progress' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -594,7 +747,7 @@ trait RegistersStyleControls {
 			[
 				'label'     => __( 'Panel Kecepatan', 'apeiron-kit' ),
 				'tab'       => Controls_Manager::TAB_STYLE,
-				'condition' => [ 'show_speed_control' => 'yes' ],
+				'condition' => [ 'show_speed_control' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 
@@ -1223,7 +1376,7 @@ trait RegistersStyleControls {
 			[
 				'label'     => __( 'Kembali ke Atas', 'apeiron-kit' ),
 				'tab'       => Controls_Manager::TAB_STYLE,
-				'condition' => [ 'show_scroll_top' => 'yes' ],
+				'condition' => [ 'show_scroll_top' => 'yes', 'skin!' => 'simple-capsule' ],
 			]
 		);
 

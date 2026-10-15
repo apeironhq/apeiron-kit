@@ -380,7 +380,7 @@ trait RegistersStyleControls {
 			Group_Control_Typography::get_type(),
 			[
 				'name'     => 'capsule_text_typography',
-				'label'    => __( 'Tipografi Teks AutoScroll', 'apeiron-kit' ),
+				'label'    => __( 'Typography', 'apeiron-kit' ),
 				'selector' => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-label',
 			]
 		);
@@ -433,12 +433,63 @@ trait RegistersStyleControls {
 			]
 		);
 
-		$this->add_control(
+		$this->end_controls_section();
+
+		$this->start_controls_section(
+			'section_style_capsule_size',
+			[
+				'label'     => __( 'Ukuran Kapsul', 'apeiron-kit' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'skin' => 'simple-capsule' ],
+			]
+		);
+
+		$this->add_responsive_control(
+			'capsule_min_width',
+			[
+				'label'      => __( 'Lebar Minimum Kapsul', 'apeiron-kit' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => [ 'px' ],
+				'range'      => [ 'px' => [ 'min' => 24, 'max' => 240 ] ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-min-width: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'capsule_min_height',
+			[
+				'label'      => __( 'Tinggi Minimum Kapsul', 'apeiron-kit' ),
+				'type'       => Controls_Manager::SLIDER,
+				'size_units' => [ 'px' ],
+				'range'      => [ 'px' => [ 'min' => 36, 'max' => 500 ] ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-min-height: {{SIZE}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->add_responsive_control(
+			'capsule_padding',
+			[
+				'label'      => __( 'Padding Internal Kapsul', 'apeiron-kit' ),
+				'type'       => Controls_Manager::DIMENSIONS,
+				'size_units' => [ 'px', 'em' ],
+				'selectors'  => [
+					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-padding-top: {{TOP}}{{UNIT}}; --ak-capsule-padding-right: {{RIGHT}}{{UNIT}}; --ak-capsule-padding-bottom: {{BOTTOM}}{{UNIT}}; --ak-capsule-padding-left: {{LEFT}}{{UNIT}};',
+				],
+			]
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
 			'heading_capsule_progress_style',
 			[
 				'label'     => __( 'Lingkaran Angka Progres', 'apeiron-kit' ),
-				'type'      => Controls_Manager::HEADING,
-				'separator' => 'before',
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'skin' => 'simple-capsule', 'show_capsule_progress' => 'yes' ],
 			]
 		);
 
@@ -448,6 +499,7 @@ trait RegistersStyleControls {
 				'label'     => __( 'Warna Angka Progres', 'apeiron-kit' ),
 				'type'      => Controls_Manager::COLOR,
 				'default'   => '#083c57',
+				'condition' => [ 'show_capsule_progress' => 'yes' ],
 				'selectors' => [
 					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-progress-color: {{VALUE}};',
 				],
@@ -460,6 +512,7 @@ trait RegistersStyleControls {
 				'label'     => __( 'Warna Background Lingkaran', 'apeiron-kit' ),
 				'type'      => Controls_Manager::COLOR,
 				'default'   => '#ffffff',
+				'condition' => [ 'show_capsule_progress' => 'yes' ],
 				'selectors' => [
 					'{{WRAPPER}} .skin-simple-capsule' => '--ak-capsule-progress-bg: {{VALUE}};',
 				],
@@ -472,6 +525,7 @@ trait RegistersStyleControls {
 				'name'           => 'capsule_progress_typography',
 				'label'          => __( 'Tipografi Angka Progres', 'apeiron-kit' ),
 				'selector'       => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-progress',
+				'condition'      => [ 'show_capsule_progress' => 'yes' ],
 				'fields_options' => [
 					'font_size' => [
 						'size_units' => [ 'px' ],
@@ -484,8 +538,9 @@ trait RegistersStyleControls {
 		$this->add_group_control(
 			Group_Control_Border::get_type(),
 			[
-				'name'     => 'capsule_progress_border',
-				'selector' => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-progress',
+				'name'      => 'capsule_progress_border',
+				'selector'  => '{{WRAPPER}} .skin-simple-capsule .apeiron-capsule-progress',
+				'condition' => [ 'show_capsule_progress' => 'yes' ],
 			]
 		);
 

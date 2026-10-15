@@ -55,8 +55,10 @@ $compact_speed_size = 'vertical' === $speed_layout && in_array( $speed_slider_si
 		>
 			<?php if ( $is_simple_capsule ) : ?>
 				<span class="btn-icon"><?php echo $config['iconStart']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Sanitized by RenderContext. ?></span>
-				<span class="apeiron-capsule-label" aria-hidden="true">AutoScroll</span>
-				<span class="apeiron-capsule-progress" aria-hidden="true">1</span>
+				<span class="apeiron-capsule-label" aria-hidden="true"><?php echo esc_html( (string) ( $settings['capsule_label'] ?? 'AutoScroll' ) ); ?></span>
+				<?php if ( 'yes' === ( $settings['show_capsule_progress'] ?? '' ) ) : ?>
+					<span class="apeiron-capsule-progress" aria-hidden="true">1</span>
+				<?php endif; ?>
 				<svg class="apeiron-capsule-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
 					<path d="<?php echo 'up' === $config['direction'] ? 'M12 19V5M6 11l6-6 6 6' : 'M12 5v14M6 13l6 6 6-6'; ?>" />
 				</svg>

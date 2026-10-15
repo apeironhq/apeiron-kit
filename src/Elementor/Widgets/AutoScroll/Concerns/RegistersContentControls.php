@@ -41,6 +41,30 @@ trait RegistersContentControls {
 		);
 
 		$this->add_control(
+			'capsule_label',
+			[
+				'label'       => __( 'Teks Label Kapsul', 'apeiron-kit' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => 'AutoScroll',
+				'label_block' => true,
+				'condition'   => [ 'skin' => 'simple-capsule' ],
+			]
+		);
+
+		$this->add_control(
+			'show_capsule_progress',
+			[
+				'label'        => __( 'Tampilkan Lingkaran Progres', 'apeiron-kit' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'label_on'     => __( 'On', 'apeiron-kit' ),
+				'label_off'    => __( 'Off', 'apeiron-kit' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'condition'    => [ 'skin' => 'simple-capsule' ],
+			]
+		);
+
+		$this->add_control(
 			'scroll_engine',
 			[
 				'label'       => __( 'Gaya Gerakan', 'apeiron-kit' ),

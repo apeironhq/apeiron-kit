@@ -281,7 +281,7 @@ final class RenderContext {
 			$config['showScrollTop']         = false;
 			$config['activeAnimation']       = 'none';
 			$config['rippleEnabled']         = false;
-			$config['buttonAppearAnimation'] = 'fade';
+			$config['buttonAppearAnimation'] = $config['isEditor'] ? 'none' : 'fade';
 			$config['buttonAppearDelay']     = 0;
 		}
 

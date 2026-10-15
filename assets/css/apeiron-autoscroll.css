@@ -1735,15 +1735,18 @@
 }
 
 [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn {
+	position: static;
 	flex-direction: column;
 	gap: 8px;
-	width: 40px;
+	width: auto;
+	min-width: var(--ak-capsule-min-width, 40px);
 	height: auto;
-	min-height: 144px;
+	min-height: var(--ak-capsule-min-height, 144px);
 	margin: 0;
-	padding: 14px 0;
+	padding: var(--ak-capsule-padding-top, 14px) var(--ak-capsule-padding-right, 0px) var(--ak-capsule-padding-bottom, 14px) var(--ak-capsule-padding-left, 0px);
 	box-sizing: border-box;
 	border: 1px solid rgba(255, 255, 255, 0.18);
+	border-top: 0;
 	border-right: 0;
 	border-radius: var(--ak-capsule-radius, 18px) 0 0 var(--ak-capsule-radius, 18px);
 	background: var(--ak-capsule-bg, #083c57);
@@ -1756,7 +1759,28 @@
 	letter-spacing: 0.06em;
 	text-transform: none;
 	animation: none;
-	transform: translateZ(0);
+	transform: none;
+	will-change: auto;
+}
+
+[id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn::before {
+	border: 0;
+	background: none;
+	box-shadow: none;
+}
+
+[id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn::after {
+	content: "";
+	display: block;
+	position: static;
+	width: var(--ak-capsule-icon-size, 14px);
+	height: var(--ak-capsule-icon-size, 14px);
+	flex-shrink: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	box-shadow: none;
 }
 
 [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn:hover,
@@ -1766,7 +1790,7 @@
 }
 
 [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn.is-paused {
-	transform: translateZ(0);
+	transform: none;
 }
 
 [id^="apeiron-autoscroll-"].skin-simple-capsule.pos-center-left .apeiron-scroll-btn {
@@ -1778,10 +1802,10 @@
 [id^="apeiron-autoscroll-"].skin-simple-capsule.pos-bottom-center .apeiron-scroll-btn {
 	flex-direction: row;
 	width: auto;
-	min-width: 144px;
-	height: 44px;
-	min-height: 44px;
-	padding: 0 16px;
+	min-width: var(--ak-capsule-min-width, 144px);
+	height: auto;
+	min-height: var(--ak-capsule-min-height, 44px);
+	padding: var(--ak-capsule-padding-top, 0px) var(--ak-capsule-padding-right, 16px) var(--ak-capsule-padding-bottom, 0px) var(--ak-capsule-padding-left, 16px);
 	border-right: 1px solid rgba(255, 255, 255, 0.18);
 	border-radius: var(--ak-capsule-radius, 18px);
 }
@@ -1811,11 +1835,29 @@
 
 [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-capsule-chevron {
 	display: block;
+	position: absolute;
+	left: 50%;
+	bottom: var(--ak-capsule-padding-bottom, 14px);
+	margin: 0;
+	translate: -50% 0;
 	width: var(--ak-capsule-icon-size, 14px);
 	height: var(--ak-capsule-icon-size, 14px);
 	flex-shrink: 0;
 	fill: none;
 	stroke: currentColor;
+}
+
+[id^="apeiron-autoscroll-"].skin-simple-capsule.pos-bottom-center .apeiron-capsule-chevron {
+	top: 50%;
+	right: var(--ak-capsule-padding-right, 16px);
+	bottom: auto;
+	left: auto;
+	translate: 0 -50%;
+}
+
+.elementor-editor-active [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn,
+.elementor-editor-preview [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn {
+	transition: none;
 }
 
 [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn.is-active:not(.is-paused) .apeiron-capsule-chevron {
@@ -1848,12 +1890,10 @@
 	0%,
 	100% {
 		opacity: 1;
-		transform: translateY(0);
 	}
 
 	50% {
 		opacity: 0.5;
-		transform: translateY(2px);
 	}
 }
 
@@ -1920,7 +1960,7 @@
 
 @media (pointer: coarse) {
 	[id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn {
-		width: 44px;
+		min-width: var(--ak-capsule-min-width, 44px);
 	}
 
 	[id^="apeiron-autoscroll-"] .speed-arrow {

@@ -5,6 +5,7 @@ declare( strict_types=1 );
 namespace ApeironKit\Support;
 
 use ApeironKit\Elementor\Widgets\AutoScroll\AutoScroll;
+use ApeironKit\Elementor\Widgets\CeritaCinta\CeritaCinta;
 use ApeironKit\Elementor\Widgets\ClipboardTap\ClipboardTap;
 use ApeironKit\Elementor\Widgets\CommentDock\CommentDock;
 use ApeironKit\Elementor\Widgets\Countdown\Countdown;
@@ -138,6 +139,15 @@ final class WidgetRegistry {
 			'js_file'  => 'widgets/cover',
 			'js_deps'  => [],
 		],
+		'cerita_cinta'  => [
+			'class' => CeritaCinta::class,
+			'type'  => 'apeiron-cerita-cinta',
+			'css'   => 'apeiron-kit-cerita-cinta',
+			'js'    => 'apeiron-kit-cerita-cinta-js',
+			'css_file' => 'apeiron-cerita-cinta',
+			'js_file'  => 'widgets/cerita-cinta',
+			'js_deps'  => [],
+		],
 	];
 
 	/**
@@ -175,6 +185,7 @@ final class WidgetRegistry {
 		'social_proof',
 		'page_loader',
 		'cover',
+		'cerita_cinta',
 	];
 
 	/**
@@ -194,6 +205,7 @@ final class WidgetRegistry {
 		'autoscroll',
 		'page_loader',
 		'cover',
+		'cerita_cinta',
 	];
 
 	/**
@@ -213,6 +225,7 @@ final class WidgetRegistry {
 		'social_proof',
 		'page_loader',
 		'cover',
+		'cerita_cinta',
 	];
 
 	/**
@@ -520,6 +533,14 @@ final class WidgetRegistry {
 				'color'       => 'rose',
 				'label'       => __( 'Sampul', 'apeiron-kit' ),
 				'description' => __( 'Cover pembuka undangan dengan panel, pita, kartu penerima, dan animasi buka undangan.', 'apeiron-kit' ),
+				'group'       => __( 'Event', 'apeiron-kit' ),
+				'group_key'   => 'event',
+			],
+			'cerita_cinta'  => [
+				'icon'        => 'heart',
+				'color'       => 'rose',
+				'label'       => __( 'Cerita Cinta', 'apeiron-kit' ),
+				'description' => __( 'Timeline cerita cinta dengan foto polaroid dan animasi scroll Scrapbook Story.', 'apeiron-kit' ),
 				'group'       => __( 'Event', 'apeiron-kit' ),
 				'group_key'   => 'event',
 			],

@@ -2,16 +2,15 @@
 
 namespace ApeironKit\Support;
 
-use ApeironKit\Core\Crypto;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 final class FormOrderSettings {
 	public const OPTION_NAME = 'apeiron_form_order_settings';
-	private const SECRET_OPTION = 'apeiron_form_order_secret';
-	private const CONTEXT = 'apeiron-kit/form-order/v1';
+	private const API_CONNECTION_OPTION = 'apeiron_form_order_api_connection';
+	public const API_SERVICE = 'apeiron-form-order';
+	public const API_VERSION = 'form-order-api-v1';
 
 	public static function defaults(): array {
 		return [
@@ -22,15 +21,16 @@ final class FormOrderSettings {
 			'whatsapp_template' => "Pesanan undangan baru:\n{details}",
 			'whatsapp_behavior' => 'new_tab',
 			'spreadsheet_enabled' => 'no',
-			'webhook_url' => '',
-			'sheet_name' => 'Orders',
+			'storage_provider' => 'api',
+			'api_url' => '',
 		];
 	}
 
 	public static function get(): array {
 		$saved = get_option( self::OPTION_NAME, [] );
-		$saved = is_array( $saved ) ? $saved : [];
+		$saved = is_array( $saved ) ? array_intersect_key( $saved, self::defaults() ) : [];
 		$saved['delivery_target'] = self::delivery_target( $saved );
+		$saved['storage_provider'] = 'api';
 		return wp_parse_args( $saved, self::defaults() );
 	}
 
@@ -56,150 +56,121 @@ final class FormOrderSettings {
 			'whatsapp_template' => sanitize_textarea_field( (string) ( $input['whatsapp_template'] ?? '' ) ),
 			'whatsapp_behavior' => in_array( $behavior, [ 'new_tab', 'same_tab' ], true ) ? $behavior : 'new_tab',
 			'spreadsheet_enabled' => 'yes' === ( $input['spreadsheet_enabled'] ?? '' ) ? 'yes' : 'no',
-			'webhook_url' => esc_url_raw( (string) ( $input['webhook_url'] ?? '' ) ),
-			'sheet_name' => sanitize_text_field( (string) ( $input['sheet_name'] ?? '' ) ),
+			'storage_provider' => 'api',
+			'api_url' => esc_url_raw( (string) ( $input['api_url'] ?? '' ) ),
 		];
 	}
 
-	public static function valid_webhook_url( string $url ): bool {
+	public static function api_url( ?array $settings = null ): string {
+		$settings = $settings ?? self::get();
+		if ( is_string( $settings['api_url'] ?? null ) && '' !== $settings['api_url'] ) { return $settings['api_url']; }
+		$shared_url = DaftarHadiahSettings::get()['api_url'];
+		return preg_match( '~/daftar-hadiah/?$~D', $shared_url ) ? (string) preg_replace( '~/daftar-hadiah/?$~D', '/form-order', $shared_url ) : '';
+	}
+
+	public static function valid_api_url( string $url ): bool {
+		$shared_url = DaftarHadiahSettings::get()['api_url'];
+		if ( ! DaftarHadiahSettings::valid_api_url( $url ) || ! DaftarHadiahSettings::valid_api_url( $shared_url ) ) { return false; }
 		$parts = wp_parse_url( $url );
-		return is_array( $parts )
-			&& ( $parts['scheme'] ?? '' ) === 'https'
-			&& ( $parts['host'] ?? '' ) === 'script.google.com'
-			&& empty( $parts['port'] )
-			&& empty( $parts['user'] ) && empty( $parts['pass'] )
-			&& empty( $parts['query'] ) && empty( $parts['fragment'] )
-			&& (bool) preg_match( '~^/macros/s/[A-Za-z0-9_-]+/exec$~D', $parts['path'] ?? '' );
+		$shared = wp_parse_url( $shared_url );
+		return $parts['scheme'] === $shared['scheme'] && strtolower( $parts['host'] ) === strtolower( $shared['host'] )
+			&& ( $parts['port'] ?? ( 'https' === $parts['scheme'] ? 443 : 80 ) ) === ( $shared['port'] ?? ( 'https' === $shared['scheme'] ? 443 : 80 ) );
 	}
 
-	private static function secret_key(): string {
-		return Crypto::derive_hkdf_key( wp_salt( 'auth' ), wp_salt( 'secure_auth' ), self::CONTEXT );
+	private static function api_fingerprint(): string {
+		return hash( 'sha256', self::api_url() . '|' . DaftarHadiahSettings::api_token() );
 	}
 
-	public static function save_secret( string $secret ): bool {
-		$encrypted = Crypto::encrypt_authenticated( $secret, self::secret_key(), self::CONTEXT );
-		if ( '' === $encrypted ) {
-			return false;
+	public static function api_connection(): array {
+		$value = get_option( self::API_CONNECTION_OPTION, [] );
+		if ( ! is_array( $value ) || ( $value['fingerprint'] ?? '' ) !== self::api_fingerprint() ) {
+			return [ 'connected' => false, 'message' => __( 'Belum diuji', 'apeiron-kit' ) ];
 		}
-		return update_option( self::SECRET_OPTION, $encrypted, false ) || get_option( self::SECRET_OPTION ) === $encrypted;
+		return [ 'connected' => true === ( $value['connected'] ?? false ), 'message' => is_string( $value['message'] ?? null ) ? $value['message'] : '' ];
 	}
 
-	public static function secret(): string {
-		$encrypted = get_option( self::SECRET_OPTION, '' );
-		return is_string( $encrypted ) ? Crypto::decrypt_authenticated( $encrypted, self::secret_key(), self::CONTEXT ) : '';
+	public static function api_ready(): bool {
+		return self::valid_api_url( self::api_url() ) && DaftarHadiahSettings::has_api_token() && self::api_connection()['connected'];
 	}
 
-	public static function has_secret(): bool {
-		return '' !== self::secret();
+	public static function test_api_connection( ?string &$failure = null ): bool {
+		$fingerprint = self::api_fingerprint();
+		$connected = self::send_to_api( [], [], [], '', $failure, true );
+		$message = $connected ? __( 'Koneksi Form Order API terverifikasi untuk penyimpanan khusus admin.', 'apeiron-kit' ) : ( $failure ?? __( 'Koneksi Form Order API gagal.', 'apeiron-kit' ) );
+		update_option( self::API_CONNECTION_OPTION, [ 'fingerprint' => $fingerprint, 'connected' => $connected, 'message' => $message ], false );
+		return $connected;
 	}
 
-	/** @param array<string,string|string[]> $fields */
-	public static function send_to_sheet( array $fields, string $type = 'order', ?string &$failure = null, array $labels = [], ?string &$version = null, string $submission_id = '' ): bool {
+	/** Write-only API contract; neither records nor credentials are returned to guests. */
+	public static function send_to_api( array $fields, array $labels, array $context, string $submission_id, ?string &$failure = null, bool $test = false ): bool {
 		$failure = null;
-		$version = null;
-		$settings = self::get();
-		$secret = self::secret();
-		if ( ! self::valid_webhook_url( $settings['webhook_url'] ) || '' === $secret ) {
-			$failure = __( 'URL Web App atau Secret Key belum tersimpan dengan benar.', 'apeiron-kit' );
+		$url = self::api_url();
+		$token = DaftarHadiahSettings::api_token();
+		if ( ! self::valid_api_url( $url ) || ! DaftarHadiahSettings::valid_api_token( $token ) ) {
+			$failure = __( 'Hubungkan Token Website Daftar Hadiah dan gunakan protokol, host, serta port API yang sama. HTTP hanya untuk alamat lokal.', 'apeiron-kit' );
 			return false;
 		}
-
-		$timeout = 'order' === $type ? 30 : 12;
-		$response = wp_safe_remote_post( $settings['webhook_url'], [
-			'timeout' => $timeout,
-			'redirection' => 0,
-			'reject_unsafe_urls' => true,
-			'headers' => [ 'Content-Type' => 'application/json' ],
-			'body' => wp_json_encode( [
-				'type' => $type,
-				'sheet' => $settings['sheet_name'],
-				'secret' => $secret,
-				'fields' => $fields,
-				'labels' => $labels,
-				'request_id' => $submission_id,
-			] ),
-		] );
-		if ( is_wp_error( $response ) ) {
-			$failure = __( 'Server WordPress tidak dapat menghubungi Google Apps Script. Periksa koneksi keluar atau SSL hosting.', 'apeiron-kit' );
-			return false;
+		$scope = [ 'website_id' => DaftarHadiahCatalog::website_id() ];
+		$body = [
+			'service' => self::API_SERVICE, 'schema_version' => 1, 'operation' => $test ? 'ping' : 'submit',
+			'correlation_id' => wp_generate_uuid4(), 'website_id' => $scope['website_id'], 'website_url' => home_url( '/' ),
+			'visibility' => 'admin_only',
+		];
+		if ( ! $test ) {
+			if ( ! is_int( $context['post_id'] ?? null ) || $context['post_id'] < 1
+				|| ! is_int( $context['document_id'] ?? null ) || $context['document_id'] < 1
+				|| ! is_string( $context['element_id'] ?? null ) || ! preg_match( '/^[A-Za-z0-9_-]{1,100}$/D', $context['element_id'] )
+				|| ! preg_match( '/^[a-f0-9]{64}$/D', $submission_id ) || ! $fields || count( $fields ) > 200 ) {
+				$failure = __( 'Konteks atau data pesanan Form Order tidak valid.', 'apeiron-kit' );
+				return false;
+			}
+			$scope += array_intersect_key( $context, array_flip( [ 'post_id', 'document_id', 'element_id' ] ) );
+			$body += $scope + [
+				'post_title' => sanitize_text_field( html_entity_decode( (string) get_the_title( $context['post_id'] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ),
+				'request_id' => $submission_id, 'fields' => $fields, 'labels' => $labels,
+			];
 		}
+		$local_api = DaftarHadiahSettings::is_local_api_url( $url );
+		$args = [
+			'timeout' => $test ? 12 : 30, 'redirection' => 0, 'reject_unsafe_urls' => ! $local_api, 'limit_response_size' => 262144,
+			'headers' => [ 'Content-Type' => 'application/json', 'Authorization' => 'Bearer ' . $token ],
+			'body' => wp_json_encode( $body ),
+		];
+		$response = $local_api ? wp_remote_post( $url, $args ) : wp_safe_remote_post( $url, $args );
+		if ( is_wp_error( $response ) ) { $failure = __( 'WordPress tidak dapat menghubungi API Form Order.', 'apeiron-kit' ); return false; }
 		$status = wp_remote_retrieve_response_code( $response );
-		$redirects = 0;
-		while ( in_array( $status, [ 302, 303 ], true ) && $redirects < 3 ) {
-			$location = wp_remote_retrieve_header( $response, 'location' );
-			$parts = is_string( $location ) ? wp_parse_url( $location ) : false;
-			if ( is_array( $parts ) && 'accounts.google.com' === ( $parts['host'] ?? '' ) ) {
-				$failure = __( 'Google meminta login. Pastikan Web App dijalankan sebagai Me dan dapat diakses Anyone.', 'apeiron-kit' );
-				return false;
-			}
-			if ( ! is_array( $parts ) || 'https' !== ( $parts['scheme'] ?? '' )
-				|| 'script.googleusercontent.com' !== ( $parts['host'] ?? '' )
-				|| '/macros/echo' !== ( $parts['path'] ?? '' )
-				|| isset( $parts['port'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) || isset( $parts['fragment'] ) ) {
-				$failure = __( 'Redirect Web App bukan respons Google Apps Script yang diharapkan. Periksa URL /exec dan akses Anyone.', 'apeiron-kit' );
-				return false;
-			}
-			$response = wp_safe_remote_get( $location, [ 'timeout' => $timeout, 'redirection' => 0, 'reject_unsafe_urls' => true ] );
-			if ( is_wp_error( $response ) ) {
-				$failure = __( 'Server WordPress tidak dapat mengambil respons Google Apps Script.', 'apeiron-kit' );
-				return false;
-			}
-			$status = wp_remote_retrieve_response_code( $response );
-			$redirects++;
-		}
-		if ( in_array( $status, [ 302, 303 ], true ) ) {
-			$failure = __( 'Respons Google terus dialihkan. Periksa akses Web App dan URL /exec.', 'apeiron-kit' );
+		if ( in_array( $status, [ 301, 302, 303, 307, 308 ], true ) ) { $failure = __( 'Gunakan URL endpoint API Form Order final tanpa redirect.', 'apeiron-kit' ); return false; }
+		if ( in_array( $status, [ 401, 403 ], true ) ) { $failure = __( 'Token Website tidak memiliki akses penyimpanan Form Order.', 'apeiron-kit' ); return false; }
+		if ( 429 === $status ) { $failure = __( 'Batas permintaan API Form Order tercapai. Silakan coba lagi nanti.', 'apeiron-kit' ); return false; }
+		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+		if ( ! is_array( $result ) || self::API_SERVICE !== ( $result['service'] ?? '' ) || self::API_VERSION !== ( $result['version'] ?? '' )
+			|| 1 !== ( $result['schema_version'] ?? null ) || $body['operation'] !== ( $result['operation'] ?? '' ) || $body['correlation_id'] !== ( $result['correlation_id'] ?? '' ) ) {
+			$failure = __( 'Respons API Form Order tidak sesuai kontrak form-order-api-v1.', 'apeiron-kit' );
 			return false;
 		}
-		if ( 200 !== $status ) {
-			$failure = 400 === $status
-				? __( 'HTTP 400: Google menolak permintaan Web App. Buat deployment Web app baru (Execute as: Me, akses: Anyone), lalu simpan ulang URL /exec di dashboard.', 'apeiron-kit' )
-				: sprintf( __( 'Web App merespons HTTP %d. Periksa URL /exec dan akses deployment (Anyone).', 'apeiron-kit' ), $status );
+		if ( $status < 200 || $status >= 300 || true !== ( $result['success'] ?? false ) ) {
+			$failure = 'request_conflict' === ( $result['error'] ?? '' ) ? __( 'Identitas pengiriman sudah dipakai untuk pesanan berbeda. Muat ulang formulir.', 'apeiron-kit' ) : __( 'Backend API Form Order belum mengonfirmasi penyimpanan pesanan.', 'apeiron-kit' );
 			return false;
 		}
-		$content = wp_remote_retrieve_body( $response );
-		$body = json_decode( $content, true );
-		if ( ! is_array( $body ) ) {
-			$failure = '' === trim( $content )
-				? __( 'Web App mengembalikan respons kosong. Periksa fungsi doPost pada deployment aktif.', 'apeiron-kit' )
-				: __( 'Web App mengembalikan halaman atau teks, bukan JSON. Periksa akses Anyone dan versi Code.gs pada deployment aktif.', 'apeiron-kit' );
+		$data = $result['data'] ?? null;
+		if ( ! is_array( $data ) || 'admin_only' !== ( $data['visibility'] ?? '' ) || ! is_array( $data['scope'] ?? null ) ) {
+			$failure = __( 'API Form Order belum memverifikasi penyimpanan khusus admin.', 'apeiron-kit' );
 			return false;
 		}
-		if ( true !== ( $body['success'] ?? false ) ) {
-			$reasons = [
-				'secret_missing' => __( 'Script Property APEIRON_FORM_ORDER_SECRET tidak ditemukan atau kosong pada project Web App yang aktif.', 'apeiron-kit' ),
-				'secret_mismatch' => __( 'Secret Key Apps Script tidak cocok dengan dashboard Form Order.', 'apeiron-kit' ),
-				'legacy_secret_mismatch' => __( 'Code.gs mengembalikan pesan Secret Key dari contoh lama. Contoh lama memakai Script Property APEIRON_SECRET; kode dashboard terbaru memakai APEIRON_FORM_ORDER_SECRET. Cocokkan kode dan nama property, lalu deploy versi terbaru.', 'apeiron-kit' ),
-				'sheet_not_found' => __( 'Nama tab Sheet tidak ditemukan. Samakan dengan Nama Sheet di dashboard.', 'apeiron-kit' ),
-				'invalid_fields' => __( 'Apps Script menolak data pesanan. Periksa kode Code.gs.', 'apeiron-kit' ),
-				'script_error' => __( 'Apps Script gagal memproses permintaan. Periksa ID Spreadsheet dan izin akses.', 'apeiron-kit' ),
-				'busy' => __( 'Spreadsheet sedang memproses pesanan lain. Silakan coba lagi.', 'apeiron-kit' ),
-			];
-			$legacy_messages = [
-				'Secret Key tidak cocok' => 'legacy_secret_mismatch',
-				'Tab sheet tidak ditemukan' => 'sheet_not_found',
-				'Data pesanan tidak valid' => 'invalid_fields',
-				'Apps Script gagal memproses permintaan' => 'script_error',
-			];
-			$legacy_message = is_string( $body['message'] ?? null ) ? $body['message'] : '';
-			$reason = is_string( $body['error'] ?? null ) && '' !== $body['error']
-				? $body['error']
-				: ( $legacy_messages[ $legacy_message ] ?? '' );
-			$failure = $reasons[ $reason ] ?? __( 'Web App mengembalikan JSON tanpa success:true. Pastikan deployment memakai versi terbaru dari kode Code.gs di dashboard.', 'apeiron-kit' );
-			if ( 'test' === $type && 'sheet_not_found' === $reason && is_array( $body['details'] ?? null ) ) {
-				$details = $body['details'];
-				$file = is_string( $details['spreadsheet'] ?? null ) ? sanitize_text_field( $details['spreadsheet'] ) : '';
-				$names = [];
-				foreach ( array_slice( is_array( $details['sheets'] ?? null ) ? $details['sheets'] : [], 0, 10 ) as $name ) {
-					if ( is_string( $name ) ) { $names[] = sanitize_text_field( $name ); }
-				}
-				if ( '' !== $file && $names ) {
-					$failure .= ' ' . sprintf( __( 'File yang dibuka Code.gs: %1$s. Tab yang tersedia: %2$s.', 'apeiron-kit' ), $file, implode( ', ', $names ) );
-				}
-			}
+		foreach ( $scope as $key => $value ) {
+			if ( ( $data['scope'][ $key ] ?? null ) !== $value ) { $failure = __( 'Identitas website atau formulir pada respons API tidak cocok.', 'apeiron-kit' ); return false; }
+		}
+		if ( $test ) {
+			if ( true !== ( $data['storage_ready'] ?? false ) ) { $failure = __( 'Penyimpanan Form Order belum siap. Periksa migrasi database dan izin modul pada server.', 'apeiron-kit' ); return false; }
+			return true;
+		}
+		if ( 'stored' !== ( $data['status'] ?? '' ) || $submission_id !== ( $data['request_id'] ?? '' )
+			|| ! is_string( $data['order_id'] ?? null ) || ! preg_match( '/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/Di', $data['order_id'] )
+			|| ! is_string( $data['timestamp'] ?? null ) || ! preg_match( '/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/D', $data['timestamp'] ) ) {
+			$failure = __( 'API Form Order tidak mengembalikan bukti penyimpanan pesanan yang valid.', 'apeiron-kit' );
 			return false;
 		}
-		$version = is_string( $body['version'] ?? null ) ? $body['version'] : null;
 		return true;
 	}
+
 }

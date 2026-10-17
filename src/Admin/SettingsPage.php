@@ -13,7 +13,9 @@ use ApeironKit\Admin\Tabs\StickerTab;
 use ApeironKit\Admin\Tabs\SocialProofTab;
 use ApeironKit\Admin\Tabs\UcapanTamuTab;
 use ApeironKit\Admin\Tabs\FormOrderTab;
+use ApeironKit\Admin\Tabs\DaftarHadiahTab;
 use ApeironKit\Admin\Ajax\FormOrderHandler;
+use ApeironKit\Admin\Ajax\DaftarHadiahHandler;
 use ApeironKit\Admin\Ajax\SocialProofHandler;
 use ApeironKit\Admin\Ajax\UcapanTamuHandler;
 use ApeironKit\Admin\Ajax\WidgetToggleHandler;
@@ -36,6 +38,11 @@ class SettingsPage {
 		'ucapan_tamu_save'      => [ UcapanTamuHandler::class, 'save_settings' ],
 		'form_order_save'       => [ FormOrderHandler::class, 'save_settings' ],
 		'form_order_test'       => [ FormOrderHandler::class, 'test_connection' ],
+		'daftar_hadiah_save'    => [ DaftarHadiahHandler::class, 'save_settings' ],
+		'daftar_hadiah_test'    => [ DaftarHadiahHandler::class, 'test_connection' ],
+		'daftar_hadiah_catalogs' => [ DaftarHadiahHandler::class, 'load_catalogs' ],
+		'daftar_hadiah_sync'    => [ DaftarHadiahHandler::class, 'sync_catalog' ],
+		'daftar_hadiah_reservations' => [ DaftarHadiahHandler::class, 'read_reservations' ],
 	];
 
 	private string $main_slug   = 'apeiron-kit';
@@ -50,6 +57,7 @@ class SettingsPage {
 	private ?SocialProofTab $social_proof_tab = null;
 	private ?UcapanTamuTab $ucapan_tamu_tab = null;
 	private ?FormOrderTab $form_order_tab = null;
+	private ?DaftarHadiahTab $daftar_hadiah_tab = null;
 
 	public function __construct( ?LicenseManager $license_manager = null ) {
 		$this->license_manager = $license_manager;
@@ -141,6 +149,7 @@ class SettingsPage {
 		$allowed = [
 			'widgets',
 			'form-order',
+			'daftar-hadiah',
 			'cover',
 			'ucapan-tamu',
 			'social-proof',
@@ -282,6 +291,7 @@ class SettingsPage {
 					'ucapan-tamu'  => [ __( 'Ucapan Tamu', 'apeiron-kit' ), 'format-chat' ],
 					'cover'        => [ __( 'Sampul', 'apeiron-kit' ), 'format-image' ],
 					'form-order'   => [ __( 'Form Order', 'apeiron-kit' ), 'feedback' ],
+					'daftar-hadiah' => [ __( 'Daftar Hadiah', 'apeiron-kit' ), 'products' ],
 					'social-proof' => [ __( 'Aktivitas', 'apeiron-kit' ), 'megaphone' ],
 				],
 			],
@@ -354,6 +364,11 @@ class SettingsPage {
 		if ( 'form-order' === $active_tab ) {
 			$this->form_order_tab ??= new FormOrderTab();
 			$this->form_order_tab->render();
+			return;
+		}
+		if ( 'daftar-hadiah' === $active_tab ) {
+			$this->daftar_hadiah_tab ??= new DaftarHadiahTab();
+			$this->daftar_hadiah_tab->render();
 			return;
 		}
 
@@ -476,6 +491,19 @@ class SettingsPage {
 			$this->get_admin_asset_url( 'assets/js/admin-form-order', 'js' ),
 			[ 'jquery' ],
 			$this->get_admin_asset_version( 'assets/js/admin-form-order', 'js' ),
+			true
+		);
+		wp_enqueue_style(
+			'apeiron-kit-admin-daftar-hadiah',
+			$this->get_admin_asset_url( 'assets/css/admin-daftar-hadiah', 'css' ),
+			[],
+			$this->get_admin_asset_version( 'assets/css/admin-daftar-hadiah', 'css' )
+		);
+		wp_enqueue_script(
+			'apeiron-kit-admin-daftar-hadiah',
+			$this->get_admin_asset_url( 'assets/js/admin-daftar-hadiah', 'js' ),
+			[ 'jquery' ],
+			$this->get_admin_asset_version( 'assets/js/admin-daftar-hadiah', 'js' ),
 			true
 		);
 

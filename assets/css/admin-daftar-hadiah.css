@@ -1,0 +1,51 @@
+.apeiron-daftar-hadiah-admin__heading { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.apeiron-daftar-hadiah-admin__description { margin: 0; color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-body); line-height: var(--apeiron-line-height-help); }
+.apeiron-daftar-hadiah-admin__content { display: grid; gap: var(--apeiron-space-4); }
+.apeiron-daftar-hadiah-admin .apeiron-card { width: 100%; min-width: 0; max-width: none; margin: 0; padding: 0; overflow: hidden; }
+.apeiron-daftar-hadiah-admin__tabs { display: flex; min-width: 0; overflow-x: auto; border-bottom: 1px solid var(--apeiron-border-soft); scrollbar-width: thin; }
+.apeiron-daftar-hadiah-admin__tab { flex: 1 0 140px; min-height: var(--apeiron-control-height); margin: 0; padding: 8px 16px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: #fff; color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-ui); line-height: var(--apeiron-line-height-ui); text-align: center; white-space: nowrap; box-shadow: none; cursor: pointer; }
+.apeiron-daftar-hadiah-admin__tab:hover { background: var(--apeiron-surface-soft); color: var(--apeiron-text); }
+.apeiron-daftar-hadiah-admin__tab.is-active, .apeiron-daftar-hadiah-admin__tab.is-active:hover { border-bottom-color: var(--apeiron-primary); background: var(--apeiron-primary-soft); color: var(--apeiron-primary); font-weight: var(--apeiron-font-weight-title); }
+.apeiron-daftar-hadiah-admin__tab:focus-visible { outline: 2px solid var(--apeiron-border-hover); outline-offset: -4px; }
+.apeiron-daftar-hadiah-admin__panel[hidden] { display: none; }
+.apeiron-daftar-hadiah-admin fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.apeiron-daftar-hadiah-admin legend { margin-bottom: var(--apeiron-space-4); padding: 0; color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-title); font-weight: var(--apeiron-font-weight-title); line-height: var(--apeiron-line-height-ui); }
+.apeiron-daftar-hadiah-admin__intro { max-width: 860px; margin: 0 0 var(--apeiron-space-4); color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); line-height: var(--apeiron-line-height-body); }
+.apeiron-daftar-hadiah-admin__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--apeiron-space-4); max-width: 860px; }
+.apeiron-daftar-hadiah-admin__wide { grid-column: 1 / -1; }
+.apeiron-daftar-hadiah-admin .apeiron-form-group { min-width: 0; margin-bottom: 0; }
+.apeiron-daftar-hadiah-admin .apeiron-label { margin: 0 0 6px; color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-ui); line-height: var(--apeiron-line-height-ui); }
+.apeiron-settings-wrap .apeiron-daftar-hadiah-admin input.apeiron-input,
+.apeiron-settings-wrap .apeiron-daftar-hadiah-admin select.apeiron-select { box-sizing: border-box; width: 100%; max-width: none; height: var(--apeiron-control-height); min-height: var(--apeiron-control-height); margin: 0; padding: 0 12px; border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); background-color: #fff; color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-body); line-height: var(--apeiron-line-height-ui); box-shadow: none; }
+.apeiron-settings-wrap .apeiron-daftar-hadiah-admin select.apeiron-select { padding-right: 34px; }
+.apeiron-daftar-hadiah-admin .apeiron-input:hover,
+.apeiron-daftar-hadiah-admin .apeiron-select:hover { border-color: var(--apeiron-border-hover); }
+.apeiron-daftar-hadiah-admin .apeiron-input:focus,
+.apeiron-daftar-hadiah-admin .apeiron-select:focus { border-color: var(--apeiron-border-hover); background-color: #fff; outline: none; box-shadow: none; }
+.apeiron-daftar-hadiah-admin__toggle { display: flex; align-items: center; justify-content: space-between; gap: var(--apeiron-space-4); max-width: 860px; margin: 0 0 var(--apeiron-space-4); padding: 12px 14px; border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); color: var(--apeiron-text-label); font-size: var(--apeiron-font-size-body); font-weight: var(--apeiron-font-weight-ui); line-height: var(--apeiron-line-height-ui); cursor: pointer; }
+.apeiron-daftar-hadiah-admin .apeiron-hint { max-width: 860px; margin: 6px 0 0; font-style: normal; }
+.apeiron-daftar-hadiah-admin fieldset > .apeiron-hint { margin: 8px 0 16px; }
+.apeiron-daftar-hadiah-admin__actions { margin-top: var(--apeiron-space-4); padding-top: var(--apeiron-space-4); }
+.apeiron-daftar-hadiah-admin__feedback { margin: 12px 0 0; color: var(--apeiron-text-muted); font-size: var(--apeiron-font-size-body); overflow-wrap: anywhere; }
+.apeiron-daftar-hadiah-admin__feedback:empty { display: none; }
+.apeiron-daftar-hadiah-admin__feedback.is-error { color: var(--apeiron-danger, #b42318); }
+.apeiron-daftar-hadiah-admin__setup { max-width: 860px; margin: 8px 0 var(--apeiron-space-4); padding: 12px 14px; border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); }
+.apeiron-daftar-hadiah-admin__setup summary { cursor: pointer; font-weight: var(--apeiron-font-weight-ui); }
+.apeiron-daftar-hadiah-admin__setup ol { margin: 12px 0; padding-left: 24px; }
+.apeiron-daftar-hadiah-admin__setup li { margin-bottom: 8px; overflow-wrap: anywhere; }
+.apeiron-daftar-hadiah-admin__setup textarea { box-sizing: border-box; display: block; width: 100%; min-height: 260px; margin: 0 0 12px; padding: 10px; border: 1px solid var(--apeiron-border-soft); border-radius: var(--apeiron-radius); background: var(--apeiron-surface-soft); font-family: monospace; font-size: 12px; white-space: pre; scrollbar-width: none; }
+.apeiron-daftar-hadiah-admin__setup textarea::-webkit-scrollbar { display: none; }
+.apeiron-daftar-hadiah-admin__setup [data-hadiah-copy-feedback]:empty { display: none; }
+.apeiron-daftar-hadiah-admin__setup [data-hadiah-copy-feedback]:not(:empty) { margin: 8px 0 0; }
+.apeiron-daftar-hadiah-admin__table { margin-top: var(--apeiron-space-4); overflow-x: auto; }
+.apeiron-daftar-hadiah-admin__table[hidden] { display: none; }
+.apeiron-daftar-hadiah-admin table { width: 100%; border-collapse: collapse; font-size: var(--apeiron-font-size-body); }
+.apeiron-daftar-hadiah-admin th,
+.apeiron-daftar-hadiah-admin td { padding: 10px 12px; border-bottom: 1px solid var(--apeiron-border-soft); color: var(--apeiron-text-label); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.apeiron-daftar-hadiah-admin th { font-weight: var(--apeiron-font-weight-title); background: var(--apeiron-surface-soft); white-space: nowrap; }
+.apeiron-daftar-hadiah-admin__table > .apeiron-btn { margin-top: 12px; }
+@media (max-width: 782px) {
+	.apeiron-daftar-hadiah-admin__grid { grid-template-columns: minmax(0, 1fr); }
+	.apeiron-daftar-hadiah-admin__wide { grid-column: auto; }
+	.apeiron-daftar-hadiah-admin .apeiron-actions .apeiron-btn { width: 100%; }
+}

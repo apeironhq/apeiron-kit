@@ -10,6 +10,7 @@ use ApeironKit\Admin\SettingsPage;
 use ApeironKit\Elementor\WidgetManager;
 use ApeironKit\Rest\CommentsController;
 use ApeironKit\Rest\FormOrderController;
+use ApeironKit\Rest\DaftarHadiahController;
 use ApeironKit\Support\AssetManager;
 use ApeironKit\Support\CommentDockSettingsStore;
 use ApeironKit\Support\LegacyContentCleanup;
@@ -31,6 +32,11 @@ class Plugin {
 		'ucapan_tamu_save'      => 'apeiron_save_ucapan_tamu',
 		'form_order_save'       => 'apeiron_save_form_order',
 		'form_order_test'       => 'apeiron_test_form_order',
+		'daftar_hadiah_save'    => 'apeiron_save_daftar_hadiah',
+		'daftar_hadiah_test'    => 'apeiron_test_daftar_hadiah',
+		'daftar_hadiah_catalogs' => 'apeiron_load_daftar_hadiah_catalogs',
+		'daftar_hadiah_sync'    => 'apeiron_sync_daftar_hadiah',
+		'daftar_hadiah_reservations' => 'apeiron_read_daftar_hadiah_reservations',
 	];
 
 	private const LICENSE_AJAX_ACTIONS = [
@@ -101,6 +107,7 @@ class Plugin {
 	public function register_rest_routes(): void {
 		( new CommentsController() )->register_routes();
 		( new FormOrderController() )->register_routes();
+		( new DaftarHadiahController() )->register_routes();
 	}
 
 	/** Daftarkan aset hanya saat hook terkait dapat berjalan. */

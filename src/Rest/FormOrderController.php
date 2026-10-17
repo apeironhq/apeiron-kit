@@ -34,9 +34,12 @@ final class FormOrderController {
 		}
 		$settings = FormOrderSettings::get();
 		$use_whatsapp = in_array( $settings['delivery_target'], [ 'whatsapp', 'both' ], true );
-		$use_sheet = in_array( $settings['delivery_target'], [ 'spreadsheet', 'both' ], true );
-		if ( ( $use_whatsapp && 'yes' !== $settings['whatsapp_enabled'] ) || ( $use_sheet && 'yes' !== $settings['spreadsheet_enabled'] ) ) {
+		$use_storage = in_array( $settings['delivery_target'], [ 'spreadsheet', 'both' ], true );
+		if ( ( $use_whatsapp && 'yes' !== $settings['whatsapp_enabled'] ) || ( $use_storage && 'yes' !== $settings['spreadsheet_enabled'] ) ) {
 			return $this->error( 'not_configured', __( 'Form Order belum dikonfigurasi.', 'apeiron-kit' ), 503 );
+		}
+		if ( $use_storage && ! FormOrderSettings::api_ready() ) {
+			return $this->error( 'not_configured', __( 'Penyimpanan Form Order belum terhubung. Hubungi pengelola website.', 'apeiron-kit' ), 503 );
 		}
 		$post_id = absint( $request->get_param( 'post_id' ) );
 		$document_id = absint( $request->get_param( 'document_id' ) );
@@ -70,7 +73,6 @@ final class FormOrderController {
 			return $this->error( 'invalid_fields', __( 'Data formulir tidak valid.', 'apeiron-kit' ), 422 );
 		}
 		$fields = [];
-		$sheet_fields = [];
 		$details = [];
 		$labels = [];
 		$label_contexts = [];
@@ -137,11 +139,9 @@ final class FormOrderController {
 				continue;
 			}
 			$fields[ $name ] = $value;
-			$sheet_fields[ $name ] = $value;
 			$display = is_array( $value ) ? $value : ( '' === $value ? [] : [ $value ] );
 			if ( 'date' === $definition['type'] && '' !== $value ) {
 				$display = [ FieldSchema::display_date( $value ) ];
-				$sheet_fields[ $name ] = "'" . $display[0];
 			}
 			if ( in_array( $definition['type'], [ 'select', 'radio', 'checkbox' ], true ) ) {
 				$display = array_map( static function ( $option ) use ( $definition ) { return $definition['options'][ $option ] ?? $option; }, $display );
@@ -161,18 +161,23 @@ final class FormOrderController {
 			$used_labels[ $title ] = ( $used_labels[ $title ] ?? 0 ) + 1;
 			$labels[ $name ] = $used_labels[ $title ] > 1 ? $title . ' (' . $used_labels[ $title ] . ')' : $title;
 		}
-		$send_sheet = $use_sheet && ! empty( $fields );
+		$send_storage = $use_storage && ! empty( $fields );
 		$send_whatsapp = $use_whatsapp && ! empty( $details );
-		if ( ! $send_sheet && ! $send_whatsapp ) {
+		if ( ! $send_storage && ! $send_whatsapp ) {
 			return $this->error( 'no_delivery_target', __( 'Tidak ada tujuan pengiriman aktif untuk field Form Order ini.', 'apeiron-kit' ), 422 );
 		}
-		$sheet_failure = null;
-		$sheet_version = null;
+		$storage_failure = null;
 		$submission_id = is_string( $request_id ) && '' !== $request_id
 			? hash( 'sha256', wp_hash( 'apeiron-form-order-request|' . $post_id . '|' . $document_id . '|' . $element_id . '|' . $request_id . '|' . wp_json_encode( $fields ) ) )
 			: '';
-		if ( $send_sheet && ! FormOrderSettings::send_to_sheet( $sheet_fields, 'order', $sheet_failure, $labels, $sheet_version, $submission_id ) ) {
-			return $this->error( 'sheet_failed', __( 'Gagal mengirim ke Google Spreadsheet. Data belum diteruskan ke WhatsApp; coba lagi atau hubungi pengelola.', 'apeiron-kit' ), 502 );
+		if ( $send_storage && '' === $submission_id ) {
+			return $this->error( 'invalid_request', __( 'Identitas pengiriman belum tersedia. Muat ulang formulir dan coba lagi.', 'apeiron-kit' ), 422 );
+		}
+		if ( $send_storage ) {
+			$stored = FormOrderSettings::send_to_api( $fields, $labels, [ 'post_id' => $post_id, 'document_id' => $document_id, 'element_id' => $element_id ], $submission_id, $storage_failure );
+			if ( ! $stored ) {
+				return $this->error( 'sheet_failed', __( 'Gagal menyimpan pesanan. Data belum diteruskan ke WhatsApp; coba lagi atau hubungi pengelola.', 'apeiron-kit' ), 502 );
+			}
 		}
 		$result = [ 'message' => $settings['success_message'] ?? __( 'Pesanan berhasil diproses.', 'apeiron-kit' ), 'whatsapp_url' => '' ];
 		if ( $send_whatsapp ) {

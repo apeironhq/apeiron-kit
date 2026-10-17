@@ -11,6 +11,7 @@ use ApeironKit\Elementor\Widgets\CommentDock\CommentDock;
 use ApeironKit\Elementor\Widgets\Countdown\Countdown;
 use ApeironKit\Elementor\Widgets\Countdown\LegacyPulseCountdown;
 use ApeironKit\Elementor\Widgets\Cover\Cover;
+use ApeironKit\Elementor\Widgets\DaftarHadiah\DaftarHadiah;
 use ApeironKit\Elementor\Widgets\FormOrder\FormOrder;
 use ApeironKit\Elementor\Widgets\GuestInvitationManager\GuestInvitationManager;
 use ApeironKit\Elementor\Widgets\PageLoader\PageLoader;
@@ -148,6 +149,15 @@ final class WidgetRegistry {
 			'js_file'  => 'widgets/cerita-cinta',
 			'js_deps'  => [],
 		],
+		'daftar_hadiah' => [
+			'class' => DaftarHadiah::class,
+			'type'  => 'apeiron-daftar-hadiah',
+			'css'   => 'apeiron-kit-daftar-hadiah',
+			'js'    => 'apeiron-kit-daftar-hadiah-js',
+			'css_file' => 'apeiron-daftar-hadiah',
+			'js_file'  => 'widgets/daftar-hadiah',
+			'js_deps'  => [],
+		],
 	];
 
 	/**
@@ -186,6 +196,7 @@ final class WidgetRegistry {
 		'page_loader',
 		'cover',
 		'cerita_cinta',
+		'daftar_hadiah',
 	];
 
 	/**
@@ -206,6 +217,7 @@ final class WidgetRegistry {
 		'page_loader',
 		'cover',
 		'cerita_cinta',
+		'daftar_hadiah',
 	];
 
 	/**
@@ -226,6 +238,7 @@ final class WidgetRegistry {
 		'page_loader',
 		'cover',
 		'cerita_cinta',
+		'daftar_hadiah',
 	];
 
 	/**
@@ -541,6 +554,14 @@ final class WidgetRegistry {
 				'color'       => 'rose',
 				'label'       => __( 'Cerita Cinta', 'apeiron-kit' ),
 				'description' => __( 'Timeline cerita cinta dengan foto polaroid dan animasi scroll Scrapbook Story.', 'apeiron-kit' ),
+				'group'       => __( 'Event', 'apeiron-kit' ),
+				'group_key'   => 'event',
+			],
+			'daftar_hadiah' => [
+				'icon'        => 'products',
+				'color'       => 'primary',
+				'label'       => __( 'Daftar Hadiah', 'apeiron-kit' ),
+				'description' => __( 'Katalog dan reservasi hadiah per undangan melalui dashboard Daftar Hadiah.', 'apeiron-kit' ),
 				'group'       => __( 'Event', 'apeiron-kit' ),
 				'group_key'   => 'event',
 			],

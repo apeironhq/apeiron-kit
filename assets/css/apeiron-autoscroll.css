@@ -168,7 +168,8 @@
 	animation: buttonAppearElastic var(--ak-button-appear-duration, 0.5s) cubic-bezier(0.68, -0.55, 0.265, 1.55) var(--ak-button-appear-delay, 0s) forwards;
 }
 
-[id^="apeiron-autoscroll-"] .apeiron-scroll-btn {
+[id^="apeiron-autoscroll-"] .apeiron-scroll-btn,
+[id^="apeiron-autoscroll-"] .apeiron-scroll-btn:is(:hover, :focus, :active) {
 	position: relative;
 	display: flex;
 	align-items: center;
@@ -824,7 +825,8 @@
 	animation: speedValueBounce 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-[id^="apeiron-autoscroll-"] .speed-arrow {
+[id^="apeiron-autoscroll-"] .speed-arrow,
+[id^="apeiron-autoscroll-"] .speed-arrow:focus {
 	width: var(--ak-speed-arrow-size, 30px);
 	height: var(--ak-speed-arrow-size, 30px);
 	border: none;
@@ -909,7 +911,8 @@
 }
 
 
-[id^="apeiron-autoscroll-"] .apeiron-scroll-top-btn {
+[id^="apeiron-autoscroll-"] .apeiron-scroll-top-btn,
+[id^="apeiron-autoscroll-"] .apeiron-scroll-top-btn:is(:hover, :focus, :active) {
 	position: absolute;
 	top: calc(100% + var(--ak-scroll-top-gap, 10px));
 	left: 50%;
@@ -918,6 +921,8 @@
 	justify-content: center;
 	border: none;
 	cursor: pointer;
+	background: var(--ak-scroll-top-bg, #083c57);
+	color: var(--ak-scroll-top-color, #ffffff);
 	transition:
 		opacity 0.16s ease,
 		transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
@@ -1960,16 +1965,22 @@
 
 @media (pointer: coarse) {
 	[id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-scroll-btn {
-		min-width: var(--ak-capsule-min-width, 44px);
+		min-width: var(--ak-capsule-min-width, 40px);
 	}
 
 	[id^="apeiron-autoscroll-"] .speed-arrow {
-		min-width: 44px;
-		min-height: 44px;
+		min-width: var(--ak-speed-arrow-size, 30px);
+		min-height: var(--ak-speed-arrow-size, 30px);
+	}
+
+	[id^="apeiron-autoscroll-"] .speed-arrow::before {
+		content: "";
+		position: absolute;
+		inset: min(0px, calc((var(--ak-speed-arrow-size, 30px) - 44px) / 2));
 	}
 
 	[id^="apeiron-autoscroll-"] .apeiron-speed-control.layout-vertical.is-default-speed-size .speed-arrow::before {
-		inset: -10px;
+		inset: min(-10px, calc((var(--ak-speed-arrow-size, 30px) - 44px) / 2));
 	}
 }
 

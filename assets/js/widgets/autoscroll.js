@@ -1268,6 +1268,10 @@
             }
 
             function getSpeedControlAnimationDuration() {
+                var cssDuration = getComputedStyle(container).getPropertyValue('--ak-speed-control-animation-duration').trim();
+                var cssValue = parseFloat(cssDuration);
+                if (Number.isFinite(cssValue) && cssDuration.endsWith('ms')) return Math.max(0, cssValue);
+                if (Number.isFinite(cssValue) && cssDuration.endsWith('s')) return Math.max(0, cssValue * 1000);
                 var duration = parseInt(config.speedControlAnimationDuration, 10);
                 return Number.isFinite(duration) ? Math.max(0, duration) : 0;
             }
@@ -2104,7 +2108,157 @@
     var detachObserver = null;
     var pruneRAF = null;
 
+    function registerEditorStyleControls() {
+        var host;
+        try {
+            host = window.parent;
+            if (host === window || !host.elementor || host.__apeironAutoScrollStyleControls) return;
+        } catch (error) {
+            return; // The containing page may be on another origin.
+        }
+
+        var editor = host.elementor;
+        if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
+        host.__apeironAutoScrollStyleControls = true;
+
+        function registerPanel() {
+            var panel = editor.panel && editor.panel.currentView;
+            var page = panel && panel.getPages('editor');
+            if (!page || !page.view || !page.view.extend || page.view.__apeironAutoScrollStyleControls) return;
+            var NativeEditor = page.view;
+
+            page.view = NativeEditor.extend({
+                filter: function (control, index, collection) {
+                    if (!NativeEditor.prototype.filter.call(this, control, index, collection)) return false;
+                    if (this.model.get('widgetType') !== 'apeiron-autoscroll' ||
+                        control.get('tab') !== 'style') return true;
+                    var innerTab = control.get('inner_tab');
+                    if (control.get('tabs_wrapper') === 'tabs_speed_control_style' && innerTab &&
+                        innerTab !== (this.__apeironSpeedStyleTab || 'tab_speed_panel')) return false;
+                    if (control.get('tabs_wrapper') === 'tabs_button_style' && innerTab &&
+                        innerTab !== (this.__apeironButtonStyleTab || 'tab_button_normal')) return false;
+                    // Keep native popover groups intact within the loaded tab.
+                    if (control.get('popover')) return true;
+                    var settings = this.model.get('settings');
+                    if (editor.helpers.isActiveControl(control, settings.attributes, settings.controls)) return true;
+                    if (!control.get('responsive')) return false;
+                    // Elementor propagates placeholders through every responsive sibling.
+                    var parent = control;
+                    while (parent.get('parent')) {
+                        var ancestor = this.getControlModel(parent.get('parent'));
+                        if (!ancestor) break;
+                        parent = ancestor;
+                    }
+                    var family = [parent];
+                    for (var i = 0; i < family.length; i++) {
+                        if (editor.helpers.isActiveControl(family[i], settings.attributes, settings.controls)) return true;
+                        var inheritors = family[i].get('inheritors') || [];
+                        for (var j = 0; j < inheritors.length; j++) {
+                            var child = this.getControlModel(inheritors[j]);
+                            if (child) family.push(child);
+                        }
+                    }
+                    return false;
+                },
+                getControlViewByName: function (name) {
+                    var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                    if (control || this.model.get('widgetType') !== 'apeiron-autoscroll' ||
+                        this.activeTab !== 'style' ||
+                        (this.activeSection !== 'section_style_speed_container' && this.activeSection !== 'section_style_button')) return control;
+                    var model = this.getControlModel(name);
+                    var innerTab = model && model.get('inner_tab');
+                    var wrapper = model && model.get('tabs_wrapper');
+                    if (!innerTab || model.get('section') !== this.activeSection ||
+                        (wrapper !== 'tabs_speed_control_style' && wrapper !== 'tabs_button_style')) return control;
+                    // Elementor routes can open a control before its tab has been visited.
+                    if (wrapper === 'tabs_button_style') this.__apeironButtonStyleTab = innerTab;
+                    else this.__apeironSpeedStyleTab = innerTab;
+                    this._renderChildren();
+                    var tab = NativeEditor.prototype.getControlViewByName.call(this, innerTab);
+                    if (tab) this.triggerMethod('childview:control:tab:clicked', tab);
+                    return NativeEditor.prototype.getControlViewByName.call(this, name);
+                },
+                activateSection: function (section) {
+                    if (this.model.get('widgetType') === 'apeiron-autoscroll') {
+                        if (section === 'section_style_speed_container') this.__apeironSpeedStyleTab = 'tab_speed_panel';
+                        else if (section === 'section_style_button') this.__apeironButtonStyleTab = 'tab_button_normal';
+                    }
+                    return NativeEditor.prototype.activateSection.apply(this, arguments);
+                },
+                initialize: function () {
+                    NativeEditor.prototype.initialize.apply(this, arguments);
+                    if (this.model.get('widgetType') !== 'apeiron-autoscroll') return;
+
+                    var view = this;
+                    var settings = view.model.get('settings');
+                    var refreshRAF = null;
+                    var visibleControls = '';
+                    view.__apeironSpeedStyleTab = 'tab_speed_panel';
+                    view.__apeironButtonStyleTab = 'tab_button_normal';
+
+                    function visibilitySignature() {
+                        return view.collection.filter(view.filter, view).map(function (control) {
+                            return control.cid;
+                        }).join('|');
+                    }
+
+                    function refreshConditionalControls() {
+                        refreshRAF = null;
+                        if (view.__apeironSpeedStyleTab === 'tab_speed_arrows' && settings.get('show_speed_arrows') !== 'yes') {
+                            view.__apeironSpeedStyleTab = 'tab_speed_panel';
+                        }
+                        if (view.activeTab !== 'style' || visibilitySignature() === visibleControls) return;
+
+                        var activeTabs = view.children.filter(function (child) {
+                            return child.model.get('type') === 'tab' && child.el.classList.contains('e-tab-active');
+                        }).map(function (child) { return child.model.get('name'); });
+
+                        view._renderChildren();
+                        activeTabs.forEach(function (name) {
+                            var tab = view.getControlViewByName(name);
+                            if (tab) view.triggerMethod('childview:control:tab:clicked', tab);
+                        });
+                    }
+
+                    function scheduleControlsRefresh() {
+                        if (view.activeTab === 'style' && !refreshRAF) {
+                            refreshRAF = host.requestAnimationFrame(refreshConditionalControls);
+                        }
+                    }
+
+                    view.on('render:collection', function () {
+                        visibleControls = visibilitySignature();
+                    });
+                    view.listenTo(settings, 'change', scheduleControlsRefresh);
+                    view.on('childview:control:tab:clicked', function (tab) {
+                        var name = tab.model.get('name');
+                        if (tab.model.get('tabs_wrapper') === 'tabs_button_style') {
+                            if (name !== view.__apeironButtonStyleTab) {
+                                view.__apeironButtonStyleTab = name;
+                                scheduleControlsRefresh();
+                            }
+                            return;
+                        }
+                        if (tab.model.get('tabs_wrapper') !== 'tabs_speed_control_style' || name === view.__apeironSpeedStyleTab) return;
+                        view.__apeironSpeedStyleTab = name;
+                        scheduleControlsRefresh();
+                    });
+                    view.on('destroy', function () {
+                        if (refreshRAF) host.cancelAnimationFrame(refreshRAF);
+                    });
+                }
+            });
+            page.view.__apeironAutoScrollStyleControls = true;
+        }
+
+        editor.hooks.addAction('panel/open_editor/widget/apeiron-autoscroll', registerPanel);
+        editor.on('preview:loaded', registerPanel);
+        if (editor.panel && editor.panel.currentView) registerPanel();
+        else editor.once('panel:init', registerPanel);
+    }
+
     function registerElementorHook() {
+        registerEditorStyleControls();
         if (elementorHookRegistered) return;
         if (typeof elementorFrontend === 'undefined' || !elementorFrontend.hooks) {
             return;

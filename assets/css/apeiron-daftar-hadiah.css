@@ -337,6 +337,12 @@
 	transform: none;
 }
 
+.apeiron-daftar-hadiah .apeiron-daftar-hadiah__button--primary:is(:focus, :disabled) {
+	border-color: transparent;
+	background: var(--apeiron-primary, #083c57);
+	color: #fff;
+}
+
 .apeiron-daftar-hadiah .apeiron-daftar-hadiah__button--primary:is(:hover, :active):not(:disabled) {
 	border-color: transparent;
 	background: var(--apeiron-primary-dark, #062a3d);
@@ -542,6 +548,12 @@
 	box-shadow: none;
 	outline: none;
 	cursor: pointer;
+}
+
+.apeiron-daftar-hadiah .apeiron-daftar-hadiah__close:focus {
+	border-color: transparent;
+	background: transparent;
+	color: var(--apeiron-text-muted, #475467);
 }
 
 .apeiron-daftar-hadiah .apeiron-daftar-hadiah__close:is(:hover, :active) {

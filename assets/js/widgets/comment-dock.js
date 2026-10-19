@@ -1960,8 +1960,148 @@
 		bootstrap(document);
 	}
 
+	function registerEditorControls() {
+		let host;
+		try {
+			host = window.parent;
+			if (!host || host === window || !host.elementor || host.__apeironCommentDockControls) return;
+		} catch (error) {
+			return; // The containing page may be on another origin.
+		}
+
+		const editor = host.elementor;
+		if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
+		host.__apeironCommentDockControls = true;
+
+		function registerPanel() {
+			const panel = editor.panel && editor.panel.currentView;
+			const page = panel && panel.getPages('editor');
+			if (!page || !page.view || !page.view.extend || page.view.__apeironCommentDockControls) return;
+			const NativeEditor = page.view;
+			const isDock = (view) => view.model.get('widgetType') === 'apeiron-comment-dock';
+			const isDockTab = (tab) => tab === 'content' || tab === 'style';
+
+			page.view = NativeEditor.extend({
+				initCollection() {
+					if (!isDock(this) || !isDockTab(this.getOption('tab'))) return NativeEditor.prototype.initCollection.apply(this, arguments);
+					// Defer full control defaults until a view is actually needed.
+					this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
+				},
+				getChildView(control) {
+					if (isDock(this) && isDockTab(this.getOption('tab'))) {
+						// Behaviors also read defaults before the native control's initialize().
+						control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+					}
+					return NativeEditor.prototype.getChildView.apply(this, arguments);
+				},
+				filter(control, index, collection) {
+					if (!NativeEditor.prototype.filter.call(this, control, index, collection)) return false;
+					if (!isDock(this) || !isDockTab(control.get('tab'))) return true;
+					const owner = this.__dockPopoverOwners && this.__dockPopoverOwners.get(control.cid);
+					if (owner) return this.__dockLoadedPopovers.has(owner);
+					// Unknown/add-on popover groups retain their native boundaries.
+					if (control.get('popover')) return true;
+					const settings = this.model.get('settings');
+					return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+				},
+				getControlViewByName(name) {
+					let control = NativeEditor.prototype.getControlViewByName.call(this, name);
+					if (!isDock(this) || !isDockTab(this.activeTab) || !this.__dockPopoverOwners) return control;
+					const model = this.getControlModel(name);
+					if (!model || model.get('section') !== this.activeSection) return control;
+					const owner = this.__dockPopoverToggles.has(name) ? name : this.__dockPopoverOwners.get(model.cid);
+					if (owner && !this.__dockLoadedPopovers.has(owner)) {
+						// Native Elementor routes activate the toggle before opening its popover.
+						this.__dockLoadedPopovers.add(owner);
+						if (control && name === owner) {
+							// Finish the native radio change before replacing the clicked input.
+							this.__dockPendingPopover = owner;
+							this.__dockScheduleControls();
+						} else {
+							this._renderChildren();
+							control = NativeEditor.prototype.getControlViewByName.call(this, name);
+						}
+					}
+					return control;
+				},
+				activateSection(section) {
+					if (isDock(this) && this.activeSection !== section && this.__dockLoadedPopovers) {
+						this.__dockLoadedPopovers.clear();
+						this.__dockPendingPopover = null;
+					}
+					return NativeEditor.prototype.activateSection.apply(this, arguments);
+				},
+				initialize() {
+					NativeEditor.prototype.initialize.apply(this, arguments);
+					if (!isDock(this)) return;
+
+					const view = this;
+					const settings = view.model.get('settings');
+					view.__dockPopoverOwners = new Map();
+					view.__dockPopoverToggles = new Set();
+					view.__dockLoadedPopovers = new Set();
+					let previous = null;
+					let owner = null;
+					view.collection.each((control) => {
+						const popover = control.get('popover');
+						if (popover && popover.start && isDockTab(control.get('tab'))) {
+							owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+							if (owner) view.__dockPopoverToggles.add(owner);
+						}
+						if (owner) view.__dockPopoverOwners.set(control.cid, owner);
+						if (popover && popover.end) owner = null;
+						previous = control;
+					});
+
+					let refreshFrame = null;
+					let visibleControls = '';
+					const signature = () => view.collection.filter(view.filter, view).map((control) => control.cid).join('|');
+					function refreshControls() {
+						refreshFrame = null;
+						if (view.isDestroyed || !isDockTab(view.activeTab)) return;
+						const pendingPopover = view.__dockPendingPopover;
+						view.__dockPendingPopover = null;
+						if (signature() === visibleControls && !pendingPopover) return;
+						const openPopovers = view.children.filter((child) =>
+							child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible')
+						).map((child) => child.model.get('name'));
+						if (pendingPopover && !openPopovers.includes(pendingPopover)) openPopovers.push(pendingPopover);
+						const focusSelector = 'input, select, textarea, button, [tabindex]';
+						const focused = view.children.find((child) => child.el.contains(host.document.activeElement));
+						const focusIndex = focused ? Array.from(focused.el.querySelectorAll(focusSelector)).indexOf(host.document.activeElement) : -1;
+						view._renderChildren();
+						openPopovers.forEach((name) => {
+							const toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+							if (toggle) toggle.activate();
+						});
+						if (focused && focusIndex >= 0) {
+							const control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+							const input = control && control.el.querySelectorAll(focusSelector)[focusIndex];
+							if (input) input.focus({ preventScroll: true });
+						}
+					}
+					view.on('render:collection', () => { visibleControls = signature(); });
+					view.__dockScheduleControls = () => {
+						if (isDockTab(view.activeTab) && !refreshFrame) refreshFrame = host.requestAnimationFrame(refreshControls);
+					};
+					view.listenTo(settings, 'change', view.__dockScheduleControls);
+					view.on('destroy', () => {
+						if (refreshFrame) host.cancelAnimationFrame(refreshFrame);
+					});
+				}
+			});
+			page.view.__apeironCommentDockControls = true;
+		}
+
+		editor.hooks.addAction('panel/open_editor/widget/apeiron-comment-dock', registerPanel);
+		editor.on('preview:loaded', registerPanel);
+		if (editor.panel && editor.panel.currentView) registerPanel();
+		else editor.once('panel:init', registerPanel);
+	}
+
 	let elementorHookRegistered = false;
 	const registerElementorHook = () => {
+		registerEditorControls();
 		if (elementorHookRegistered || typeof elementorFrontend === 'undefined' || !elementorFrontend.hooks) {
 			return;
 		}

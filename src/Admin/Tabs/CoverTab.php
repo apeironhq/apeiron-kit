@@ -23,7 +23,6 @@ class CoverTab extends AbstractTab {
 	}
 
 	public function render(): void {
-		$usage_counts = $this->get_usage_counts();
 		?>
 		<div class="apeiron-cover-settings-wrap">
 			<section class="apeiron-elements-section apeiron-cover-settings-section">
@@ -44,8 +43,8 @@ class CoverTab extends AbstractTab {
 									<span class="apeiron-cover-summary-card__eyebrow"><?php echo esc_html( $type['eyebrow'] ); ?></span>
 									<h3 id="apeiron-cover-<?php echo esc_attr( $slug ); ?>-title"><?php echo esc_html( $type['label'] ); ?></h3>
 									<p><?php echo esc_html( $type['description'] ); ?></p>
-									<?php if ( $available && null !== $usage_counts ) : ?>
-										<p class="apeiron-cover-summary-card__usage"><?php echo esc_html( sprintf( __( 'Digunakan pada %s undangan', 'apeiron-kit' ), number_format_i18n( $usage_counts[ $slug ] ?? 0 ) ) ); ?></p>
+									<?php if ( $available ) : ?>
+										<p class="apeiron-cover-summary-card__usage" data-apeiron-cover-usage="<?php echo esc_attr( $slug ); ?>" hidden></p>
 									<?php endif; ?>
 								</div>
 								<div class="apeiron-cover-summary-card__status <?php echo $available ? '' : 'is-muted'; ?>" <?php echo $available ? 'role="status" aria-label="' . esc_attr( sprintf( __( '%s tersedia', 'apeiron-kit' ), $type['label'] ) ) . '"' : ''; ?>>
@@ -64,7 +63,7 @@ class CoverTab extends AbstractTab {
 	 * Hitung dokumen Elementor per jenis sampul.
 	 * @return array<string,int>|null Null jika penggunaan tidak dapat dihitung.
 	 */
-	private function get_usage_counts(): ?array {
+	public function get_usage_counts(): ?array {
 		global $wpdb;
 
 		if ( ! is_object( $wpdb )

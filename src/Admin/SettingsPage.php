@@ -388,6 +388,17 @@ class SettingsPage {
 
 		$tab = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'widgets';
 		$tab = $this->normalize_dashboard_tab( $tab );
+		if ( 'cover' === $tab && isset( $_POST['cover_usage'] ) && '1' === $_POST['cover_usage'] ) {
+			$this->cover_tab ??= new CoverTab();
+			$counts = $this->cover_tab->get_usage_counts();
+			$labels = [];
+			if ( null !== $counts ) {
+				foreach ( $counts as $slug => $count ) {
+					$labels[ $slug ] = sprintf( __( 'Digunakan pada %s undangan', 'apeiron-kit' ), number_format_i18n( $count ) );
+				}
+			}
+			wp_send_json_success( [ 'usage' => $labels ] );
+		}
 
 		ob_start();
 		$this->render_active_tab_content( $tab );

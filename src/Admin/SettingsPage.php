@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use ApeironKit\Admin\Tabs\GeneralTab;
 use ApeironKit\Admin\Tabs\LicenseTab;
-use ApeironKit\Admin\Tabs\CoverTab;
 use ApeironKit\Admin\Tabs\StickerTab;
 use ApeironKit\Admin\Tabs\SocialProofTab;
 use ApeironKit\Admin\Tabs\UcapanTamuTab;
@@ -52,7 +51,6 @@ class SettingsPage {
 	private ?ElementorNoticeRelocator $notice_relocator = null;
 	private ?GeneralTab $general_tab = null;
 	private ?LicenseTab $license_tab = null;
-	private ?CoverTab $cover_tab = null;
 	private ?StickerTab $sticker_tab = null;
 	private ?SocialProofTab $social_proof_tab = null;
 	private ?UcapanTamuTab $ucapan_tamu_tab = null;
@@ -150,7 +148,6 @@ class SettingsPage {
 			'widgets',
 			'form-order',
 			'daftar-hadiah',
-			'cover',
 			'ucapan-tamu',
 			'social-proof',
 			'stickers',
@@ -183,6 +180,14 @@ class SettingsPage {
 		}
 
 		$current_page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( $this->main_slug === $current_page
+			&& isset( $_GET['tab'] ) && is_string( $_GET['tab'] )
+			&& 'cover' === sanitize_key( wp_unslash( $_GET['tab'] ) )
+		) {
+			wp_safe_redirect( $this->get_tab_url() );
+			exit;
+		}
+
 		$legacy_map = [
 			'apeiron-kit-license'      => 'license',
 			'apeiron-kit-stickers'     => 'stickers',
@@ -229,7 +234,7 @@ class SettingsPage {
 
 	/** Siapkan tab ringan agar navigasi tidak meminta AJAX tambahan. */
 	private function render_prefetched_tab_templates( string $active_tab ): void {
-		$tabs = [ 'cover', 'form-order' ];
+		$tabs = [ 'form-order' ];
 		if ( 'widgets' === $active_tab ) {
 			$tabs[] = 'license';
 		}
@@ -296,7 +301,6 @@ class SettingsPage {
 				'label' => __( 'Pengaturan Widget', 'apeiron-kit' ),
 				'items' => [
 					'ucapan-tamu'  => [ __( 'Ucapan Tamu', 'apeiron-kit' ), 'format-chat' ],
-					'cover'        => [ __( 'Sampul', 'apeiron-kit' ), 'format-image' ],
 					'form-order'   => [ __( 'Form Order', 'apeiron-kit' ), 'feedback' ],
 					'daftar-hadiah' => [ __( 'Daftar Hadiah', 'apeiron-kit' ), 'products' ],
 					'social-proof' => [ __( 'Aktivitas', 'apeiron-kit' ), 'megaphone' ],
@@ -345,12 +349,6 @@ class SettingsPage {
 			return;
 		}
 
-		if ( 'cover' === $active_tab ) {
-			$this->cover_tab ??= new CoverTab();
-			$this->cover_tab->render();
-			return;
-		}
-
 		if ( 'stickers' === $active_tab ) {
 			$this->sticker_tab ??= new StickerTab();
 			$this->sticker_tab->render();
@@ -395,17 +393,6 @@ class SettingsPage {
 
 		$tab = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'widgets';
 		$tab = $this->normalize_dashboard_tab( $tab );
-		if ( 'cover' === $tab && isset( $_POST['cover_usage'] ) && '1' === $_POST['cover_usage'] ) {
-			$this->cover_tab ??= new CoverTab();
-			$counts = $this->cover_tab->get_usage_counts();
-			$labels = [];
-			if ( null !== $counts ) {
-				foreach ( $counts as $slug => $count ) {
-					$labels[ $slug ] = sprintf( __( 'Digunakan pada %s undangan', 'apeiron-kit' ), number_format_i18n( $count ) );
-				}
-			}
-			wp_send_json_success( [ 'usage' => $labels ] );
-		}
 
 		ob_start();
 		$this->render_active_tab_content( $tab );

@@ -10,7 +10,6 @@
     var tabRequestTimeout = 15000;
     var tabCache = Object.create(null);
     var tabPrefetches = Object.create(null);
-    var coverUsageRequest = null;
 
     if (!shell || !content || !links.length) {
       return;
@@ -621,10 +620,6 @@
     }
 
     function replaceContent(html, tab, url, headerHtml) {
-      if (coverUsageRequest) {
-        coverUsageRequest.abort();
-        coverUsageRequest = null;
-      }
       $(document).trigger('apeiron:dashboard-tab-unload');
       if (header && typeof headerHtml === 'string') {
         header.innerHTML = headerHtml || '';
@@ -632,52 +627,11 @@
       content.innerHTML = html || '';
 	  $(document).trigger('apeiron:dashboard-tab-loaded', [tab, content]);
 
-      if (tab === 'cover') {
-        loadCoverUsage();
-      }
-
       if (url && window.history && window.history.pushState) {
         window.history.pushState({ apeironTab: tab }, '', url.href);
       }
 
       content.focus && content.focus({ preventScroll: true });
-    }
-
-    function loadCoverUsage() {
-      if (!window.fetch || !window.FormData) {
-        return;
-      }
-      var body = createTabRequestBody('cover', false);
-      var controller = typeof window.AbortController === 'function' ? new window.AbortController() : null;
-      var request = controller || { abort: function() {} };
-      body.append('cover_usage', '1');
-      coverUsageRequest = request;
-
-      window.fetch(window.ajaxurl || 'admin-ajax.php', {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: body,
-        signal: controller ? controller.signal : undefined
-      }).then(function(response) {
-        return response.json();
-      }).then(function(response) {
-        if (coverUsageRequest !== request || !response.success || !response.data || !response.data.usage) {
-          return;
-        }
-        Object.keys(response.data.usage).forEach(function(slug) {
-          var label = content.querySelector('[data-apeiron-cover-usage="' + slug + '"]');
-          if (label) {
-            label.textContent = response.data.usage[slug];
-            label.hidden = false;
-          }
-        });
-      }).catch(function() {
-        // The usage count is optional; the cover menu remains usable.
-      }).then(function() {
-        if (coverUsageRequest === request) {
-          coverUsageRequest = null;
-        }
-      });
     }
 
     function loadTab(link, pushState, options) {
@@ -826,9 +780,6 @@
     };
 
     cacheInitialTab();
-    if (getTabFromUrl(getUrl(window.location.href)) === 'cover') {
-      loadCoverUsage();
-    }
     watchCacheInvalidation();
     navItems.forEach(function(item) {
       item.addEventListener('mouseenter', function() {

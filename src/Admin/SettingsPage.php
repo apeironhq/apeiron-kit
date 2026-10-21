@@ -227,14 +227,21 @@ class SettingsPage {
 		<?php
 	}
 
-	/** Siapkan konten tab lisensi agar navigasi tidak meminta AJAX tambahan. */
+	/** Siapkan tab ringan agar navigasi tidak meminta AJAX tambahan. */
 	private function render_prefetched_tab_templates( string $active_tab ): void {
-		if ( 'widgets' !== $active_tab ) {
-			return;
+		$tabs = [ 'cover', 'form-order' ];
+		if ( 'widgets' === $active_tab ) {
+			$tabs[] = 'license';
 		}
-		?>
-		<template data-apeiron-dashboard-prefetch-tab="license"><?php $this->render_active_tab_content( 'license' ); ?></template>
-		<?php
+
+		foreach ( $tabs as $tab ) {
+			if ( $active_tab === $tab ) {
+				continue;
+			}
+			?>
+			<template data-apeiron-dashboard-prefetch-tab="<?php echo esc_attr( $tab ); ?>"><?php $this->render_active_tab_content( $tab ); ?></template>
+			<?php
+		}
 	}
 
 	private function render_admin_header( bool $is_license_active ): void {

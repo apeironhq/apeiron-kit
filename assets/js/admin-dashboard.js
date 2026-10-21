@@ -76,7 +76,7 @@
     }
 
     function isCacheableTab(tab) {
-      return tab === 'widgets' || tab === 'license';
+      return !!findNavItemByTab(tab);
     }
 
     function isValidDashboardResponse(response) {
@@ -173,6 +173,7 @@
         || !window.FormData
         || !isDashboardUrl(url)
         || !isCacheableTab(tab)
+        || (tab !== 'widgets' && tab !== 'license')
         || pendingRequest
         || tabCache[tab]
         || tabPrefetches[tab]
@@ -240,6 +241,10 @@
     function getAjaxAction(data) {
       var match;
 
+      if (data && typeof data.get === 'function') {
+        return data.get('action') || '';
+      }
+
       if (data && typeof data === 'object' && typeof data.action === 'string') {
         return data.action;
       }
@@ -254,8 +259,8 @@
 
     function watchCacheInvalidation() {
       $(document)
-        .off('ajaxSuccess.apeironDashboardCache')
-        .on('ajaxSuccess.apeironDashboardCache', function(event, xhr, settings) {
+        .off('ajaxComplete.apeironDashboardCache')
+        .on('ajaxComplete.apeironDashboardCache', function(event, xhr, settings) {
           var action = getAjaxAction(settings && settings.data);
 
           if (action === 'apeiron_toggle_widget' || action === 'apeiron_bulk_toggle_widgets') {
@@ -269,6 +274,31 @@
             || action === 'apeiron_save_server_config'
           ) {
             invalidateTab('license');
+          }
+
+          if (action === 'apeiron_save_ucapan_tamu') {
+            invalidateTab('ucapan-tamu');
+          }
+
+          if (action === 'apeiron_save_form_order' || action === 'apeiron_test_form_order') {
+            invalidateTab('form-order');
+          }
+
+          if (action === 'apeiron_save_daftar_hadiah' || action === 'apeiron_test_daftar_hadiah') {
+            invalidateTab('daftar-hadiah');
+            invalidateTab('form-order');
+          }
+
+          if (
+            action === 'apeiron_save_social_proof'
+            || action === 'apeiron_delete_social_proof_entry'
+            || action === 'apeiron_import_social_proof_backup'
+          ) {
+            invalidateTab('social-proof');
+          }
+
+          if (action === 'apeiron_upload_sticker' || action === 'apeiron_delete_sticker') {
+            invalidateTab('stickers');
           }
         });
     }
@@ -702,6 +732,9 @@
 
         if (prefetch) {
           tabPromise = prefetch.promise.then(function(response) {
+            if (!isCurrentRequest(request)) {
+              return null;
+            }
             return response || fetchDashboardTab(createTabRequestBody(tab, false), request);
           });
         } else {

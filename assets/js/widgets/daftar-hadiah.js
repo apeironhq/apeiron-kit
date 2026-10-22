@@ -696,7 +696,218 @@
 		}
 	}
 
+	function registerEditorControls() {
+		var host;
+		try {
+			host = window.parent;
+			if (!host || host === window || !host.elementor || host.__apeironDaftarHadiahControls) { return; }
+		} catch (error) {
+			return; // The containing page may be on another origin.
+		}
+		var editor = host.elementor;
+		if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) { return; }
+		host.__apeironDaftarHadiahControls = true;
+
+		function registerPanel() {
+			var panel = editor.panel && editor.panel.currentView;
+			var page = panel && panel.getPages('editor');
+			if (!page || !page.view || !page.view.extend || page.view.__apeironDaftarHadiahControls) { return; }
+			var NativeEditor = page.view;
+			function isGiftStyle(view) {
+				return view.model.get('widgetType') === 'apeiron-daftar-hadiah' && view.getOption('tab') === 'style';
+			}
+
+			page.view = NativeEditor.extend({
+				initCollection: function () {
+					if (!isGiftStyle(this)) { return NativeEditor.prototype.initCollection.apply(this, arguments); }
+					this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
+					this.__giftMergedControls = new Set();
+				},
+				getChildView: function (control) {
+					if (isGiftStyle(this) && !this.__giftMergedControls.has(control.cid)) {
+						control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+						this.__giftMergedControls.add(control.cid);
+					}
+					return NativeEditor.prototype.getChildView.apply(this, arguments);
+				},
+				buildChildView: function (control) {
+					var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+					if (isGiftStyle(this) && control.get('responsive') && child.getResponsiveChildrenViews) {
+						var getChildren = child.getResponsiveChildrenViews;
+						// Unopened devices have settings, but do not have control views yet.
+						child.getResponsiveChildrenViews = function () {
+							return getChildren.apply(this, arguments).filter(function (view) { return !!view; });
+						};
+					}
+					return child;
+				},
+				_renderChildren: function () {
+					var result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+					if (isGiftStyle(this) && this.__giftActiveTabs) {
+						var view = this;
+						view.__giftActiveTabs.forEach(function (name) {
+							var tab = NativeEditor.prototype.getControlViewByName.call(view, name);
+							if (tab && !tab.$el.hasClass('e-tab-active')) { tab.el.click(); }
+						});
+					}
+					return result;
+				},
+				filter: function (control, index, collection) {
+					if (!NativeEditor.prototype.filter.call(this, control, index, collection)) { return false; }
+					if (!isGiftStyle(this)) { return true; }
+					var owner = this.__giftPopoverOwners && this.__giftPopoverOwners.get(control.cid);
+					if (owner && !this.__giftLoadedPopovers.has(owner)) { return false; }
+					if (!this.__giftRequestedControls.has(control.cid)) {
+						var responsive = control.get('responsive');
+						var popover = control.get('popover');
+						var deviceControls = this.__giftResponsiveDevices.get(editor.channels.deviceMode.request('currentMode'));
+						// Keep popover boundaries even when their device-specific field is hidden.
+						if (responsive && deviceControls && !deviceControls.has(control.cid) &&
+							!(popover && (popover.start || popover.end))) { return false; }
+						var innerTab = control.get('inner_tab');
+						if (innerTab && this.__giftActiveTabs.get(control.get('tabs_wrapper')) !== innerTab) { return false; }
+					}
+					var settings = this.model.get('settings');
+					return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+				},
+				getControlViewByName: function (name) {
+					var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+					if (!isGiftStyle(this) || !this.__giftPopoverOwners) { return control; }
+					var model = this.getControlModel(name);
+					if (!model || model.get('section') !== this.activeSection) { return control; }
+					var owner = this.__giftPopoverToggles.has(name) ? name : this.__giftPopoverOwners.get(model.cid);
+					if (owner && !this.__giftLoadedPopovers.has(owner)) {
+						this.__giftLoadedPopovers.add(owner);
+						if (control && name === owner) {
+							this.__giftPendingPopover = owner;
+							this.__giftScheduleControls();
+						} else {
+							this._renderChildren();
+							control = NativeEditor.prototype.getControlViewByName.call(this, name);
+						}
+					}
+					if (!control) {
+						var requested = model;
+						while (requested) {
+							this.__giftRequestedControls.add(requested.cid);
+							requested = requested.get('parent') ? this.getControlModel(requested.get('parent')) : null;
+						}
+						this._renderChildren();
+						control = NativeEditor.prototype.getControlViewByName.call(this, name);
+					}
+					return control;
+				},
+				activateSection: function (section) {
+					if (isGiftStyle(this) && this.activeSection !== section && this.__giftLoadedPopovers) {
+						this.__giftLoadedPopovers.clear();
+						this.__giftPendingPopover = null;
+						this.__giftRequestedControls.clear();
+						this.__giftActiveTabs = new Map(this.__giftDefaultTabs);
+					}
+					return NativeEditor.prototype.activateSection.apply(this, arguments);
+				},
+				initialize: function () {
+					NativeEditor.prototype.initialize.apply(this, arguments);
+					if (!isGiftStyle(this)) { return; }
+					var view = this;
+					var settings = view.model.get('settings');
+					view.__giftPopoverOwners = new Map();
+					view.__giftPopoverToggles = new Set();
+					view.__giftLoadedPopovers = new Set();
+					view.__giftRequestedControls = new Set();
+					view.__giftDefaultTabs = new Map();
+					view.__giftActiveTabs = new Map();
+					view.__giftResponsiveDevices = new Map();
+					var controlsByName = new Map(view.collection.map(function (control) { return [ control.get('name'), control ]; }));
+					var previous = null;
+					var owner = null;
+					view.collection.each(function (control) {
+						var responsive = control.get('responsive');
+						if (responsive) {
+							var device = responsive.max || responsive.min;
+							if (!view.__giftResponsiveDevices.has(device)) { view.__giftResponsiveDevices.set(device, new Set()); }
+							var parent = control;
+							// Native responsive placeholders need the complete parent chain.
+							while (parent) {
+								view.__giftResponsiveDevices.get(device).add(parent.cid);
+								parent = controlsByName.get(parent.get('parent'));
+							}
+						}
+						if (control.get('type') === 'tab' && !view.__giftDefaultTabs.has(control.get('tabs_wrapper'))) {
+							view.__giftDefaultTabs.set(control.get('tabs_wrapper'), control.get('name'));
+							view.__giftActiveTabs.set(control.get('tabs_wrapper'), control.get('name'));
+						}
+						var popover = control.get('popover');
+						if (popover && popover.start) {
+							owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+							if (owner) { view.__giftPopoverToggles.add(owner); }
+						}
+						if (owner) { view.__giftPopoverOwners.set(control.cid, owner); }
+						if (popover && popover.end) { owner = null; }
+						previous = control;
+					});
+
+					var refreshFrame = null;
+					var visibleControls = '';
+					function signature() {
+						return view.collection.filter(view.filter, view).map(function (control) { return control.cid; }).join('|');
+					}
+					function refreshControls() {
+						refreshFrame = null;
+						if (view.isDestroyed || view.activeTab !== 'style') { return; }
+						var pendingPopover = view.__giftPendingPopover;
+						view.__giftPendingPopover = null;
+						if (signature() === visibleControls && !pendingPopover) { return; }
+						var openPopovers = view.children.filter(function (child) {
+							return child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible');
+						}).map(function (child) { return child.model.get('name'); });
+						if (pendingPopover && openPopovers.indexOf(pendingPopover) === -1) { openPopovers.push(pendingPopover); }
+						var focusSelector = 'input, select, textarea, button, [tabindex]';
+						var focused = view.children.find(function (child) { return child.el.contains(host.document.activeElement); });
+						var focusIndex = focused ? Array.from(focused.el.querySelectorAll(focusSelector)).indexOf(host.document.activeElement) : -1;
+						view._renderChildren();
+						openPopovers.forEach(function (name) {
+							var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+							if (toggle) {
+								if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) { toggle.onShow(); }
+								toggle.activate();
+							}
+						});
+						if (focused && focusIndex >= 0) {
+							var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+							var input = control && control.el.querySelectorAll(focusSelector)[focusIndex];
+							if (input) { input.focus({ preventScroll: true }); }
+						}
+					}
+					view.on('render:collection', function () { visibleControls = signature(); });
+					view.__giftScheduleControls = function () {
+						if (view.activeTab === 'style' && !refreshFrame) { refreshFrame = host.requestAnimationFrame(refreshControls); }
+					};
+					view.listenTo(settings, 'change', view.__giftScheduleControls);
+					view.listenTo(editor.channels.deviceMode, 'change', view.__giftScheduleControls);
+					view.on('childview:control:tab:clicked', function (tab) {
+						var wrapper = tab.model.get('tabs_wrapper');
+						var name = tab.model.get('name');
+						if (view.__giftActiveTabs.get(wrapper) === name) { return; }
+						view.__giftActiveTabs.set(wrapper, name);
+						view.__giftScheduleControls();
+					});
+					view.on('destroy', function () {
+						if (refreshFrame) { host.cancelAnimationFrame(refreshFrame); }
+					});
+				}
+			});
+			page.view.__apeironDaftarHadiahControls = true;
+		}
+
+		editor.hooks.addAction('panel/open_editor/widget/apeiron-daftar-hadiah', registerPanel);
+		editor.on('preview:loaded', registerPanel);
+		if (editor.panel && editor.panel.currentView) { registerPanel(); }
+		else { editor.once('panel:init', registerPanel); }
+	}
+
 	function registerElementorHooks() {
+		registerEditorControls();
 		if (!hooksRegistered && window.elementorFrontend && window.elementorFrontend.hooks) {
 			window.elementorFrontend.hooks.addAction('frontend/element_ready/apeiron-daftar-hadiah.default', initScope);
 			hooksRegistered = true;

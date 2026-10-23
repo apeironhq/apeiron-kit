@@ -14,7 +14,8 @@ $show = static function ( string $part ) use ( $settings ): bool {
 	return 'yes' === ( $settings[ 'show_' . $part ] ?? 'yes' );
 };
 $text = static function ( string $key ) use ( $settings ): string {
-	return is_scalar( $settings[ $key ] ?? null ) ? (string) $settings[ $key ] : '';
+	$value = is_scalar( $settings[ $key ] ?? null ) ? (string) $settings[ $key ] : '';
+	return ! empty( $settings['__dynamic__'][ $key ] ) ? html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : $value;
 };
 $mobile_swipe = 'grid' !== ( $settings['mobile_display'] ?? 'swipe' );
 $navigation   = in_array( $settings['swipe_navigation'] ?? 'dots', [ 'dots', 'arrows', 'both', 'none' ], true ) ? ( $settings['swipe_navigation'] ?? 'dots' ) : 'dots';

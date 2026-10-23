@@ -714,7 +714,50 @@
 			if (!page || !page.view || !page.view.extend || page.view.__apeironDaftarHadiahControls) { return; }
 			var NativeEditor = page.view;
 			function isGiftStyle(view) {
-				return view.model.get('widgetType') === 'apeiron-daftar-hadiah' && view.getOption('tab') === 'style';
+				return view.model.get('widgetType') === 'apeiron-daftar-hadiah' && ['style', 'advanced'].indexOf(view.getOption('tab')) !== -1;
+			}
+
+			function deferColorPicker(child) {
+				var applySavedValue = child.applySavedValue;
+				var dynamicBehaviors = Object.values(child._behaviors || {}).filter(function (behavior) {
+					return typeof behavior.moveDynamicSwitcherToColorPicker === 'function';
+				});
+				dynamicBehaviors.forEach(function (behavior) {
+					var move = behavior.moveDynamicSwitcherToColorPicker;
+					behavior.moveDynamicSwitcherToColorPicker = function () {
+						if (child.isDestroyed || !this.ui.dynamicSwitcher) { return; }
+						if (child.colorPicker) { return move.apply(this, arguments); }
+						this.ui.dynamicSwitcher.detach();
+					};
+				});
+				child.applySavedValue = function () {
+					if (this.colorPicker) { return applySavedValue.apply(this, arguments); }
+					var value = this.getCurrentValue();
+					var placeholder = this.ui.pickerContainer[0];
+					var button = placeholder.querySelector('button');
+					if (!button) {
+						placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+						button = host.document.createElement('button');
+						button.type = 'button';
+						button.className = 'pcr-button';
+						button.setAttribute('aria-label', 'toggle color picker dialog');
+						placeholder.appendChild(button);
+						button.addEventListener('click', function (event) {
+							event.stopPropagation();
+							child.applySavedValue = applySavedValue;
+							child.initPicker();
+							dynamicBehaviors.forEach(function (behavior) { behavior.moveDynamicSwitcherToColorPicker(); });
+							child.colorPicker.picker.on('init', function () {
+								if (child.isDestroyed) { return; }
+								child.$pickerButton[0].click();
+								child.$pickerButton[0].focus();
+							});
+						});
+					}
+					button.classList.toggle('clear', !value);
+					button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+					this.$el.toggleClass('e-control-color--no-value', !value);
+				};
 			}
 
 			page.view = NativeEditor.extend({
@@ -722,6 +765,10 @@
 					if (!isGiftStyle(this)) { return NativeEditor.prototype.initCollection.apply(this, arguments); }
 					this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
 					this.__giftMergedControls = new Set();
+					this.__giftControlsByName = new Map(this.collection.map(function (control) { return [ control.get('name'), control ]; }));
+				},
+				getControlModel: function (name) {
+					return this.__giftControlsByName ? this.__giftControlsByName.get(name) : NativeEditor.prototype.getControlModel.apply(this, arguments);
 				},
 				getChildView: function (control) {
 					if (isGiftStyle(this) && !this.__giftMergedControls.has(control.cid)) {
@@ -732,6 +779,10 @@
 				},
 				buildChildView: function (control) {
 					var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+					if (isGiftStyle(this) && control.get('type') === 'color' && child.initPicker) {
+						// Keep the native swatch; build Pickr only when this color is opened.
+						deferColorPicker(child);
+					}
 					if (isGiftStyle(this) && control.get('responsive') && child.getResponsiveChildrenViews) {
 						var getChildren = child.getResponsiveChildrenViews;
 						// Unopened devices have settings, but do not have control views yet.
@@ -854,7 +905,7 @@
 					}
 					function refreshControls() {
 						refreshFrame = null;
-						if (view.isDestroyed || view.activeTab !== 'style') { return; }
+						if (view.isDestroyed || !isGiftStyle(view)) { return; }
 						var pendingPopover = view.__giftPendingPopover;
 						view.__giftPendingPopover = null;
 						if (signature() === visibleControls && !pendingPopover) { return; }
@@ -881,7 +932,7 @@
 					}
 					view.on('render:collection', function () { visibleControls = signature(); });
 					view.__giftScheduleControls = function () {
-						if (view.activeTab === 'style' && !refreshFrame) { refreshFrame = host.requestAnimationFrame(refreshControls); }
+						if (isGiftStyle(view) && !refreshFrame) { refreshFrame = host.requestAnimationFrame(refreshControls); }
 					};
 					view.listenTo(settings, 'change', view.__giftScheduleControls);
 					view.listenTo(editor.channels.deviceMode, 'change', view.__giftScheduleControls);

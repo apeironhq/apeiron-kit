@@ -84,11 +84,12 @@ class FormOrder extends BaseWidget {
 
 	protected function render_widget() {
 		$settings = $this->get_settings_for_display();
-		$raw_settings = $this->get_settings();
-		$step_settings = is_array( $settings ) ? $settings : [];
-		if ( is_array( $raw_settings ) && isset( $raw_settings['order_fields'] ) ) {
-			$step_settings['order_fields'] = $raw_settings['order_fields'];
+		foreach ( [ 'form_title', 'next_text', 'back_text', 'submit_text', 'confirmation_text', 'confirmation_submit_hint', 'validation_text' ] as $key ) {
+			if ( ! empty( $settings['__dynamic__'][ $key ] ) && is_scalar( $settings[ $key ] ?? null ) ) {
+				$settings[ $key ] = html_entity_decode( (string) $settings[ $key ], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+			}
 		}
+		$step_settings = is_array( $settings ) ? $settings : [];
 		$steps = FieldSchema::resolve( is_array( $step_settings ) ? $step_settings : [] );
 		if ( ! $steps ) {
 			if ( $this->is_elementor_editor_preview() ) {

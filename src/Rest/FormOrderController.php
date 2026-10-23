@@ -72,6 +72,17 @@ final class FormOrderController {
 		if ( ! is_array( $raw ) || count( $raw ) > 200 ) {
 			return $this->error( 'invalid_fields', __( 'Data formulir tidak valid.', 'apeiron-kit' ), 422 );
 		}
+		if ( class_exists( '\Elementor\Plugin' ) && isset( \Elementor\Plugin::$instance->db ) ) {
+			// ACF must resolve against the verified page, including when this widget comes from a template.
+			$elementor = \Elementor\Plugin::$instance;
+			$elementor->db->switch_to_query( [ 'p' => $post_id, 'post_type' => 'any' ] );
+			try {
+				$widget = new \ApeironKit\Elementor\Widgets\FormOrder\FormOrder( [ 'id' => $element_id, 'settings' => $widget_settings ], [] );
+				$widget_settings = $widget->get_settings_for_display();
+			} finally {
+				$elementor->db->restore_current_query();
+			}
+		}
 		$fields = [];
 		$details = [];
 		$labels = [];

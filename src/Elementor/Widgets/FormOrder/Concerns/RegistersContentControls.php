@@ -17,6 +17,7 @@ trait RegistersContentControls {
 		$this->add_control( 'form_title', [
 			'label' => __( 'Judul Form', 'apeiron-kit' ),
 			'type' => Controls_Manager::TEXT,
+			'dynamic' => [ 'active' => true ],
 			'default' => __( 'Form Order Undangan', 'apeiron-kit' ),
 		] );
 		$this->end_controls_section();
@@ -27,19 +28,20 @@ trait RegistersContentControls {
 		] );
 		$field->add_control( 'step_label', [ 'type' => Controls_Manager::HIDDEN, 'default' => '' ] );
 		$field->add_control( 'group_header', [ 'type' => Controls_Manager::HIDDEN, 'default' => '' ] );
-		$field->add_control( 'label', [ 'label' => __( 'Label', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Field Baru', 'apeiron-kit' ), 'label_block' => true ] );
+		$field->add_control( 'label', [ 'label' => __( 'Label', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Field Baru', 'apeiron-kit' ), 'label_block' => true, 'dynamic' => [ 'active' => true ] ] );
 		$field->add_control( 'field_key', [ 'label' => __( 'Internal Field ID (kosong = otomatis)', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'description' => __( 'Gunakan ID unik; ID bawaan jangan diubah bila integrasi sudah digunakan.', 'apeiron-kit' ) ] );
 		$field->add_control( 'type', [ 'label' => __( 'Tipe', 'apeiron-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'text', 'options' => [
 			'text' => 'Text', 'email' => 'Email', 'tel' => 'Tel/WhatsApp', 'number' => 'Number', 'textarea' => 'Textarea',
 			'select' => 'Select', 'radio' => 'Radio', 'checkbox' => 'Checkbox', 'date' => 'Date', 'time' => 'Time', 'url' => 'URL', 'heading' => 'Heading/Description',
 		] ] );
-		$field->add_control( 'placeholder', [ 'label' => __( 'Placeholder', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT ] );
-		$field->add_control( 'default_value', [ 'label' => __( 'Nilai Default', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT ] );
+		$field->add_control( 'placeholder', [ 'label' => __( 'Placeholder', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'dynamic' => [ 'active' => true ] ] );
+		$field->add_control( 'default_value', [ 'label' => __( 'Nilai Default', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'dynamic' => [ 'active' => true ] ] );
 		$field->add_control( 'options', [
 			'label' => __( 'Opsi (satu per baris: nilai|label)', 'apeiron-kit' ), 'type' => Controls_Manager::TEXTAREA,
 			'condition' => [ 'type' => [ 'select', 'radio', 'checkbox' ] ],
+			'dynamic' => [ 'active' => true ],
 		] );
-		$field->add_control( 'help_text', [ 'label' => __( 'Teks Bantuan / Deskripsi', 'apeiron-kit' ), 'type' => Controls_Manager::TEXTAREA ] );
+		$field->add_control( 'help_text', [ 'label' => __( 'Teks Bantuan / Deskripsi', 'apeiron-kit' ), 'type' => Controls_Manager::TEXTAREA, 'dynamic' => [ 'active' => true ] ] );
 		$field->add_control( 'required', [ 'label' => __( 'Wajib', 'apeiron-kit' ), 'type' => Controls_Manager::SWITCHER, 'return_value' => 'yes' ] );
 		$field->add_control( 'visible', [ 'label' => __( 'Tampilkan', 'apeiron-kit' ), 'type' => Controls_Manager::SWITCHER, 'return_value' => 'yes', 'default' => 'yes' ] );
 		$field->add_responsive_control( 'width', [ 'label' => __( 'Lebar Field', 'apeiron-kit' ), 'type' => Controls_Manager::SELECT,
@@ -47,7 +49,7 @@ trait RegistersContentControls {
 			'default' => '50', 'tablet_default' => '100', 'mobile_default' => '100',
 		] );
 		$step = new Repeater();
-		$step->add_control( 'title', [ 'label' => __( 'Nama Step', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Step Baru', 'apeiron-kit' ), 'label_block' => true ] );
+		$step->add_control( 'title', [ 'label' => __( 'Nama Step', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Step Baru', 'apeiron-kit' ), 'label_block' => true, 'dynamic' => [ 'active' => true ] ] );
 		$step->add_control( 'step_key', [ 'label' => __( 'ID Step', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT,
 			'description' => __( 'Gunakan ID unik, misalnya cerita_cinta. Hubungkan field menggunakan ID ini.', 'apeiron-kit' ),
 		] );
@@ -70,8 +72,8 @@ trait RegistersContentControls {
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_navigation', [ 'label' => __( 'Navigation', 'apeiron-kit' ) ] );
-		$this->add_control( 'next_text', [ 'label' => __( 'Tombol Lanjut', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Lanjut', 'apeiron-kit' ) ] );
-		$this->add_control( 'back_text', [ 'label' => __( 'Tombol Kembali', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Kembali', 'apeiron-kit' ) ] );
+		$this->add_control( 'next_text', [ 'label' => __( 'Tombol Lanjut', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Lanjut', 'apeiron-kit' ), 'dynamic' => [ 'active' => true ] ] );
+		$this->add_control( 'back_text', [ 'label' => __( 'Tombol Kembali', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT, 'default' => __( 'Kembali', 'apeiron-kit' ), 'dynamic' => [ 'active' => true ] ] );
 		$this->add_control( 'mobile_navigation', [
 			'label' => __( 'Posisi Tombol di Mobile', 'apeiron-kit' ), 'type' => Controls_Manager::SELECT, 'default' => 'normal',
 			'options' => [ 'normal' => __( 'Normal', 'apeiron-kit' ), 'fixed' => __( 'Tetap di Bawah Layar', 'apeiron-kit' ) ],
@@ -83,18 +85,22 @@ trait RegistersContentControls {
 		$this->add_control( 'submit_text', [
 			'label' => __( 'Teks Tombol Kirim', 'apeiron-kit' ),
 			'type' => Controls_Manager::TEXT,
+			'dynamic' => [ 'active' => true ],
 			'default' => __( 'Kirim Pesanan', 'apeiron-kit' ),
 		] );
 		$this->end_controls_section();
 		$this->start_controls_section( 'section_messages', [ 'label' => __( 'Messages', 'apeiron-kit' ) ] );
 		$this->add_control( 'confirmation_text', [ 'label' => __( 'Teks Konfirmasi', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT,
+			'dynamic' => [ 'active' => true ],
 			'default' => __( 'Periksa kembali seluruh data sebelum mengirim.', 'apeiron-kit' ),
 		] );
 		$this->add_control( 'confirmation_submit_hint', [ 'label' => __( 'Petunjuk Pengiriman di Tahap Akhir', 'apeiron-kit' ), 'type' => Controls_Manager::TEXTAREA,
+			'dynamic' => [ 'active' => true ],
 			'default' => __( 'Pesanan belum dikirim. Klik tombol “{submit}” di bawah untuk mengirim pesanan.', 'apeiron-kit' ),
 			'description' => __( '{submit} mengikuti teks tombol Kirim. Kosongkan untuk menyembunyikan petunjuk.', 'apeiron-kit' ),
 		] );
 		$this->add_control( 'validation_text', [ 'label' => __( 'Pesan Validasi', 'apeiron-kit' ), 'type' => Controls_Manager::TEXT,
+			'dynamic' => [ 'active' => true ],
 			'default' => __( 'Periksa field yang wajib diisi atau format yang belum valid.', 'apeiron-kit' ),
 		] );
 		$this->end_controls_section();

@@ -243,6 +243,7 @@ final class FieldSchema {
 			if ( ! is_array( $row ) || ( array_key_exists( 'enabled', $row ) && 'yes' !== $row['enabled'] ) ) {
 				continue;
 			}
+			$row = self::decode_dynamic_text( $row );
 			$kind = 'confirmation' === ( $row['kind'] ?? '' ) ? 'confirmation' : 'fields';
 			$step = [
 				'key' => sanitize_key( (string) ( $row['_id'] ?? '' ) ) ?: ( sanitize_key( (string) ( $row['step_key'] ?? '' ) ) ?: 'step_' . ( $step_index + 1 ) ),
@@ -258,6 +259,7 @@ final class FieldSchema {
 					if ( ! is_array( $field ) || ( array_key_exists( 'visible', $field ) && 'yes' !== $field['visible'] ) ) {
 						continue;
 					}
+					$field = self::decode_dynamic_text( $field );
 					$type = sanitize_key( (string) ( $field['type'] ?? 'text' ) );
 					if ( ! in_array( $type, [ 'text', 'email', 'tel', 'number', 'textarea', 'select', 'radio', 'checkbox', 'date', 'time', 'url', 'heading' ], true ) ) {
 						$type = 'text';
@@ -306,6 +308,15 @@ final class FieldSchema {
 
 	private static function width( $value ): string {
 		return in_array( (string) $value, [ '25', '33', '50', '66', '75', '100' ], true ) ? (string) $value : '100';
+	}
+
+	private static function decode_dynamic_text( array $settings ): array {
+		foreach ( [ 'title', 'label', 'placeholder', 'default_value', 'options', 'help_text' ] as $key ) {
+			if ( ! empty( $settings['__dynamic__'][ $key ] ) && is_scalar( $settings[ $key ] ?? null ) ) {
+				$settings[ $key ] = html_entity_decode( (string) $settings[ $key ], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+			}
+		}
+		return $settings;
 	}
 
 	private static function text( $value, int $length, bool $multiline = false ): string {

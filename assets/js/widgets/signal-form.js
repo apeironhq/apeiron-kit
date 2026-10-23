@@ -352,7 +352,268 @@
 		initScope(event.target || document);
 	});
 
+	function registerEditorControls() {
+		var host;
+		try {
+			host = window.parent;
+			if (!host || host === window || !host.elementor || host.__apeironSignalFormControls) { return; }
+		} catch (error) {
+			return; // The containing page may be on another origin.
+		}
+		var editor = host.elementor;
+		if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) { return; }
+		host.__apeironSignalFormControls = true;
+
+		function registerPanel() {
+			var panel = editor.panel && editor.panel.currentView;
+			var page = panel && panel.getPages('editor');
+			if (!page || !page.view || !page.view.extend || page.view.__apeironSignalFormControls) { return; }
+			var NativeEditor = page.view;
+			function isFormStyle(view) {
+				return view.model.get('widgetType') === 'apeiron-signal-form' && ['style', 'advanced'].indexOf(view.getOption('tab')) !== -1;
+			}
+
+			function deferColorPicker(child) {
+				var applySavedValue = child.applySavedValue;
+				var dynamicBehaviors = Object.values(child._behaviors || {}).filter(function (behavior) {
+					return typeof behavior.moveDynamicSwitcherToColorPicker === 'function';
+				});
+				dynamicBehaviors.forEach(function (behavior) {
+					var move = behavior.moveDynamicSwitcherToColorPicker;
+					behavior.moveDynamicSwitcherToColorPicker = function () {
+						if (child.isDestroyed || !this.ui.dynamicSwitcher) { return; }
+						if (child.colorPicker) { return move.apply(this, arguments); }
+						this.ui.dynamicSwitcher.detach();
+					};
+				});
+				child.applySavedValue = function () {
+					if (this.colorPicker) { return applySavedValue.apply(this, arguments); }
+					var value = this.getCurrentValue();
+					var placeholder = this.ui.pickerContainer[0];
+					var button = placeholder.querySelector('button');
+					if (!button) {
+						placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+						button = host.document.createElement('button');
+						button.type = 'button';
+						button.className = 'pcr-button';
+						button.setAttribute('aria-label', 'toggle color picker dialog');
+						placeholder.appendChild(button);
+						button.addEventListener('click', function (event) {
+							event.stopPropagation();
+							child.applySavedValue = applySavedValue;
+							child.initPicker();
+							dynamicBehaviors.forEach(function (behavior) { behavior.moveDynamicSwitcherToColorPicker(); });
+							child.colorPicker.picker.on('init', function () {
+								if (child.isDestroyed) { return; }
+								child.$pickerButton[0].click();
+								child.$pickerButton[0].focus();
+							});
+						});
+					}
+					button.classList.toggle('clear', !value);
+					button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+					this.$el.toggleClass('e-control-color--no-value', !value);
+				};
+			}
+
+			page.view = NativeEditor.extend({
+				initCollection: function () {
+					if (!isFormStyle(this)) { return NativeEditor.prototype.initCollection.apply(this, arguments); }
+					// Merge native defaults only for controls whose views are needed.
+					this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
+					this.__signalMergedControls = new Set();
+					this.__signalControlsByName = new Map(this.collection.map(function (control) { return [ control.get('name'), control ]; }));
+				},
+				getControlModel: function (name) {
+					return this.__signalControlsByName ? this.__signalControlsByName.get(name) : NativeEditor.prototype.getControlModel.apply(this, arguments);
+				},
+				getChildView: function (control) {
+					if (isFormStyle(this) && !this.__signalMergedControls.has(control.cid)) {
+						control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+						this.__signalMergedControls.add(control.cid);
+					}
+					return NativeEditor.prototype.getChildView.apply(this, arguments);
+				},
+				buildChildView: function (control) {
+					var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+					if (isFormStyle(this) && control.get('type') === 'color' && child.initPicker) {
+						deferColorPicker(child);
+					}
+					if (isFormStyle(this) && control.get('responsive') && child.getResponsiveChildrenViews) {
+						var getChildren = child.getResponsiveChildrenViews;
+						child.getResponsiveChildrenViews = function () {
+							return getChildren.apply(this, arguments).filter(function (view) { return !!view; });
+						};
+					}
+					return child;
+				},
+				_renderChildren: function () {
+					var result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+					if (isFormStyle(this) && this.__signalActiveTabs) {
+						var view = this;
+						view.__signalActiveTabs.forEach(function (name) {
+							var tab = NativeEditor.prototype.getControlViewByName.call(view, name);
+							if (tab && !tab.$el.hasClass('e-tab-active')) { tab.el.click(); }
+						});
+					}
+					return result;
+				},
+				filter: function (control, index, collection) {
+					if (!NativeEditor.prototype.filter.call(this, control, index, collection)) { return false; }
+					if (!isFormStyle(this)) { return true; }
+					var owner = this.__signalPopoverOwners && this.__signalPopoverOwners.get(control.cid);
+					if (owner && !this.__signalLoadedPopovers.has(owner)) { return false; }
+					if (!this.__signalRequestedControls.has(control.cid)) {
+						var responsive = control.get('responsive');
+						var popover = control.get('popover');
+						var deviceControls = this.__signalResponsiveDevices.get(editor.channels.deviceMode.request('currentMode'));
+						// Native popovers and responsive placeholders retain their boundaries/parent chain.
+						if (responsive && deviceControls && !deviceControls.has(control.cid) &&
+							!(popover && (popover.start || popover.end))) { return false; }
+						var innerTab = control.get('inner_tab');
+						if (innerTab && this.__signalActiveTabs.get(control.get('tabs_wrapper')) !== innerTab) { return false; }
+					}
+					var settings = this.model.get('settings');
+					return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+				},
+				getControlViewByName: function (name) {
+					var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+					if (!isFormStyle(this) || !this.__signalPopoverOwners) { return control; }
+					var model = this.getControlModel(name);
+					if (!model || model.get('section') !== this.activeSection) { return control; }
+					var owner = this.__signalPopoverToggles.has(name) ? name : this.__signalPopoverOwners.get(model.cid);
+					if (owner && !this.__signalLoadedPopovers.has(owner)) {
+						this.__signalLoadedPopovers.add(owner);
+						if (control && name === owner) {
+							// Allow the native radio change to finish before rebuilding its popover.
+							this.__signalPendingPopover = owner;
+							this.__signalScheduleControls();
+						} else {
+							this._renderChildren();
+							control = NativeEditor.prototype.getControlViewByName.call(this, name);
+						}
+					}
+					if (!control) {
+						var requested = model;
+						while (requested) {
+							this.__signalRequestedControls.add(requested.cid);
+							requested = requested.get('parent') ? this.getControlModel(requested.get('parent')) : null;
+						}
+						this._renderChildren();
+						control = NativeEditor.prototype.getControlViewByName.call(this, name);
+					}
+					return control;
+				},
+				activateSection: function (section) {
+					if (isFormStyle(this) && this.activeSection !== section && this.__signalLoadedPopovers) {
+						this.__signalLoadedPopovers.clear();
+						this.__signalPendingPopover = null;
+						this.__signalRequestedControls.clear();
+						this.__signalActiveTabs = new Map(this.__signalDefaultTabs);
+					}
+					return NativeEditor.prototype.activateSection.apply(this, arguments);
+				},
+				initialize: function () {
+					NativeEditor.prototype.initialize.apply(this, arguments);
+					if (!isFormStyle(this)) { return; }
+					var view = this;
+					var settings = view.model.get('settings');
+					view.__signalPopoverOwners = new Map();
+					view.__signalPopoverToggles = new Set();
+					view.__signalLoadedPopovers = new Set();
+					view.__signalRequestedControls = new Set();
+					view.__signalDefaultTabs = new Map();
+					view.__signalActiveTabs = new Map();
+					view.__signalResponsiveDevices = new Map();
+					var previous = null;
+					var owner = null;
+					view.collection.each(function (control) {
+						var responsive = control.get('responsive');
+						if (responsive) {
+							var device = responsive.max || responsive.min;
+							if (!view.__signalResponsiveDevices.has(device)) { view.__signalResponsiveDevices.set(device, new Set()); }
+							var parent = control;
+							while (parent) {
+								view.__signalResponsiveDevices.get(device).add(parent.cid);
+								parent = view.__signalControlsByName.get(parent.get('parent'));
+							}
+						}
+						if (control.get('type') === 'tab' && !view.__signalDefaultTabs.has(control.get('tabs_wrapper'))) {
+							view.__signalDefaultTabs.set(control.get('tabs_wrapper'), control.get('name'));
+							view.__signalActiveTabs.set(control.get('tabs_wrapper'), control.get('name'));
+						}
+						var popover = control.get('popover');
+						if (popover && popover.start) {
+							owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+							if (owner) { view.__signalPopoverToggles.add(owner); }
+						}
+						if (owner) { view.__signalPopoverOwners.set(control.cid, owner); }
+						if (popover && popover.end) { owner = null; }
+						previous = control;
+					});
+
+					var refreshFrame = null;
+					var visibleControls = '';
+					function signature() {
+						return view.collection.filter(view.filter, view).map(function (control) { return control.cid; }).join('|');
+					}
+					function refreshControls() {
+						refreshFrame = null;
+						if (view.isDestroyed || !isFormStyle(view)) { return; }
+						var pendingPopover = view.__signalPendingPopover;
+						view.__signalPendingPopover = null;
+						if (signature() === visibleControls && !pendingPopover) { return; }
+						var openPopovers = view.children.filter(function (child) {
+							return child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible');
+						}).map(function (child) { return child.model.get('name'); });
+						if (pendingPopover && openPopovers.indexOf(pendingPopover) === -1) { openPopovers.push(pendingPopover); }
+						var focusSelector = 'input, select, textarea, button, [tabindex]';
+						var focused = view.children.find(function (child) { return child.el.contains(host.document.activeElement); });
+						var focusIndex = focused ? Array.from(focused.el.querySelectorAll(focusSelector)).indexOf(host.document.activeElement) : -1;
+						view._renderChildren();
+						openPopovers.forEach(function (name) {
+							var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+							if (toggle) {
+								if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) { toggle.onShow(); }
+								toggle.activate();
+							}
+						});
+						if (focused && focusIndex >= 0) {
+							var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+							var input = control && control.el.querySelectorAll(focusSelector)[focusIndex];
+							if (input) { input.focus({ preventScroll: true }); }
+						}
+					}
+					view.on('render:collection', function () { visibleControls = signature(); });
+					view.__signalScheduleControls = function () {
+						if (isFormStyle(view) && !refreshFrame) { refreshFrame = host.requestAnimationFrame(refreshControls); }
+					};
+					view.listenTo(settings, 'change', view.__signalScheduleControls);
+					view.listenTo(editor.channels.deviceMode, 'change', view.__signalScheduleControls);
+					view.on('childview:control:tab:clicked', function (tab) {
+						var wrapper = tab.model.get('tabs_wrapper');
+						var name = tab.model.get('name');
+						if (view.__signalActiveTabs.get(wrapper) === name) { return; }
+						view.__signalActiveTabs.set(wrapper, name);
+						view.__signalScheduleControls();
+					});
+					view.on('destroy', function () {
+						if (refreshFrame) { host.cancelAnimationFrame(refreshFrame); }
+					});
+				}
+			});
+			page.view.__apeironSignalFormControls = true;
+		}
+
+		editor.hooks.addAction('panel/open_editor/widget/apeiron-signal-form', registerPanel);
+		editor.on('preview:loaded', registerPanel);
+		if (editor.panel && editor.panel.currentView) { registerPanel(); }
+		else { editor.once('panel:init', registerPanel); }
+	}
+
+	registerEditorControls();
 	window.addEventListener('elementor/frontend/init', function () {
+		registerEditorControls();
 		if (typeof elementorFrontend === 'undefined' || !elementorFrontend.hooks) {
 			return;
 		}

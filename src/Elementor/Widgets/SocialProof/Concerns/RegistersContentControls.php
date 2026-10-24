@@ -72,6 +72,7 @@ trait RegistersContentControls {
 				'default'      => '',
 				'description'  => __( 'Aktifkan jika posisi popup di halaman ini perlu berbeda dari dashboard.', 'apeiron-kit' ),
 				'prefix_class' => 'apeiron-sp-custom-position-',
+				'render_type'  => 'template',
 			]
 		);
 

@@ -99,7 +99,7 @@ trait RegistersContentControls {
 				'condition'   => [
 					'src_type' => 'youtube',
 				],
-				'dynamic'     => [ 'active' => true ],
+				'dynamic'     => [ 'active' => true, 'categories' => [ 'text', 'url' ] ],
 			]
 		);
 

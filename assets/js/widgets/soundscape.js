@@ -1502,6 +1502,273 @@
         }
     };
 
+    function registerEditorControls() {
+        var host;
+        try {
+            host = window.parent;
+            if (!host || host === window || !host.elementor || host.__apeironSoundscapeControls) return;
+        } catch (error) {
+            return; // The containing page may be on another origin.
+        }
+        var editor = host.elementor;
+        if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
+        host.__apeironSoundscapeControls = true;
+
+        function registerPanel() {
+            var panel = editor.panel && editor.panel.currentView;
+            var page = panel && panel.getPages('editor');
+            if (!page || !page.view || !page.view.extend || page.view.__apeironSoundscapeControls) return;
+            var NativeEditor = page.view;
+            function isSoundscape(view) {
+                return view.model.get('widgetType') === 'apeiron-soundscape' &&
+                    ['content', 'style', 'advanced'].indexOf(view.getOption('tab')) !== -1;
+            }
+
+            function hideTooltips(view) {
+                view.$el.find('[data-tooltip]').each(function () {
+                    var tooltip = host.jQuery(this).data('tipsy');
+                    if (tooltip) tooltip.hide();
+                });
+            }
+
+            function deferColorPicker(child) {
+                var applySavedValue = child.applySavedValue;
+                var dynamicBehaviors = Object.values(child._behaviors || {}).filter(function (behavior) {
+                    return typeof behavior.moveDynamicSwitcherToColorPicker === 'function';
+                });
+                dynamicBehaviors.forEach(function (behavior) {
+                    var move = behavior.moveDynamicSwitcherToColorPicker;
+                    behavior.moveDynamicSwitcherToColorPicker = function () {
+                        if (child.isDestroyed || !this.ui.dynamicSwitcher) return;
+                        if (child.colorPicker) return move.apply(this, arguments);
+                        this.ui.dynamicSwitcher.detach();
+                    };
+                });
+                child.applySavedValue = function () {
+                    if (this.colorPicker) return applySavedValue.apply(this, arguments);
+                    var value = this.getCurrentValue();
+                    var placeholder = this.ui.pickerContainer[0];
+                    var button = placeholder.querySelector('button');
+                    if (!button) {
+                        placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+                        button = host.document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'pcr-button';
+                        button.setAttribute('aria-label', 'toggle color picker dialog');
+                        placeholder.appendChild(button);
+                        button.addEventListener('click', function (event) {
+                            event.stopPropagation();
+                            child.applySavedValue = applySavedValue;
+                            child.initPicker();
+                            dynamicBehaviors.forEach(function (behavior) { behavior.moveDynamicSwitcherToColorPicker(); });
+                            child.colorPicker.picker.on('init', function () {
+                                if (child.isDestroyed) return;
+                                child.$pickerButton[0].click();
+                                child.$pickerButton[0].focus();
+                            });
+                        });
+                    }
+                    button.classList.toggle('clear', !value);
+                    button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+                    this.$el.toggleClass('e-control-color--no-value', !value);
+                };
+            }
+
+            page.view = NativeEditor.extend({
+                initCollection: function () {
+                    if (!isSoundscape(this)) return NativeEditor.prototype.initCollection.apply(this, arguments);
+                    // Retain every control ID; merge native defaults only when its view is needed.
+                    this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
+                    this.__soundscapeMergedControls = new Set();
+                    this.__soundscapeControlsByName = new Map(this.collection.map(function (control) { return [control.get('name'), control]; }));
+                },
+                getControlModel: function (name) {
+                    return this.__soundscapeControlsByName ? this.__soundscapeControlsByName.get(name) : NativeEditor.prototype.getControlModel.apply(this, arguments);
+                },
+                getChildView: function (control) {
+                    if (isSoundscape(this) && !this.__soundscapeMergedControls.has(control.cid)) {
+                        control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+                        this.__soundscapeMergedControls.add(control.cid);
+                    }
+                    return NativeEditor.prototype.getChildView.apply(this, arguments);
+                },
+                buildChildView: function (control) {
+                    var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+                    if (isSoundscape(this) && control.get('type') === 'color' && child.initPicker) deferColorPicker(child);
+                    if (isSoundscape(this) && control.get('responsive') && child.getResponsiveChildrenViews) {
+                        var getChildren = child.getResponsiveChildrenViews;
+                        child.getResponsiveChildrenViews = function () {
+                            return getChildren.apply(this, arguments).filter(function (view) { return !!view; });
+                        };
+                    }
+                    return child;
+                },
+                _renderChildren: function () {
+                    if (isSoundscape(this)) hideTooltips(this);
+                    var result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+                    if (isSoundscape(this) && this.__soundscapeActiveTabs) {
+                        var view = this;
+                        this.__soundscapeActiveTabs.forEach(function (name) {
+                            var tab = NativeEditor.prototype.getControlViewByName.call(view, name);
+                            if (tab && !tab.$el.hasClass('e-tab-active')) tab.el.click();
+                        });
+                    }
+                    return result;
+                },
+                filter: function (control, index, collection) {
+                    if (!NativeEditor.prototype.filter.call(this, control, index, collection)) return false;
+                    if (!isSoundscape(this)) return true;
+                    var owner = this.__soundscapePopoverOwners && this.__soundscapePopoverOwners.get(control.cid);
+                    if (owner && !this.__soundscapeLoadedPopovers.has(owner)) return false;
+                    var popover = control.get('popover');
+                    if (!this.__soundscapeRequestedControls.has(control.cid)) {
+                        var responsive = control.get('responsive');
+                        var deviceControls = this.__soundscapeResponsiveDevices.get(editor.channels.deviceMode.request('currentMode'));
+                        // Keep native popover boundaries and responsive placeholder parent chains.
+                        if (responsive && deviceControls && !deviceControls.has(control.cid) &&
+                            !(popover && (popover.start || popover.end))) return false;
+                        var innerTab = control.get('inner_tab');
+                        if (innerTab && this.__soundscapeActiveTabs.get(control.get('tabs_wrapper')) !== innerTab) return false;
+                    }
+                    if (popover && (popover.start || popover.end)) return true;
+                    var settings = this.model.get('settings');
+                    return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+                },
+                getControlViewByName: function (name) {
+                    var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                    if (!isSoundscape(this) || !this.__soundscapePopoverOwners) return control;
+                    var model = this.getControlModel(name);
+                    if (!model || model.get('section') !== this.activeSection) return control;
+                    var owner = this.__soundscapePopoverToggles.has(name) ? name : this.__soundscapePopoverOwners.get(model.cid);
+                    if (owner && !this.__soundscapeLoadedPopovers.has(owner)) {
+                        this.__soundscapeLoadedPopovers.add(owner);
+                        if (control && name === owner) {
+                            // Let the native radio change finish before replacing its clicked input.
+                            this.__soundscapePendingPopover = owner;
+                            this.__soundscapeScheduleControls();
+                        } else {
+                            this._renderChildren();
+                            control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                        }
+                    }
+                    if (!control) {
+                        var requested = model;
+                        while (requested) {
+                            this.__soundscapeRequestedControls.add(requested.cid);
+                            requested = requested.get('parent') ? this.getControlModel(requested.get('parent')) : null;
+                        }
+                        this._renderChildren();
+                        control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                    }
+                    return control;
+                },
+                activateSection: function (section) {
+                    if (isSoundscape(this) && this.activeSection !== section && this.__soundscapeLoadedPopovers) {
+                        this.__soundscapeLoadedPopovers.clear();
+                        this.__soundscapePendingPopover = null;
+                        this.__soundscapeRequestedControls.clear();
+                        this.__soundscapeActiveTabs = new Map(this.__soundscapeDefaultTabs);
+                    }
+                    return NativeEditor.prototype.activateSection.apply(this, arguments);
+                },
+                initialize: function () {
+                    NativeEditor.prototype.initialize.apply(this, arguments);
+                    if (!isSoundscape(this)) return;
+                    var view = this;
+                    view.__soundscapePopoverOwners = new Map();
+                    view.__soundscapePopoverToggles = new Set();
+                    view.__soundscapeLoadedPopovers = new Set();
+                    view.__soundscapeRequestedControls = new Set();
+                    view.__soundscapeDefaultTabs = new Map();
+                    view.__soundscapeActiveTabs = new Map();
+                    view.__soundscapeResponsiveDevices = new Map();
+                    var previous = null;
+                    var owner = null;
+                    view.collection.each(function (control) {
+                        var responsive = control.get('responsive');
+                        if (responsive) {
+                            var device = responsive.max || responsive.min;
+                            if (!view.__soundscapeResponsiveDevices.has(device)) view.__soundscapeResponsiveDevices.set(device, new Set());
+                            var parent = control;
+                            while (parent) {
+                                view.__soundscapeResponsiveDevices.get(device).add(parent.cid);
+                                parent = view.__soundscapeControlsByName.get(parent.get('parent'));
+                            }
+                        }
+                        if (control.get('type') === 'tab' && !view.__soundscapeDefaultTabs.has(control.get('tabs_wrapper'))) {
+                            view.__soundscapeDefaultTabs.set(control.get('tabs_wrapper'), control.get('name'));
+                            view.__soundscapeActiveTabs.set(control.get('tabs_wrapper'), control.get('name'));
+                        }
+                        var popover = control.get('popover');
+                        if (popover && popover.start) {
+                            owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+                            if (owner) view.__soundscapePopoverToggles.add(owner);
+                        }
+                        if (owner) view.__soundscapePopoverOwners.set(control.cid, owner);
+                        if (popover && popover.end) owner = null;
+                        previous = control;
+                    });
+
+                    var refreshFrame = null;
+                    var visibleControls = '';
+                    function signature() {
+                        return view.collection.filter(view.filter, view).map(function (control) { return control.cid; }).join('|');
+                    }
+                    function refreshControls() {
+                        refreshFrame = null;
+                        if (view.isDestroyed || !isSoundscape(view)) return;
+                        var pending = view.__soundscapePendingPopover;
+                        view.__soundscapePendingPopover = null;
+                        if (signature() === visibleControls && !pending) return;
+                        var open = view.children.filter(function (child) {
+                            return child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible');
+                        }).map(function (child) { return child.model.get('name'); });
+                        if (pending && open.indexOf(pending) === -1) open.push(pending);
+                        var selector = 'input, select, textarea, button, [tabindex]';
+                        var focused = view.children.find(function (child) { return child.el.contains(host.document.activeElement); });
+                        var focusIndex = focused ? Array.from(focused.el.querySelectorAll(selector)).indexOf(host.document.activeElement) : -1;
+                        view._renderChildren();
+                        open.forEach(function (name) {
+                            var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+                            if (toggle) {
+                                if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) toggle.onShow();
+                                toggle.activate();
+                            }
+                        });
+                        if (focused && focusIndex >= 0) {
+                            var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+                            var input = control && control.el.querySelectorAll(selector)[focusIndex];
+                            if (input) input.focus({ preventScroll: true });
+                        }
+                    }
+                    view.on('render:collection', function () { visibleControls = signature(); });
+                    view.__soundscapeScheduleControls = function () {
+                        if (isSoundscape(view) && !refreshFrame) refreshFrame = host.requestAnimationFrame(refreshControls);
+                    };
+                    view.listenTo(view.model.get('settings'), 'change', view.__soundscapeScheduleControls);
+                    view.listenTo(editor.channels.deviceMode, 'change', view.__soundscapeScheduleControls);
+                    view.on('childview:control:tab:clicked', function (tab) {
+                        var wrapper = tab.model.get('tabs_wrapper');
+                        var name = tab.model.get('name');
+                        if (view.__soundscapeActiveTabs.get(wrapper) === name) return;
+                        view.__soundscapeActiveTabs.set(wrapper, name);
+                        view.__soundscapeScheduleControls();
+                    });
+                    view.on('before:destroy', function () { hideTooltips(view); });
+                    view.on('destroy', function () { if (refreshFrame) host.cancelAnimationFrame(refreshFrame); });
+                }
+            });
+            page.view.__apeironSoundscapeControls = true;
+        }
+
+        editor.hooks.addAction('panel/open_editor/widget/apeiron-soundscape', registerPanel);
+        editor.on('preview:loaded', registerPanel);
+        if (editor.panel && editor.panel.currentView) registerPanel();
+        else editor.once('panel:init', registerPanel);
+    }
+
+    registerEditorControls();
+
     document.addEventListener('DOMContentLoaded', function () {
         SoundscapePlayer.findPlayers(document).forEach(function (player) {
             SoundscapePlayer.initWidget(player);
@@ -1509,6 +1776,7 @@
     });
 
     window.addEventListener('elementor/frontend/init', function () {
+        registerEditorControls();
         if (typeof elementorFrontend === 'undefined' || !elementorFrontend.hooks) {
             return;
         }

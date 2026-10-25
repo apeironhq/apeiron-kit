@@ -376,6 +376,7 @@ trait RegistersStyleControls {
 				'label'     => __( 'Accent Color', 'apeiron-kit' ),
 				'type'      => Controls_Manager::COLOR,
 				'default'   => '#083C57',
+				'condition' => $non_default_style,
 				'selectors' => [
 					'{{WRAPPER}} .apeiron-page-loader' => '--ap-loader-secondary: {{VALUE}};',
 				],
@@ -779,6 +780,7 @@ trait RegistersStyleControls {
 				'label'     => __( 'Loading Text', 'apeiron-kit' ),
 				'type'      => Controls_Manager::HEADING,
 				'separator' => 'before',
+				'condition' => [ 'loader_style!' => 'default' ],
 			]
 		);
 
@@ -787,6 +789,7 @@ trait RegistersStyleControls {
 			[
 				'name'     => 'loading_text_typography',
 				'selector' => '{{WRAPPER}} .apeiron-page-loader__text',
+				'condition' => [ 'loader_style!' => 'default' ],
 				'exclude'  => [ 'text_transform', 'font_style', 'text_decoration', 'word_spacing' ],
 				'fields_options' => [
 					'font_size' => [ 'default' => [ 'size' => 13, 'unit' => 'px' ] ],
@@ -801,6 +804,7 @@ trait RegistersStyleControls {
 				'label'     => __( 'Warna', 'apeiron-kit' ),
 				'type'      => Controls_Manager::COLOR,
 				'default'   => '#253044',
+				'condition' => [ 'loader_style!' => 'default' ],
 				'selectors' => [
 					'{{WRAPPER}} .apeiron-page-loader__text' => 'color: {{VALUE}};',
 				],
@@ -813,6 +817,7 @@ trait RegistersStyleControls {
 				'label'      => __( 'Spacing', 'apeiron-kit' ),
 				'type'       => Controls_Manager::SLIDER,
 				'size_units' => [ 'px', 'em' ],
+				'condition'  => [ 'loader_style!' => 'default' ],
 				'range'      => [ 'px' => [ 'min' => 0, 'max' => 80 ] ],
 				'default'    => [ 'size' => 14, 'unit' => 'px' ],
 				'selectors'  => [

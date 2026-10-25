@@ -97,6 +97,7 @@ trait RegistersContentControls {
 				'label_off'    => __( 'Tidak', 'apeiron-kit' ),
 				'return_value' => 'yes',
 				'default'      => 'yes',
+				'condition'    => [ 'loader_style!' => 'default' ],
 			]
 		);
 
@@ -109,6 +110,7 @@ trait RegistersContentControls {
 				'label_off'    => __( 'Tidak', 'apeiron-kit' ),
 				'return_value' => 'yes',
 				'default'      => 'yes',
+				'condition'    => [ 'loader_style!' => 'default' ],
 				'description'  => __( 'Progress mengikuti state dokumen lalu diselesaikan saat halaman siap.', 'apeiron-kit' ),
 			]
 		);

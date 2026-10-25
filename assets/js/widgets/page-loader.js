@@ -4,6 +4,7 @@
   var SELECTOR = '.apeiron-page-loader';
   var lockingInstances = [];
   var instancesById = {};
+  var editorPhases = {};
   var TEXT_SEQUENCE_DURATION = 4700;
   var TEXT_EXIT_DURATION = 900;
   var PHASE_PAUSE_DURATION = 400;
@@ -68,7 +69,7 @@
     }
 
     try {
-      return window.sessionStorage.getItem(root.dataset.storageKey || 'apeiron_page_loader_seen') === '1';
+      return window.localStorage.getItem(root.dataset.storageKey || 'apeiron_page_loader_seen') === '1';
     } catch (error) {
       return false;
     }
@@ -80,7 +81,7 @@
     }
 
     try {
-      window.sessionStorage.setItem(root.dataset.storageKey || 'apeiron_page_loader_seen', '1');
+      window.localStorage.setItem(root.dataset.storageKey || 'apeiron_page_loader_seen', '1');
     } catch (error) {
       // Storage can be unavailable in privacy-restricted browsing contexts.
     }
@@ -238,7 +239,18 @@
     this.root.setAttribute('aria-hidden', 'false');
     this.root.setAttribute('aria-busy', 'false');
     this.setProgress(68);
+    if (editorPhases[this.root.id]) {
+      setEditorPhase(this.root, editorPhases[this.root.id]);
+    }
   };
+
+  function setEditorPhase(root, phase) {
+    var loading = phase === 'loading' && root.dataset.loaderStyle !== 'default';
+    editorPhases[root.id] = phase;
+    root.dataset.editorPhase = loading ? 'loading' : 'text';
+    root.classList.toggle('is-text-hidden', loading);
+    root.classList.toggle('is-loading-visible', loading);
+  }
 
   PageLoader.prototype.skip = function (reason) {
     if (this.boot && this.boot.active && typeof this.boot.release === 'function') {
@@ -353,7 +365,7 @@
       sequenceDuration += PHASE_PAUSE_DURATION + VISUAL_MIN_DURATION - FINAL_PROGRESS_DURATION;
     }
     var sequenceFinish = this.startedAt + (this.reducedMotion ? 0 : sequenceDuration);
-    var configuredFinish = this.loaderStyle === 'default' ? sequenceFinish : this.startedAt + this.minimumDuration;
+    var configuredFinish = this.startedAt + this.minimumDuration;
     var earliestFinish = Math.max(configuredFinish, sequenceFinish, Date.now() + this.customDelay);
     var wait = Math.max(0, Math.min(earliestFinish, this.deadline) - Date.now());
     var instance = this;
@@ -429,6 +441,10 @@
     this.root.classList.add('is-exiting', 'is-exit-' + (this.root.dataset.exitAnimation || 'fade_scale'));
     window.clearTimeout(this.hardTimer);
     this.root.setAttribute('aria-busy', 'false');
+    if (immediate || this.reducedMotion || this.root.dataset.exitAnimation === 'none') {
+      this.finish(reason);
+      return;
+    }
     if (this.overlay) {
       this.overlay.addEventListener('transitionend', this.onTransitionEnd, { once: true });
     }
@@ -538,6 +554,346 @@
 
   function ready() {
     initializeWithin(document);
+    registerEditorControls();
+  }
+
+  function registerEditorControls() {
+    var host;
+    try {
+      host = window.parent;
+      if (!host || host === window || !host.elementor || host.__apeironPageLoaderControls) {
+        return;
+      }
+    } catch (error) {
+      return;
+    }
+
+    var editor = host.elementor;
+    if (!editor.helpers || !editor.helpers.isActiveControl) {
+      return;
+    }
+
+    function registerPanel() {
+      var panel = editor.panel && editor.panel.currentView;
+      var page = panel && panel.getPages('editor');
+      if (!page || !page.view || !page.view.extend || page.view.__apeironPageLoaderControls) {
+        return;
+      }
+      var NativeEditor = page.view;
+      function isLoader(view) {
+        return view.model.get('widgetType') === 'apeiron-page-loader';
+      }
+      function hideTooltips(view) {
+        view.$el.find('[original-title]').each(function () {
+          var tooltip = host.jQuery(this).data('tipsy');
+          if (tooltip) { tooltip.hide(); }
+        });
+      }
+      function updateEditorText(view, settings, values) {
+        var editedView = view.getOption('editedElementView');
+        var root = editedView && editedView.el.querySelector(SELECTOR);
+        if (!root || !root.classList.contains('is-editor-preview')) { return; }
+        var changed = values || settings.changedAttributes() || {};
+        var dynamic = settings.get('__dynamic__') || {};
+        ['intro', 'main', 'loading', 'secondary'].forEach(function (name) {
+          var key = name + '_text';
+          if (!Object.prototype.hasOwnProperty.call(changed, key) || (dynamic.get ? dynamic.get(key) : dynamic[key])) { return; }
+          var value = values ? values[key] : settings.get(key);
+          value = typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
+          var className = 'apeiron-page-loader__' + (name === 'loading' ? 'text' : name);
+          var element = root.querySelector('.' + className);
+          if (!element && value) {
+            var parent = root.querySelector(name === 'intro' ? '.apeiron-page-loader__sequence' : name === 'loading' ? '.apeiron-page-loader__progress' : '.apeiron-page-loader__final');
+            if (!parent) { return; }
+            if (name === 'main') {
+              var mask = root.querySelector('.apeiron-page-loader__mask');
+              if (!mask) {
+                mask = root.ownerDocument.createElement('div');
+                mask.className = 'apeiron-page-loader__mask';
+                parent.insertBefore(mask, parent.firstChild);
+              }
+              parent = mask;
+            }
+            element = root.ownerDocument.createElement('div');
+            element.className = className;
+            parent.insertBefore(element, name === 'secondary' ? null : parent.firstChild);
+          }
+          if (element) {
+            element.textContent = value;
+            element.hidden = value === '';
+          }
+          if (name === 'loading' && value) { root.querySelector('.apeiron-page-loader__sr-status').textContent = value; }
+        });
+      }
+      function closePendingPopover(view) {
+        var name = view.__loaderPendingPopover;
+        if (!name) { return; }
+        view.__loaderPendingPopover = null;
+        var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+        if (toggle) { toggle.onPopoverHide(); }
+      }
+      function deferColorPicker(child) {
+        var applySavedValue = child.applySavedValue;
+        var dynamicBehaviors = Object.values(child._behaviors || {}).filter(function (behavior) {
+          return typeof behavior.moveDynamicSwitcherToColorPicker === 'function';
+        });
+        dynamicBehaviors.forEach(function (behavior) {
+          var move = behavior.moveDynamicSwitcherToColorPicker;
+          behavior.moveDynamicSwitcherToColorPicker = function () {
+            if (child.isDestroyed || !this.ui.dynamicSwitcher) { return; }
+            if (child.colorPicker) { return move.apply(this, arguments); }
+            this.ui.dynamicSwitcher.detach();
+          };
+        });
+        child.applySavedValue = function () {
+          if (this.colorPicker) { return applySavedValue.apply(this, arguments); }
+          var value = this.getCurrentValue();
+          var placeholder = this.ui.pickerContainer[0];
+          var button = placeholder.querySelector('button');
+          if (!button) {
+            placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+            button = host.document.createElement('button');
+            button.type = 'button';
+            button.className = 'pcr-button';
+            button.setAttribute('aria-label', 'toggle color picker dialog');
+            placeholder.appendChild(button);
+            button.addEventListener('click', function (event) {
+              event.stopPropagation();
+              child.applySavedValue = applySavedValue;
+              child.initPicker();
+              dynamicBehaviors.forEach(function (behavior) { behavior.moveDynamicSwitcherToColorPicker(); });
+              child.colorPicker.picker.on('init', function () {
+                if (child.isDestroyed) { return; }
+                child.$pickerButton[0].click();
+                child.$pickerButton[0].focus();
+              });
+            });
+          }
+          button.classList.toggle('clear', !value);
+          button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+          this.$el.toggleClass('e-control-color--no-value', !value);
+        };
+      }
+      page.view = NativeEditor.extend({
+        initCollection: function () {
+          if (!isLoader(this)) { return NativeEditor.prototype.initCollection.apply(this, arguments); }
+          this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
+          this.__loaderMergedControls = new Set();
+          this.__loaderControlsByName = new Map(this.collection.map(function (control) { return [control.get('name'), control]; }));
+        },
+        getControlModel: function (name) {
+          return this.__loaderControlsByName ? this.__loaderControlsByName.get(name) : NativeEditor.prototype.getControlModel.apply(this, arguments);
+        },
+        getChildView: function (control) {
+          if (isLoader(this) && !this.__loaderMergedControls.has(control.cid)) {
+            control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+            this.__loaderMergedControls.add(control.cid);
+          }
+          return NativeEditor.prototype.getChildView.apply(this, arguments);
+        },
+        buildChildView: function (control) {
+          var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+          if (isLoader(this) && control.get('type') === 'color' && child.initPicker) { deferColorPicker(child); }
+          if (isLoader(this) && control.get('responsive') && child.getResponsiveChildrenViews) {
+            var getChildren = child.getResponsiveChildrenViews;
+            child.getResponsiveChildrenViews = function () {
+              return getChildren.apply(this, arguments).filter(function (view) { return !!view; });
+            };
+          }
+          return child;
+        },
+        _renderChildren: function () {
+          if (isLoader(this)) { hideTooltips(this); }
+          var result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+          if (isLoader(this) && this.__loaderActiveTabs) {
+            var view = this;
+            view.__loaderActiveTabs.forEach(function (name) {
+              var tab = NativeEditor.prototype.getControlViewByName.call(view, name);
+              if (tab && !tab.$el.hasClass('e-tab-active')) { tab.el.click(); }
+            });
+          }
+          return result;
+        },
+        filter: function (control, index, collection) {
+          if (!NativeEditor.prototype.filter.call(this, control, index, collection)) { return false; }
+          if (!isLoader(this)) { return true; }
+          var owner = this.__loaderPopoverOwners && this.__loaderPopoverOwners.get(control.cid);
+          if (owner && !this.__loaderLoadedPopovers.has(owner)) { return false; }
+          if (this.__loaderRequestedControls && !this.__loaderRequestedControls.has(control.cid)) {
+            var responsive = control.get('responsive');
+            var popover = control.get('popover');
+            var deviceControls = this.__loaderResponsiveDevices.get(editor.channels.deviceMode.request('currentMode'));
+            if (responsive && deviceControls && !deviceControls.has(control.cid) && !(popover && (popover.start || popover.end))) { return false; }
+            var innerTab = control.get('inner_tab');
+            if (innerTab && this.__loaderActiveTabs.get(control.get('tabs_wrapper')) !== innerTab) { return false; }
+          }
+          var settings = this.model.get('settings');
+          return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+        },
+        getControlViewByName: function (name) {
+          var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+          if (!isLoader(this) || !this.__loaderPopoverOwners) { return control; }
+          var model = this.getControlModel(name);
+          if (!model || model.get('section') !== this.activeSection) { return control; }
+          var owner = this.__loaderPopoverToggles.has(name) ? name : this.__loaderPopoverOwners.get(model.cid);
+          if (owner && !this.__loaderLoadedPopovers.has(owner)) {
+            this.__loaderLoadedPopovers.add(owner);
+            if (control && name === owner) {
+              this.__loaderPendingPopover = owner;
+              this.__loaderScheduleControls();
+            } else {
+              this._renderChildren();
+              control = NativeEditor.prototype.getControlViewByName.call(this, name);
+            }
+          }
+          if (!control) {
+            var requested = model;
+            while (requested) {
+              this.__loaderRequestedControls.add(requested.cid);
+              requested = requested.get('parent') ? this.getControlModel(requested.get('parent')) : null;
+            }
+            this._renderChildren();
+            control = NativeEditor.prototype.getControlViewByName.call(this, name);
+          }
+          return control;
+        },
+        activateSection: function (section) {
+          if (isLoader(this) && this.activeSection !== section && this.__loaderLoadedPopovers) {
+            closePendingPopover(this);
+            this.__loaderLoadedPopovers.clear();
+            this.__loaderRequestedControls.clear();
+            this.__loaderActiveTabs = new Map(this.__loaderDefaultTabs);
+          }
+          return NativeEditor.prototype.activateSection.apply(this, arguments);
+        },
+        initialize: function () {
+          NativeEditor.prototype.initialize.apply(this, arguments);
+          if (!isLoader(this)) { return; }
+          var view = this;
+          var previous = null;
+          var owner = null;
+          view.__loaderPopoverOwners = new Map();
+          view.__loaderPopoverToggles = new Set();
+          view.__loaderLoadedPopovers = new Set();
+          view.__loaderRequestedControls = new Set();
+          view.__loaderDefaultTabs = new Map();
+          view.__loaderActiveTabs = new Map();
+          view.__loaderResponsiveDevices = new Map();
+          view.collection.each(function (control) {
+            var responsive = control.get('responsive');
+            if (responsive) {
+              var device = responsive.max || responsive.min;
+              if (!view.__loaderResponsiveDevices.has(device)) { view.__loaderResponsiveDevices.set(device, new Set()); }
+              var parent = control;
+              while (parent) {
+                view.__loaderResponsiveDevices.get(device).add(parent.cid);
+                parent = view.__loaderControlsByName.get(parent.get('parent'));
+              }
+            }
+            if (control.get('type') === 'tab' && !view.__loaderDefaultTabs.has(control.get('tabs_wrapper'))) {
+              view.__loaderDefaultTabs.set(control.get('tabs_wrapper'), control.get('name'));
+              view.__loaderActiveTabs.set(control.get('tabs_wrapper'), control.get('name'));
+            }
+            var popover = control.get('popover');
+            if (popover && popover.start) {
+              owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+              if (owner) { view.__loaderPopoverToggles.add(owner); }
+            }
+            if (owner) { view.__loaderPopoverOwners.set(control.cid, owner); }
+            if (popover && popover.end) { owner = null; }
+            previous = control;
+          });
+          var refreshFrame = null;
+          var visibleControls = '';
+          function signature() {
+            return view.collection.filter(view.filter, view).map(function (control) { return control.cid; }).join('|');
+          }
+          function refreshControls() {
+            refreshFrame = null;
+            if (view.isDestroyed) { return; }
+            var pending = view.__loaderPendingPopover;
+            view.__loaderPendingPopover = null;
+            if (!pending && signature() === visibleControls) { return; }
+            var open = view.children.filter(function (child) {
+              return child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible');
+            }).map(function (child) { return child.model.get('name'); });
+            if (pending && open.indexOf(pending) === -1) { open.push(pending); }
+            var selector = 'input, select, textarea, button, [tabindex]';
+            var focused = view.children.find(function (child) { return child.el.contains(host.document.activeElement); });
+            var focusIndex = focused ? Array.from(focused.el.querySelectorAll(selector)).indexOf(host.document.activeElement) : -1;
+            view._renderChildren();
+            open.forEach(function (name) {
+              var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+              if (toggle) {
+                if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) { toggle.onShow(); }
+                toggle.activate();
+              }
+            });
+            if (focused && focusIndex >= 0) {
+              var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+              var input = control && control.el.querySelectorAll(selector)[focusIndex];
+              if (input) { input.focus({ preventScroll: true }); }
+            }
+          }
+          function onNavigationClick(event) {
+            var tab = event.target.closest('.elementor-panel-navigation-tab');
+            if (tab && tab.getAttribute('data-tab') !== view.activeTab) { closePendingPopover(view); }
+          }
+          function previewControl(event) {
+            var control = view.children.find(function (child) { return child.el.contains(event.target); });
+            if (!control) { return; }
+            var name = control.model.get('name');
+            var phase = /^(intro|main|secondary)_text/.test(name) || name === 'section_style_text' ? 'text' : null;
+            if (/^(loading_text|percentage_|loader_|stroke_width|animation_speed|show_percentage|track_color|surface_spacing)/.test(name) || name === 'section_style_loader') {
+              phase = 'loading';
+            }
+            var editedView = view.getOption('editedElementView');
+            var root = editedView && editedView.el.querySelector(SELECTOR);
+            if (root && phase) { setEditorPhase(root, phase); }
+          }
+          function previewTextInput(event) {
+            var key = event.target.getAttribute('data-setting');
+            if (!/^(intro|main|loading|secondary)_text$/.test(key)) { return; }
+            var values = {};
+            values[key] = event.target.value;
+            updateEditorText(view, view.model.get('settings'), values);
+          }
+          view.el.addEventListener('click', onNavigationClick, true);
+          view.el.addEventListener('click', previewControl, true);
+          view.el.addEventListener('focusin', previewControl);
+          view.el.addEventListener('input', previewTextInput);
+          view.on('render:collection', function () { visibleControls = signature(); });
+          view.__loaderScheduleControls = function () {
+            if (!refreshFrame) { refreshFrame = host.requestAnimationFrame(refreshControls); }
+          };
+          view.listenTo(view.model.get('settings'), 'change', view.__loaderScheduleControls);
+          view.listenTo(view.model.get('settings'), 'change', function (settings) { updateEditorText(view, settings); });
+          view.listenTo(editor.channels.deviceMode, 'change', view.__loaderScheduleControls);
+          view.on('childview:control:tab:clicked', function (tab) {
+            var wrapper = tab.model.get('tabs_wrapper');
+            var name = tab.model.get('name');
+            if (view.__loaderActiveTabs.get(wrapper) === name) { return; }
+            closePendingPopover(view);
+            view.__loaderActiveTabs.set(wrapper, name);
+            view.__loaderScheduleControls();
+          });
+          view.on('before:destroy', function () {
+            hideTooltips(view);
+            if (refreshFrame) { host.cancelAnimationFrame(refreshFrame); }
+            view.el.removeEventListener('click', onNavigationClick, true);
+            view.el.removeEventListener('click', previewControl, true);
+            view.el.removeEventListener('focusin', previewControl);
+            view.el.removeEventListener('input', previewTextInput);
+          });
+        }
+      });
+      page.view.__apeironPageLoaderControls = true;
+    }
+
+    host.__apeironPageLoaderControls = true;
+    editor.on('preview:loaded', registerPanel);
+    if (editor.panel && editor.panel.currentView) { registerPanel(); }
+    else { editor.once('panel:init', registerPanel); }
   }
 
   if (document.readyState === 'loading') {

@@ -65,12 +65,9 @@ class PageLoader extends BaseWidget {
 	}
 
 	protected function render_widget() {
-		$element_data = method_exists( $this, 'get_data' ) ? $this->get_data() : [];
-		$raw_settings = is_array( $element_data['settings'] ?? null ) ? $element_data['settings'] : $this->get_settings();
 		$settings     = $this->get_settings_for_display();
 		$settings     = $this->resolve_dynamic_content_settings(
-			is_array( $settings ) ? $settings : [],
-			is_array( $raw_settings ) ? $raw_settings : []
+			is_array( $settings ) ? $settings : []
 		);
 		$is_editor  = $this->is_elementor_editor_preview();
 		$element_id = 'apeiron-page-loader-' . $this->get_id();
@@ -109,22 +106,9 @@ class PageLoader extends BaseWidget {
 		$this->render_page_loader( $context );
 	}
 
-	private function resolve_dynamic_content_settings( array $settings, array $raw_settings ): array {
-		$dynamic = is_array( $raw_settings['__dynamic__'] ?? null ) ? $raw_settings['__dynamic__'] : [];
-		$defaults = [
-			'intro_text'     => __( 'The Wedding of', 'apeiron-kit' ),
-			'main_text'      => 'RK',
-			'loading_text'   => __( 'Menyiapkan halaman', 'apeiron-kit' ),
-			'secondary_text' => __( 'Rania & Kenny', 'apeiron-kit' ),
-		];
-
-		foreach ( $defaults as $key => $default ) {
-			$value = is_scalar( $settings[ $key ] ?? null ) ? trim( (string) $settings[ $key ] ) : '';
-			if ( '' === $value && ! empty( $dynamic[ $key ] ) ) {
-				$value = is_scalar( $raw_settings[ $key ] ?? null ) ? trim( (string) $raw_settings[ $key ] ) : '';
-				$value = '' !== $value ? $value : $default;
-			}
-			$settings[ $key ] = $value;
+	private function resolve_dynamic_content_settings( array $settings ): array {
+		foreach ( [ 'intro_text', 'main_text', 'loading_text', 'secondary_text' ] as $key ) {
+			$settings[ $key ] = is_scalar( $settings[ $key ] ?? null ) ? trim( (string) $settings[ $key ] ) : '';
 		}
 
 		return $settings;

@@ -13,7 +13,7 @@
     }
 
     try {
-      return window.sessionStorage.getItem(storageKey) === '1';
+      return window.localStorage.getItem(storageKey) === '1';
     } catch (error) {
       return false;
     }

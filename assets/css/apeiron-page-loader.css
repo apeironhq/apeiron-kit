@@ -160,12 +160,7 @@ body.apeiron-page-loader-scroll-lock {
 }
 
 .apeiron-page-loader.is-editor-preview .apeiron-page-loader__surface {
-	contain: layout paint style;
-}
-
-.apeiron-page-loader.is-editor-preview.has-glass .apeiron-page-loader__surface {
-	-webkit-backdrop-filter: none;
-	backdrop-filter: none;
+	contain: layout style;
 }
 
 .apeiron-page-loader.is-editor-preview,
@@ -423,6 +418,11 @@ body.apeiron-page-loader-scroll-lock {
 	filter: blur(0);
 	transform: translateY(0);
 	visibility: visible;
+}
+
+.apeiron-page-loader.is-editor-preview[data-editor-phase="text"] .apeiron-page-loader__loading-phase {
+	opacity: 0;
+	visibility: hidden;
 }
 
 .apeiron-page-loader__visual-wrap {

@@ -31,6 +31,7 @@ final class AssetRegistrar {
 			$this->version( 'assets/css/apeiron-widget-lock', 'css' )
 		);
 
+		$this->register_vendor_assets();
 		$this->register_widget_assets();
 		$this->register_cover_assets();
 		$this->register_page_loader_preflight();
@@ -76,6 +77,17 @@ final class AssetRegistrar {
 		}
 
 		return $cache[ $cache_key ] = '.min';
+	}
+
+	/**
+	 * Bundled third-party libraries. Only printed when a widget script lists them as dependencies.
+	 */
+	private function register_vendor_assets(): void {
+		$gsap_url = trailingslashit( APEIRON_KIT_URL ) . 'assets/vendor/gsap/';
+
+		wp_register_script( 'apeiron-kit-gsap', $gsap_url . 'gsap.min.js', [], '3.15.0', true );
+		wp_register_script( 'apeiron-kit-gsap-scrolltrigger', $gsap_url . 'ScrollTrigger.min.js', [ 'apeiron-kit-gsap' ], '3.15.0', true );
+		wp_register_script( 'apeiron-kit-gsap-splittext', $gsap_url . 'SplitText.min.js', [ 'apeiron-kit-gsap' ], '3.15.0', true );
 	}
 
 	private function register_widget_assets(): void {

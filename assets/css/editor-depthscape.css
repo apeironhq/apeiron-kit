@@ -1,0 +1,49 @@
+.apeiron-depthscape-style-panel .elementor-control-type-popover_toggle > .elementor-control-content .elementor-control-popover-toggle-reset-label {
+    display: none;
+}
+
+#elementor-controls:has(> .elementor-control-type-apeiron_depthscape_layers) > :is(.elementor-control-add_content_layer, .elementor-control-preview_content_motion) {
+    padding-bottom: 8px;
+}
+
+#elementor-controls:has(> .elementor-control-type-apeiron_depthscape_layers) > :is(.elementor-control-add_content_layer, .elementor-control-preview_content_motion) .elementor-control-field {
+    display: block;
+}
+
+#elementor-controls:has(> .elementor-control-type-apeiron_depthscape_layers) > :is(.elementor-control-add_content_layer, .elementor-control-preview_content_motion) .elementor-control-title:empty {
+    display: none;
+}
+
+#elementor-controls:has(> .elementor-control-type-apeiron_depthscape_layers) > :is(.elementor-control-add_content_layer, .elementor-control-preview_content_motion) .elementor-control-input-wrapper {
+    width: 100%;
+    margin: 0;
+}
+
+#elementor-controls:has(> .elementor-control-type-apeiron_depthscape_layers) > :is(.elementor-control-add_content_layer, .elementor-control-preview_content_motion) .elementor-button {
+    width: 100%;
+    min-height: 32px;
+}
+
+.elementor-control-type-apeiron_depthscape_layers .elementor-repeater-fields {
+    margin-block: 6px;
+}
+
+.elementor-control-type-apeiron_depthscape_layers .elementor-repeater-row-tools {
+    border-radius: 3px;
+}
+
+.elementor-control-type-apeiron_depthscape_layers .elementor-repeater-row-tools > .elementor-repeater-row-item-title {
+    display: block;
+    min-width: 0;
+    height: 34px;
+    line-height: 34px;
+    text-align: start;
+    text-overflow: ellipsis;
+}
+
+.elementor-control-type-apeiron_depthscape_layers .elementor-repeater-row-tools > .elementor-repeater-row-tool {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 34px;
+}

@@ -70,3 +70,8 @@
     -webkit-mask-image: url('../icon/cover.svg');
     mask-image: url('../icon/cover.svg');
 }
+
+.apeiron-icon-depthscape {
+    -webkit-mask-image: url('../icon/depthscape.svg');
+    mask-image: url('../icon/depthscape.svg');
+}

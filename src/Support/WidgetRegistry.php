@@ -12,6 +12,7 @@ use ApeironKit\Elementor\Widgets\Countdown\Countdown;
 use ApeironKit\Elementor\Widgets\Countdown\LegacyPulseCountdown;
 use ApeironKit\Elementor\Widgets\Cover\Cover;
 use ApeironKit\Elementor\Widgets\DaftarHadiah\DaftarHadiah;
+use ApeironKit\Elementor\Widgets\Depthscape\Depthscape;
 use ApeironKit\Elementor\Widgets\FormOrder\FormOrder;
 use ApeironKit\Elementor\Widgets\GuestInvitationManager\GuestInvitationManager;
 use ApeironKit\Elementor\Widgets\PageLoader\PageLoader;
@@ -158,6 +159,15 @@ final class WidgetRegistry {
 			'js_file'  => 'widgets/daftar-hadiah',
 			'js_deps'  => [],
 		],
+		'depthscape'    => [
+			'class' => Depthscape::class,
+			'type'  => 'apeiron-depthscape',
+			'css'   => 'apeiron-kit-depthscape',
+			'js'    => 'apeiron-kit-depthscape-js',
+			'css_file' => 'apeiron-depthscape',
+			'js_file'  => 'widgets/depthscape',
+			'js_deps'  => [ 'apeiron-kit-gsap', 'apeiron-kit-gsap-scrolltrigger', 'apeiron-kit-gsap-splittext' ],
+		],
 	];
 
 	/**
@@ -197,6 +207,7 @@ final class WidgetRegistry {
 		'cover',
 		'cerita_cinta',
 		'daftar_hadiah',
+		'depthscape',
 	];
 
 	/**
@@ -218,6 +229,7 @@ final class WidgetRegistry {
 		'cover',
 		'cerita_cinta',
 		'daftar_hadiah',
+		'depthscape',
 	];
 
 	/**
@@ -239,6 +251,7 @@ final class WidgetRegistry {
 		'cover',
 		'cerita_cinta',
 		'daftar_hadiah',
+		'depthscape',
 	];
 
 	/**
@@ -564,6 +577,14 @@ final class WidgetRegistry {
 				'description' => __( 'Katalog dan reservasi hadiah per undangan melalui dashboard Daftar Hadiah.', 'apeiron-kit' ),
 				'group'       => __( 'Event', 'apeiron-kit' ),
 				'group_key'   => 'event',
+			],
+			'depthscape'    => [
+				'icon'        => 'images-alt2',
+				'color'       => 'teal',
+				'label'       => __( 'Paralaks 2.5D', 'apeiron-kit' ),
+				'description' => __( 'Adegan scroll sinematik dengan kamera 3D, layer berkedalaman, dan animasi GSAP.', 'apeiron-kit' ),
+				'group'       => __( 'Media', 'apeiron-kit' ),
+				'group_key'   => 'media',
 			],
 		];
 	}

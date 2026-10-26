@@ -18,6 +18,7 @@ $text = static function ( string $key ) use ( $settings ): string {
 	return ! empty( $settings['__dynamic__'][ $key ] ) ? html_entity_decode( $value, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : $value;
 };
 $mobile_swipe = 'grid' !== ( $settings['mobile_display'] ?? 'swipe' );
+$preview = ! empty( $is_editor ) || ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() && 'elementor_ajax' === ( $_REQUEST['action'] ?? '' ) );
 $navigation   = in_array( $settings['swipe_navigation'] ?? 'dots', [ 'dots', 'arrows', 'both', 'none' ], true ) ? ( $settings['swipe_navigation'] ?? 'dots' ) : 'dots';
 $navigation_icon = static function ( string $direction ) use ( $settings ): void {
 	$icon = is_array( $settings[ 'swipe_' . $direction . '_icon' ] ?? null ) ? $settings[ 'swipe_' . $direction . '_icon' ] : [];
@@ -56,7 +57,7 @@ $render_availability = static function ( array $gift = [], bool $popup = false )
 	<?php if ( ! $gifts ) : ?>
 		<div class="apeiron-daftar-hadiah__empty" role="status"><?php echo esc_html( $text( 'empty_text' ) ); ?></div>
 	<?php else : ?>
-		<div id="<?php echo esc_attr( $dom_id . '-grid' ); ?>" class="apeiron-daftar-hadiah__grid"<?php if ( $mobile_swipe ) : ?> tabindex="0" role="group" aria-label="<?php echo esc_attr__( 'Daftar hadiah, geser ke samping untuk melihat hadiah lainnya', 'apeiron-kit' ); ?>"<?php endif; ?>>
+		<div id="<?php echo esc_attr( $dom_id . '-grid' ); ?>" class="apeiron-daftar-hadiah__grid"<?php if ( $preview ) : ?> data-gift-swipe-label="<?php echo esc_attr__( 'Daftar hadiah, geser ke samping untuk melihat hadiah lainnya', 'apeiron-kit' ); ?>"<?php endif; ?><?php if ( $mobile_swipe ) : ?> tabindex="0" role="group" aria-label="<?php echo esc_attr__( 'Daftar hadiah, geser ke samping untuk melihat hadiah lainnya', 'apeiron-kit' ); ?>"<?php endif; ?>>
 			<?php foreach ( $gifts as $gift ) : ?>
 				<?php $available = 'available' === $gift['availability'] && '' !== $gift['gift_id']; ?>
 				<article class="apeiron-daftar-hadiah__card elementor-repeater-item-<?php echo esc_attr( $gift['row_id'] ); ?>" data-gift-id="<?php echo esc_attr( $gift['gift_id'] ); ?>">
@@ -83,15 +84,15 @@ $render_availability = static function ( array $gift = [], bool $popup = false )
 				</article>
 			<?php endforeach; ?>
 		</div>
-		<?php if ( $mobile_swipe && 'none' !== $navigation && count( $gifts ) > 1 ) : ?>
-			<div class="apeiron-daftar-hadiah__swipe-navigation" data-gift-card-navigation role="group" aria-label="<?php echo esc_attr__( 'Navigasi daftar hadiah', 'apeiron-kit' ); ?>" hidden>
-				<?php if ( in_array( $navigation, [ 'arrows', 'both' ], true ) ) : ?><button class="apeiron-daftar-hadiah__swipe-arrow" type="button" data-gift-card-prev aria-label="<?php echo esc_attr__( 'Hadiah sebelumnya', 'apeiron-kit' ); ?>" aria-controls="<?php echo esc_attr( $dom_id . '-grid' ); ?>" disabled><?php $navigation_icon( 'prev' ); ?></button><?php endif; ?>
-				<?php if ( in_array( $navigation, [ 'dots', 'both' ], true ) ) : ?>
-					<div class="apeiron-daftar-hadiah__swipe-dots">
+		<?php if ( ( $preview || ( $mobile_swipe && 'none' !== $navigation ) ) && count( $gifts ) > 1 ) : ?>
+			<div class="apeiron-daftar-hadiah__swipe-navigation" data-gift-card-navigation<?php echo $preview ? ' data-gift-navigation-mode="' . esc_attr( $navigation ) . '"' : ''; ?> role="group" aria-label="<?php echo esc_attr__( 'Navigasi daftar hadiah', 'apeiron-kit' ); ?>" hidden>
+				<?php if ( $preview || in_array( $navigation, [ 'arrows', 'both' ], true ) ) : ?><button class="apeiron-daftar-hadiah__swipe-arrow" type="button" data-gift-card-prev<?php echo in_array( $navigation, [ 'arrows', 'both' ], true ) ? '' : ' style="display:none"'; ?> aria-label="<?php echo esc_attr__( 'Hadiah sebelumnya', 'apeiron-kit' ); ?>" aria-controls="<?php echo esc_attr( $dom_id . '-grid' ); ?>" disabled><?php $navigation_icon( 'prev' ); ?></button><?php endif; ?>
+				<?php if ( $preview || in_array( $navigation, [ 'dots', 'both' ], true ) ) : ?>
+					<div class="apeiron-daftar-hadiah__swipe-dots"<?php echo in_array( $navigation, [ 'dots', 'both' ], true ) ? '' : ' style="display:none"'; ?>>
 						<?php foreach ( $gifts as $index => $gift ) : ?><button class="apeiron-daftar-hadiah__swipe-dot" type="button" data-gift-card-index="<?php echo esc_attr( (string) $index ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Lihat hadiah %1$d: %2$s', 'apeiron-kit' ), $index + 1, $gift['name'] ) ); ?>" aria-controls="<?php echo esc_attr( $dom_id . '-grid' ); ?>" aria-current="<?php echo 0 === $index ? 'true' : 'false'; ?>"></button><?php endforeach; ?>
 					</div>
 				<?php endif; ?>
-				<?php if ( in_array( $navigation, [ 'arrows', 'both' ], true ) ) : ?><button class="apeiron-daftar-hadiah__swipe-arrow" type="button" data-gift-card-next aria-label="<?php echo esc_attr__( 'Hadiah berikutnya', 'apeiron-kit' ); ?>" aria-controls="<?php echo esc_attr( $dom_id . '-grid' ); ?>"><?php $navigation_icon( 'next' ); ?></button><?php endif; ?>
+				<?php if ( $preview || in_array( $navigation, [ 'arrows', 'both' ], true ) ) : ?><button class="apeiron-daftar-hadiah__swipe-arrow" type="button" data-gift-card-next<?php echo in_array( $navigation, [ 'arrows', 'both' ], true ) ? '' : ' style="display:none"'; ?> aria-label="<?php echo esc_attr__( 'Hadiah berikutnya', 'apeiron-kit' ); ?>" aria-controls="<?php echo esc_attr( $dom_id . '-grid' ); ?>"><?php $navigation_icon( 'next' ); ?></button><?php endif; ?>
 			</div>
 		<?php endif; ?>
 	<?php endif; ?>

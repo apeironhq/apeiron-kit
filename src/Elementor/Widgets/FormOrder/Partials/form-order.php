@@ -48,7 +48,7 @@ $mobile_navigation = 'fixed' === ( $settings['mobile_navigation'] ?? 'normal' );
 				<div class="apeiron-form-order__grid">
 					<?php foreach ( $group['fields'] as $name => $field ) : ?>
 						<?php $field_id = 'apeiron-order-' . sanitize_key( (string) $element_id ) . '-' . $name; ?>
-						<div class="apeiron-form-order__field" data-order-label="<?php echo esc_attr( $field['label'] ); ?>" style="--order-field-width:<?php echo esc_attr( $field['width'] ); ?>%;--order-field-width-tablet:<?php echo esc_attr( $field['width_tablet'] ); ?>%;--order-field-width-mobile:<?php echo esc_attr( $field['width_mobile'] ); ?>%">
+						<div class="apeiron-form-order__field" data-order-field="<?php echo esc_attr( $name ); ?>" data-order-label="<?php echo esc_attr( $field['label'] ); ?>" style="--order-field-width:<?php echo esc_attr( $field['width'] ); ?>%;--order-field-width-tablet:<?php echo esc_attr( $field['width_tablet'] ); ?>%;--order-field-width-mobile:<?php echo esc_attr( $field['width_mobile'] ); ?>%">
 							<?php if ( 'heading' === $field['type'] ) : ?>
 								<h4 class="apeiron-form-order__heading"><?php echo esc_html( $field['label'] ); ?></h4>
 								<?php if ( '' !== $field['help'] ) : ?><p class="apeiron-form-order__help"><?php echo esc_html( $field['help'] ); ?></p><?php endif; ?>

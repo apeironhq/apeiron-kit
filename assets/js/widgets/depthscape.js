@@ -324,7 +324,7 @@
         }
 
         var duration = halfCycle * 1000;
-        ctx.idleLoops.push(el.animate(
+        var animation = el.animate(
             [{ transform: idleTransform(range.from) }, { transform: idleTransform(range.to) }],
             {
                 duration: duration,
@@ -334,7 +334,9 @@
                 iterations: Infinity,
                 easing: 'ease-in-out',
             }
-        ));
+        );
+        ctx.idleLoops.push(animation);
+        return animation;
     }
 
     function stopIdleLoops(ctx) {
@@ -555,7 +557,7 @@
             var range = !reduce && config.idle ? idleRange(layerConfig.idle) : null;
             var idle = layer.querySelector(SELECTOR.idle);
             if (range && idle) {
-                startIdleLoop(ctx, idle, range, Math.max(toNumber(layerConfig.idle.speed, 6), 0.5) / 2);
+                record.idleLoop = startIdleLoop(ctx, idle, range, Math.max(toNumber(layerConfig.idle.speed, 6), 0.5) / 2);
             }
 
             if (!ctx.layersByKey[key]) {
@@ -659,12 +661,14 @@
         var config = ctx.config;
         var ScrollTrigger = window.ScrollTrigger;
         var editorScene = isEditMode() ? toNumber(config.editorScene, -1) : -1;
+        var triggers = [];
+        var releaseRoot = null;
 
         if (editorScene >= 0 || !hasScrollTrigger() || built.total <= 0) {
             var label = 's' + Math.min(Math.max(editorScene, 0), (config.scenes || []).length);
             built.timeline.seek(Object.prototype.hasOwnProperty.call(built.timeline.labels, label) ? label : 0);
             setActive(ctx, true);
-            return;
+            return function () { ctx.state.scroll = null; };
         }
 
         var snapPoints = Object.keys(built.timeline.labels).map(function (name) {
@@ -687,20 +691,20 @@
             sizeRoot();
             ctx.root.classList.add('is-stay-fixed');
             ScrollTrigger.addEventListener('refreshInit', sizeRoot);
-            ctx.cleanups.push(function () {
+            releaseRoot = function () {
                 ScrollTrigger.removeEventListener('refreshInit', sizeRoot);
                 ctx.root.style.paddingBottom = '';
                 ctx.root.classList.remove('is-backdrop', 'is-stay-fixed');
-            });
+            };
 
-            ScrollTrigger.create({
+            triggers.push(ScrollTrigger.create({
                 trigger: ctx.root,
                 start: 'top top',
                 end: 'max',
                 pin: ctx.stage,
                 pinSpacing: false,
                 anticipatePin: 1,
-            });
+            }));
         }
 
         var trigger = ScrollTrigger.create({
@@ -735,16 +739,22 @@
         });
 
         ctx.state.scroll = { trigger: trigger, points: snapPoints };
+        triggers.push(trigger);
 
         // Idle loops and tilt only run while the stage is on screen (to the end of the page as a backdrop).
-        ScrollTrigger.create({
+        triggers.push(ScrollTrigger.create({
             trigger: ctx.root,
             start: 'top bottom',
             end: stayFixed ? 'max' : 'bottom top',
             onToggle: function (self) {
                 setActive(ctx, self.isActive);
             },
-        });
+        }));
+        return function () {
+            if (releaseRoot) { releaseRoot(); }
+            triggers.forEach(function (item) { item.kill(true, true); });
+            ctx.state.scroll = null;
+        };
     }
 
     function setupTilt(ctx, reduce) {
@@ -826,6 +836,8 @@
         }
 
         return function () {
+            turnTo.tween.kill();
+            tiltTo.tween.kill();
             listeners.forEach(function (remove) {
                 remove();
             });
@@ -838,9 +850,10 @@
 
     // Pollen/petals spread through depth: as world layers they inherit the camera's parallax for free,
     // which is what makes a slow dolly read as real 3D space.
-    function createParticles(ctx, reduce) {
+    function createParticles(ctx, reduce, extraCount) {
         var options = ctx.config.particles || {};
         var count = reduce ? 0 : Math.round(clamp(toNumber(options.count, 0), 0, 60));
+        if (!reduce && typeof extraCount === 'number') { count = extraCount; }
         var created = [];
 
         for (var i = 0; i < count; i++) {
@@ -874,7 +887,9 @@
             ctx.world.splice(index, 0, { el: el, depth: depth, wind: false, gust: true, ax: 0, ay: 0, transform: '', visibility: '' });
             created.push(el);
 
-            startIdleLoop(ctx, inner, {
+            el._apeironParticleRatio = size / toNumber(options.size, 6);
+            el._apeironParticleStyle = options.style || 'pollen';
+            el._apeironParticleLoop = startIdleLoop(ctx, inner, {
                 from: { x: 0, y: 0, rotation: 0 },
                 to: {
                     x: randomBetween(-34, 34),
@@ -933,7 +948,7 @@
             stage: stage,
             camera: camera,
             screen: stage.querySelector(SELECTOR.screen),
-            hint: stage.querySelector(SELECTOR.hint),
+            hint: stage.querySelector(SELECTOR.hint) && !stage.querySelector(SELECTOR.hint).hidden ? stage.querySelector(SELECTOR.hint) : null,
             size: measure(stage),
             view: cameraState(state.config.camera),
             tilt: { rx: 0, ry: 0 },
@@ -961,18 +976,157 @@
         setupBreath(ctx, reduce);
         renderWorld(ctx);
         var built = buildTimeline(ctx, reduce);
-        setupScroll(ctx, built, reduce);
+        var stopScroll = setupScroll(ctx, built, reduce);
+        var liveTimelineContext = null;
         var stopVideos = setupVideos(ctx);
 
         var lineResizeTimer = null;
         if (isEditMode()) {
+            state.editorPreview = {
+                timeline: built.timeline,
+                render: function () {
+                    ctx.perspective = Math.max(toNumber(ctx.config.perspective, 1000), 200);
+                    ctx.compensate = ctx.config.compensate !== false;
+                    ctx.windStrength = reduce ? 0 : clamp(toNumber(ctx.config.wind, 0), 0, 20);
+                    var reordered = false;
+                    ctx.world = ctx.world.filter(function (item) {
+                        if (!ctx.config.layers[parseInt(item.el.getAttribute('data-ds-index'), 10)] || item.el.parentNode === ctx.camera) { return true; }
+                        item.el.style.transform = '';
+                        item.el.style.visibility = '';
+                        reordered = true;
+                        return false;
+                    });
+                    Array.from(ctx.camera.children).forEach(function (el) {
+                        var layer = ctx.config.layers[parseInt(el.getAttribute('data-ds-index'), 10)];
+                        if (layer && !ctx.world.some(function (item) { return item.el === el; })) { ctx.world.push({ el: el, depth: layer.z, wind: layer.wind && !reduce, gust: false, ax: 0, ay: 0, transform: '', visibility: '' }); reordered = true; }
+                    });
+                    if (reordered) { var order = Array.from(ctx.camera.children); ctx.world.sort(function (a, b) { return order.indexOf(a.el) - order.indexOf(b.el); }); }
+                    ctx.world.forEach(function (item) {
+                        var layer = ctx.config.layers[parseInt(item.el.getAttribute('data-ds-index'), 10)];
+                        if (layer) { item.depth = layer.z; item.wind = layer.wind && !reduce; }
+                    });
+                    var flags = collectFlags(ctx.config);
+                    Object.keys(ctx.layersByKey).forEach(function (key) {
+                        ctx.layersByKey[key].forEach(function (record) {
+                            record.useBlur = record.useBlur || !!flags.blur[key] || toNumber(record.config.start && record.config.start.blur, 0) > 0;
+                        });
+                    });
+                    measureWorld(ctx);
+                    ctx.lastSignature = '';
+                    renderWorld(ctx);
+                },
+                idle: function () {
+                    Object.keys(ctx.layersByKey).forEach(function (key) {
+                        ctx.layersByKey[key].forEach(function (record) {
+                            var range = !reduce && ctx.config.idle ? idleRange(record.config.idle) : null;
+                            var animation = record.idleLoop;
+                            if (!range) {
+                                if (animation) { animation.cancel(); ctx.idleLoops = ctx.idleLoops.filter(function (item) { return item !== animation; }); record.idleLoop = null; }
+                                return;
+                            }
+                            if (animation && animation.effect) {
+                                var timing = animation.effect.getTiming();
+                                var time = animation.currentTime;
+                                var duration = Math.max(toNumber(record.config.idle.speed, 6), 0.5) * 500;
+                                animation.effect.setKeyframes([{ transform: idleTransform(range.from) }, { transform: idleTransform(range.to) }]);
+                                animation.effect.updateTiming({ duration: duration });
+                                if (time !== null) { animation.currentTime = (time - timing.delay) / timing.duration * duration + timing.delay; }
+                            } else {
+                                var idle = record.inner.querySelector(SELECTOR.idle);
+                                if (idle) {
+                                    record.idleLoop = startIdleLoop(ctx, idle, range, Math.max(toNumber(record.config.idle.speed, 6), 0.5) / 2);
+                                    if (record.idleLoop && !ctx.active) { record.idleLoop.pause(); }
+                                }
+                            }
+                        });
+                    });
+                },
+                particles: function () {
+                    var wanted = reduce ? 0 : ctx.config.particles.count;
+                    particles.splice(wanted).forEach(function (el) {
+                        var animation = el._apeironParticleLoop;
+                        if (animation) { animation.cancel(); ctx.idleLoops = ctx.idleLoops.filter(function (item) { return item !== animation; }); }
+                        ctx.world = ctx.world.filter(function (item) { return item.el !== el; });
+                        el.remove();
+                    });
+                    if (wanted > particles.length) { particles.push.apply(particles, createParticles(ctx, reduce, wanted - particles.length)); }
+                    particles.forEach(function (el) {
+                        var options = ctx.config.particles;
+                        el.style.setProperty('--ds-size', (el._apeironParticleRatio * options.size).toFixed(1) + 'px');
+                        el.style.setProperty('--ds-particle', options.color);
+                        if (el._apeironParticleStyle !== options.style) {
+                            el.classList.remove('is-style-pollen', 'is-style-petal', 'is-style-bokeh');
+                            el.classList.add('is-style-' + options.style);
+                            el._apeironParticleStyle = options.style;
+                            var animation = el._apeironParticleLoop;
+                            if (animation && animation.effect) {
+                                var frames = animation.effect.getKeyframes();
+                                frames.forEach(function (frame, index) { frame.transform = frame.transform.replace(/rotate\([^)]*\)/, 'rotate(' + (index && options.style === 'petal' ? randomBetween(-160, 160) : 0) + 'deg)'); });
+                                animation.effect.setKeyframes(frames);
+                            }
+                        }
+                        if (el._apeironParticleLoop && !ctx.active) { el._apeironParticleLoop.pause(); }
+                    });
+                    state.editorPreview.render();
+                },
+                motion: function (keys) {
+                    if (keys.some(function (key) { return ['pointer_tilt', 'gyro_tilt', 'tilt_strength'].indexOf(key) >= 0; })) {
+                        stopTilt();
+                        Object.assign(ctx.tilt, { rx: 0, ry: 0 });
+                        stopTilt = setupTilt(ctx, reduce);
+                    }
+                    if (keys.indexOf('camera_breath') >= 0) {
+                        var phases = ctx.idleTweens.map(function (tween) { return tween.totalTime(); });
+                        ctx.idleTweens.forEach(function (tween) { tween.kill(); });
+                        ctx.idleTweens = [];
+                        Object.assign(ctx.breath, { x: 0, y: 0, z: 0, rz: 0 });
+                        setupBreath(ctx, reduce);
+                        ctx.idleTweens.forEach(function (tween, index) { if (phases[index] !== undefined) { tween.totalTime(phases[index]); } if (ctx.active) { tween.play(); } });
+                    }
+                    state.editorPreview.render();
+                },
+                scrub: function () {
+                    if (state.scroll) {
+                        var value = reduce || toNumber(ctx.config.scrub, 0) <= 0 ? true : ctx.config.scrub;
+                        state.scroll.trigger.vars.scrub = value;
+                        state.scroll.trigger.scrubDuration(value);
+                    }
+                },
+                timelineUpdate: function (preserve) {
+                    var progress = built.timeline.progress();
+                    var active = state.scroll && state.scroll.trigger.isActive;
+                    stopScroll();
+                    // The replacement timeline resets poses itself; keep split-text styles until then.
+                    if (liveTimelineContext) { liveTimelineContext.kill(false); }
+                    else { built.timeline.kill(); }
+                    liveTimelineContext = gsap.context(function () {
+                        Object.assign(ctx.view, cameraState(ctx.config.camera));
+                        Object.keys(ctx.layersByKey).forEach(function (key) {
+                            ctx.layersByKey[key].forEach(function (record) {
+                                gsap.set(record.inner, layerVars(reduce ? calmProps(record.config.start) : record.config.start, ctx.size, record.useBlur && !reduce));
+                            });
+                        });
+                        var hint = stage.querySelector(SELECTOR.hint);
+                        ctx.hint = hint && !hint.hidden ? hint : null;
+                        built = buildTimeline(ctx, reduce);
+                        stopScroll = setupScroll(ctx, built, reduce);
+                    }, root);
+                    state.editorPreview.timeline = built.timeline;
+                    if (hasScrollTrigger()) { window.ScrollTrigger.sort(); window.ScrollTrigger.refresh(); }
+                    if (preserve && ctx.config.editorScene < 0) {
+                        if (active && state.scroll) { var trigger = state.scroll.trigger; trigger.scroll(trigger.start + (trigger.end - trigger.start) * progress); }
+                        built.timeline.progress(progress, true);
+                    }
+                    state.editorPreview.render();
+                },
+            };
             var needsLineReflow = Object.keys(ctx.layersByKey).some(function (key) {
                 return ctx.layersByKey[key].some(function (record) {
                     return record.units && record.config.split === 'lines';
                 });
             });
 
-            state.resize = function (size) {
+            state.resize = function (size, reflowLines) {
                 var progress = built.timeline.progress();
                 built.timeline.progress(0, true);
                 ctx.size.width = size.width;
@@ -990,7 +1144,7 @@
                 renderWorld(ctx);
 
                 // Line masks need new wrapping, but only after the resize gesture settles.
-                if (needsLineReflow) {
+                if (needsLineReflow && reflowLines !== false) {
                     clearTimeout(lineResizeTimer);
                     lineResizeTimer = setTimeout(function () {
                         if (root.isConnected) {
@@ -1021,6 +1175,10 @@
             gsap.ticker.remove(tick);
             clearTimeout(lineResizeTimer);
             if (state.opening) { state.opening.stop(); }
+            stopScroll();
+            if (liveTimelineContext) { liveTimelineContext.revert(); }
+            ctx.idleTweens.forEach(function (tween) { tween.kill(); });
+            state.editorPreview = null;
             state.resize = null;
             state.scroll = null;
             stopTilt();
@@ -1291,6 +1449,197 @@
     var editorWatchBound = false;
     var editorRefreshTimer = null;
 
+    function updateEditorPreview(root, update) {
+        var state = states.get(root);
+        if (!state || !state.editorPreview || !update || !update.values) { return false; }
+        var config = state.config;
+        var target = config;
+        var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_mode|cam_start_(x|y|z|rx|ry|rz))$/;
+        if (update.scope === 'layer' || update.scope === 'scene') {
+            if (!Number.isInteger(update.index) || update.index < 0) { return false; }
+            target = (update.scope === 'layer' ? config.layers : config.scenes)[update.index];
+            pattern = update.scope === 'layer' ? /^(depth|anchor|layer_key|layer_space|fit|video_loop|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/ : /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
+        } else if (update.scope === 'keyframe') {
+            if (!Array.isArray(update.rows)) { return false; }
+            pattern = /^kf_(layer|scene|at|duration|ease|x|y|scale|rotate|opacity|blur|reveal)$/;
+        } else if (update.scope !== 'root') { return false; }
+        var keys = Object.keys(update.values);
+        if (!target || !keys.length || !keys.every(function (key) { return pattern.test(key); })) { return false; }
+        var layer = update.scope === 'layer' ? root.querySelector('[data-ds-index="' + update.index + '"]') : null;
+        if (update.scope === 'layer' && !layer) { return false; }
+        if (keys.indexOf('anchor') >= 0 && ['center', 'top', 'bottom'].indexOf(update.values.anchor) < 0) { return false; }
+        var hint = root.querySelector(SELECTOR.hint);
+        if (keys.indexOf('show_hint') >= 0 && !hint) { return false; }
+
+        var startLimits = { x: [0, -500, 500], y: [0, -500, 500], scale: [1, 0, 20], rotate: [0, -720, 720], opacity: [1, 0, 1], blur: [0, 0, 40] };
+        var cameraLimits = { x: [0, -200, 200], y: [0, -200, 200], z: [0, -3000, 2000], rx: [0, -60, 60], ry: [0, -60, 60], rz: [0, -180, 180] };
+        var numeric = { smoothness: ['scrub', 1, 0, 3], wind_strength: ['wind', 7, 0, 20], camera_breath: ['breath', 0, 0, 10], tilt_strength: ['tilt', 4, 0, 20] };
+        var switches = { snap: 'snap', stay_fixed: 'stayFixed', cover_autoplay: 'coverPlay', idle_enabled: 'idle', pointer_tilt: 'pointer', gyro_tilt: 'gyro' };
+        var rebuildTimeline = false;
+        var fullRebuild = false;
+        var idleChanged = false;
+        var particlesChanged = false;
+        var motionChanged = false;
+        var scrubChanged = false;
+        var resize = false;
+        function rawNumber(value) {
+            if (value && typeof value === 'object') { value = value.size; }
+            var parsed = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '') ? Number(value) : NaN;
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+        function number(value, limits) {
+            var parsed = rawNumber(value);
+            return Math.round(clamp(parsed === null ? limits[0] : parsed, limits[1], limits[2]) * 10000) / 10000;
+        }
+        function option(value, allowed, fallback) { return allowed.indexOf(value) >= 0 ? value : fallback; }
+        function ease(value, fallback) { return option(value, ['none', 'sine.inOut', 'power1.inOut', 'power2.inOut', 'power3.inOut', 'power4.inOut', 'expo.inOut', 'circ.inOut', 'power2.out', 'power3.out', 'expo.out', 'power2.in', 'back.out(1.4)', 'back.inOut(1.2)'], fallback); }
+        function layerKey(value, index) {
+            var key = typeof value === 'string' || typeof value === 'number' ? String(value).trim().replace(/ /g, '-').toLowerCase().replace(/[^a-z0-9_-]/g, '') : '';
+            return key || 'layer-' + (index + 1);
+        }
+        if (update.scope === 'keyframe') {
+            // Rebuild the filtered array: empty keyframe rows do not have a runtime index.
+            var revealed = Object.keys(collectFlags(config).reveal).sort().join('|');
+            config.keyframes = update.rows.map(function (row, index) {
+                var props = {};
+                Object.keys(startLimits).forEach(function (prop) {
+                    if (rawNumber(row['kf_' + prop]) !== null) { props[prop] = number(row['kf_' + prop], startLimits[prop]); }
+                });
+                var reveal = row.kf_reveal === 'yes';
+                if (!Object.keys(props).length && !reveal) { return null; }
+                var at = number(row.kf_at, [0, 0, 100]) / 100;
+                var duration = Math.min(number(row.kf_duration, [100, 1, 100]) / 100, 1 - at);
+                return { layer: layerKey(row.kf_layer, index), scene: Math.trunc(number(row.kf_scene, [1, 1, 99])), at: at, duration: duration > 0 ? duration : 0.01, ease: ease(row.kf_ease, 'none'), props: props, reveal: reveal };
+            }).filter(Boolean);
+            fullRebuild = revealed !== Object.keys(collectFlags(config).reveal).sort().join('|');
+            rebuildTimeline = true;
+            keys = [];
+        }
+        keys.forEach(function (key) {
+            var value = update.values[key];
+            if (key === 'depth') {
+                target.z = target.space === 'screen' ? 0 : number(value, [0, -3000, 900]);
+            } else if (key === 'anchor') {
+                layer.classList.remove('is-anchor-center', 'is-anchor-top', 'is-anchor-bottom');
+                layer.classList.add('is-anchor-' + value);
+                resize = true;
+            } else if (key === 'layer_key') {
+                target.key = layerKey(value, update.index);
+                layer.setAttribute('data-ds-layer', target.key);
+                fullRebuild = true;
+            } else if (key === 'layer_space') {
+                var space = option(value, ['auto', 'world', 'screen'], 'auto');
+                target.space = space === 'auto' ? (['text', 'shape', 'container'].indexOf(target.type) >= 0 ? 'screen' : 'world') : space;
+                layer.classList.remove('is-space-world', 'is-space-screen');
+                layer.classList.add('is-space-' + target.space);
+                var parent = root.querySelector(target.space === 'screen' ? SELECTOR.screen : SELECTOR.camera);
+                var next = Array.from(parent.children).find(function (child) { return Number(child.getAttribute('data-ds-index')) > update.index; });
+                parent.insertBefore(layer, next || null);
+            } else if (key === 'fit') {
+                var fit = ['image', 'video', 'shape'].indexOf(target.type) >= 0 ? option(value, ['free', 'cover'], 'free') : 'free';
+                layer.classList.remove('is-fit-free', 'is-fit-cover');
+                layer.classList.add('is-fit-' + fit);
+                resize = true;
+            } else if (key === 'video_loop') {
+                var video = layer.querySelector('video');
+                if (video) { video.loop = value === 'yes'; }
+            } else if (key.indexOf('idle_') === 0) {
+                var idle = key.slice(5);
+                target.idle[idle] = idle === 'type' ? option(value, ['none', 'float', 'sway', 'breathe', 'drift'], 'none') : number(value, idle === 'speed' ? [6, 0.5, 60] : [10, 0, 200]);
+                idleChanged = true;
+            } else if (key === 'layer_wind') {
+                target.wind = value === 'yes';
+            } else if (key === 'reveal_split' || key === 'reveal_style') {
+                target[key === 'reveal_split' ? 'split' : 'reveal'] = key === 'reveal_split' ? (['text', 'container'].indexOf(target.type) >= 0 ? option(value, ['none', 'lines', 'words', 'chars'], 'words') : 'none') : option(value, ['rise', 'fade', 'blur'], 'rise');
+                fullRebuild = true;
+            } else if (key.indexOf('start_') === 0) {
+                var prop = key.slice(6);
+                target.start[prop] = number(value, startLimits[prop]);
+                resize = true;
+            } else if (key === 'perspective') {
+                config.perspective = number(value, [1000, 200, 4000]);
+            } else if (key === 'depth_compensation') {
+                config.compensate = value === 'yes';
+            } else if (key === 'editor_preview') {
+                config.editorScene = rawNumber(value) === null ? -1 : Math.trunc(number(value, [0, 0, 99]));
+                rebuildTimeline = true;
+            } else if (key === 'scene_label') {
+                // The label is editor-only; the timeline uses stable numbered labels.
+            } else if (key === 'scene_length' || key === 'scene_ease') {
+                target[key === 'scene_length' ? 'length' : 'ease'] = key === 'scene_length' ? number(value, [100, 10, 600]) : ease(value, 'power2.inOut');
+                rebuildTimeline = true;
+            } else if (Object.prototype.hasOwnProperty.call(numeric, key)) {
+                var definition = numeric[key];
+                config[definition[0]] = number(value, definition.slice(1));
+                scrubChanged = scrubChanged || key === 'smoothness';
+                motionChanged = motionChanged || key === 'camera_breath' || key === 'tilt_strength';
+            } else if (Object.prototype.hasOwnProperty.call(switches, key)) {
+                config[switches[key]] = value === 'yes';
+                idleChanged = idleChanged || key === 'idle_enabled';
+                motionChanged = motionChanged || key === 'pointer_tilt' || key === 'gyro_tilt';
+                rebuildTimeline = rebuildTimeline || key === 'snap' || key === 'stay_fixed';
+            } else if (key === 'snap_ease') {
+                config.snapEase = ease(value, 'power2.inOut');
+                rebuildTimeline = true;
+            } else if (key.indexOf('particle_') === 0) {
+                var part = key.slice(9);
+                if (part === 'count') { config.particles.count = Math.trunc(number(value, [0, 0, 60])); }
+                else if (part === 'size') { config.particles.size = number(value, [6, 2, 40]); }
+                else if (part === 'style') { config.particles.style = option(value, ['pollen', 'petal', 'bokeh'], 'pollen'); }
+                else { config.particles.color = typeof value === 'string' && (/^#[0-9a-fA-F]{3,8}$/.test(value) || /^(rgb|hsl)a?\(\s*[0-9.,%\s/]+\)$/.test(value)) ? value : '#fff3b0'; }
+                particlesChanged = true;
+            } else if (key === 'show_hint' || key === 'hint_mode') {
+                if (key === 'show_hint') { hint.hidden = value !== 'yes'; hint.style.display = value === 'yes' ? '' : 'none'; }
+                else { config.hintMode = option(value, ['after_first', 'start'], 'after_first'); }
+                rebuildTimeline = true;
+            } else {
+                var name = key.slice(update.scope === 'root' ? 10 : 4);
+                if (update.scope === 'scene' && rawNumber(value) === null) {
+                    delete target.camera[name];
+                } else {
+                    target.camera[name] = number(value, cameraLimits[name]);
+                }
+                rebuildTimeline = true;
+            }
+        });
+        if (update.scope === 'layer' && keys.indexOf('layer_space') >= 0) { target.z = target.space === 'screen' ? 0 : number(update.values.depth, [0, -3000, 900]); }
+        root.setAttribute('data-apeiron-depthscape', JSON.stringify(config));
+        if (fullRebuild) {
+            var progress = state.editorPreview.timeline.progress();
+            var activeScroll = state.scroll && state.scroll.trigger.isActive;
+            rebuild(root);
+            if (config.editorScene < 0 && keys.indexOf('editor_preview') < 0 && state.editorPreview) {
+                if (activeScroll && state.scroll) {
+                    var trigger = state.scroll.trigger;
+                    trigger.scroll(trigger.start + (trigger.end - trigger.start) * progress);
+                }
+                state.editorPreview.timeline.progress(progress, true);
+                state.editorPreview.render();
+            }
+        } else {
+            state.editorPreview.render();
+            if (idleChanged) { state.editorPreview.idle(); }
+            if (particlesChanged) { state.editorPreview.particles(); }
+            if (motionChanged) { state.editorPreview.motion(keys); }
+            if (scrubChanged) { state.editorPreview.scrub(); }
+            if (rebuildTimeline) { state.editorPreview.timelineUpdate(keys.indexOf('editor_preview') < 0); }
+            else if (resize) { state.resize(state.size, false); }
+        }
+        state.lastEditorChange = update.settings && !update.css ? { settings: update.settings, keys: Object.keys(update.settings.changedAttributes() || update.values) } : null;
+        return true;
+    }
+
+    function isHandledEditorChange(container) {
+        var element = container && container.view && container.view.el;
+        var root = element && ((element.closest && element.closest(SELECTOR.root)) || (element.querySelector && element.querySelector(SELECTOR.root)));
+        var state = root && states.get(root);
+        var handled = state && state.lastEditorChange;
+        var settings = container && container.settings;
+        if (!handled || handled.settings !== settings || !settings.changedAttributes) { return false; }
+        var keys = Object.keys(settings.changedAttributes() || {});
+        return keys.length === handled.keys.length && keys.every(function (key) { return handled.keys.indexOf(key) >= 0; });
+    }
+
     function isDepthscapeContainer(container) {
         var model = container && container.model;
         if (model && typeof model.get === 'function' && model.get('widgetType') === 'apeiron-depthscape') {
@@ -1334,7 +1683,7 @@
 
         if (parentWindow.$e && parentWindow.$e.commands && typeof parentWindow.$e.commands.on === 'function') {
             parentWindow.$e.commands.on('run:after', function (component, command, args) {
-                if (command === 'document/elements/settings' && args && isDepthscapeContainer(args.container)) {
+                if (command === 'document/elements/settings' && args && isDepthscapeContainer(args.container) && !isHandledEditorChange(args.container)) {
                     scheduleEditorRefresh();
                 }
             });
@@ -1344,7 +1693,7 @@
         if (channel && typeof channel.on === 'function') {
             channel.on('change', function (controlView) {
                 var container = controlView && (controlView.container || (controlView.options && controlView.options.container));
-                if (isDepthscapeContainer(container)) {
+                if (isDepthscapeContainer(container) && !isHandledEditorChange(container)) {
                     scheduleEditorRefresh();
                 }
             });
@@ -1455,6 +1804,10 @@
 
     document.addEventListener('apeiron:content:loaded', function (event) {
         initializeScope(event.target || document);
+    });
+
+    document.addEventListener('apeiron:depthscape:preview-change', function (event) {
+        if (isEditMode() && updateEditorPreview(event.target, event.detail)) { event.preventDefault(); }
     });
 
     document.addEventListener('apeiron:depthscape:content-mode', function (event) {

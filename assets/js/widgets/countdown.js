@@ -171,6 +171,18 @@
         findRoots(scope).forEach(initializeRoot);
     }
 
+    function updateEditorPreview(widget, change) {
+        if (!change.supports(['digit_padding'])) { return false; }
+        var root = widget.querySelector(SELECTOR.root);
+        var state = root && states.get(root);
+        if (!state) { return false; }
+        state.digitPadding = clampDigitPadding(change.get('digit_padding'));
+        root.setAttribute('data-apeiron-digit-padding', String(state.digitPadding));
+        if (state.timerId !== null) { clearTimeout(state.timerId); state.timerId = null; }
+        tick(root);
+        return true;
+    }
+
     function registerEditorControls() {
         var host;
         try {
@@ -181,6 +193,9 @@
         }
 
         var editor = host.elementor;
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-countdown'] = updateEditorPreview;
+        window.__apeironEditorPreviews['apeiron-pulse-countdown'] = updateEditorPreview;
         if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
         host.__apeironCountdownControls = true;
 

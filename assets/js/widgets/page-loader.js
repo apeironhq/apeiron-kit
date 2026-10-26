@@ -557,6 +557,22 @@
     registerEditorControls();
   }
 
+  function updateEditorPreview(widget, change) {
+    var numbers = { loader_duration: ['duration', 7600, 300, 12000], maximum_timeout: ['maxRuntime', 14000, 2000, 20000], custom_delay: ['customDelay', 0, 0, 4000] };
+    var flags = { progress_based: 'progressBased', first_visit_only: 'firstVisitOnly', show_desktop: 'showDesktop', show_tablet: 'showTablet', show_mobile: 'showMobile' };
+    var choices = { entrance_animation: 'entranceAnimation', exit_animation: 'exitAnimation' };
+    var allowed = Object.keys(numbers).concat(Object.keys(flags), Object.keys(choices));
+    if (!change.supports(allowed)) { return false; }
+    var root = widget.querySelector(SELECTOR);
+    if (!root || !root.classList.contains('is-editor-preview')) { return false; }
+    Object.keys(change.values).forEach(function(name) {
+      if (numbers[name]) { var rule = numbers[name]; root.dataset[rule[0]] = String(Math.round(change.number(name, rule[1], rule[2], rule[3]))); }
+      else if (flags[name]) { root.dataset[flags[name]] = change.get(name) === 'yes' ? 'yes' : 'no'; }
+      else if (choices[name]) { root.dataset[choices[name]] = change.option(name, 'fade_scale'); }
+    });
+    return true;
+  }
+
   function registerEditorControls() {
     var host;
     try {
@@ -569,6 +585,8 @@
     }
 
     var editor = host.elementor;
+    window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+    window.__apeironEditorPreviews['apeiron-page-loader'] = updateEditorPreview;
     if (!editor.helpers || !editor.helpers.isActiveControl) {
       return;
     }

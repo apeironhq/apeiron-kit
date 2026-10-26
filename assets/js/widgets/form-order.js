@@ -626,7 +626,12 @@
 				if (draftClear) { draftClear.disabled = !!completed; }
 			});
 		});
-		if (root.getAttribute('data-order-mobile-navigation') === 'fixed') {
+		var stopPreviewNavigation = null;
+		function configureMobileNavigation() {
+			if (stopPreviewNavigation) { stopPreviewNavigation(); stopPreviewNavigation = null; }
+			refreshMobileNavigation = function () {};
+			root.classList.remove('is-mobile-navigation-active');
+			if (root.getAttribute('data-order-mobile-navigation') !== 'fixed') { return; }
 			var mobileNavigation = form.querySelector('.apeiron-form-order__mobile-navigation');
 			var mobile = window.matchMedia('(max-width: 767px)');
 			var viewport = window.visualViewport;
@@ -675,9 +680,64 @@
 				viewport.addEventListener('scroll', refreshMobileNavigation, { passive: true });
 			}
 			if (window.ResizeObserver) { sizeObserver = new ResizeObserver(refreshMobileNavigation); sizeObserver.observe(mobileNavigation); }
+			stopPreviewNavigation = stopMobileNavigation;
+		}
+		configureMobileNavigation();
+		if (window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode()) {
+			root._apeironPreviewNavigation = configureMobileNavigation;
+			window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+			window.__apeironEditorPreviews['apeiron-form-order'] = updateEditorPreview;
 		}
 		show(restoreDraft());
 		restoringDraft = false;
+	}
+
+	function updateEditorPreview(widget, change) {
+		var root = widget.querySelector('[data-apeiron-form-order]');
+		if (!root || !initialized.has(root)) { return false; }
+		if (change.supports(['width', 'width_tablet', 'width_mobile'], 'order_fields')) {
+			var stepKey = String(change.get('step_key') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+			var steps = change.getRoot('order_steps');
+			var stepModel = steps && steps.find(function(row) { return String(row.get('step_key') || row.get('_id') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '') === stepKey; });
+			var renderedKey = stepModel ? String(stepModel.get('_id') || stepKey).toLowerCase().replace(/[^a-z0-9_-]/g, '') : stepKey;
+			var step = root.querySelector('[data-order-step-key="' + window.CSS.escape(renderedKey) + '"]');
+			var rows = change.getRoot('order_fields');
+			if (change.get('visible') !== 'yes' || (stepModel && stepModel.get('enabled') !== 'yes')) { return true; }
+			if (!rows || !step) { return false; }
+			var peers = rows.filter(function(row) { return String(row.get('step_key') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '') === stepKey && row.get('visible') === 'yes'; });
+			var index = peers.findIndex(function(row) { return row.get('_id') === change.id; });
+			var field = step.querySelectorAll('[data-order-field]')[index];
+			if (!field) { return false; }
+			['width', 'width_tablet', 'width_mobile'].forEach(function(name) {
+				if (!Object.prototype.hasOwnProperty.call(change.values, name)) { return; }
+				var value = String(change.get(name));
+				if (['25', '33', '50', '66', '75', '100'].indexOf(value) < 0) { value = '100'; }
+				field.style.setProperty('--order-field-' + name.replace(/_/g, '-'), value + '%');
+			});
+			if (root._apeironPreviewNavigation) { root._apeironPreviewNavigation(); }
+			return true;
+		}
+		if (!change.supports(['mobile_navigation']) || !root._apeironPreviewNavigation) { return false; }
+		var form = root.querySelector('form');
+		var wrapper = form.querySelector('.apeiron-form-order__mobile-navigation');
+		if (change.get('mobile_navigation') === 'fixed') {
+			if (!wrapper) {
+				wrapper = document.createElement('div');
+				wrapper.className = 'apeiron-form-order__mobile-navigation';
+				form.querySelector('.apeiron-form-order__actions').before(wrapper);
+				wrapper.appendChild(form.querySelector('.apeiron-form-order__actions'));
+				wrapper.appendChild(form.querySelector('.apeiron-form-order__notice'));
+			}
+			root.setAttribute('data-order-mobile-navigation', 'fixed');
+		} else {
+			root.removeAttribute('data-order-mobile-navigation');
+			if (wrapper) {
+				while (wrapper.firstChild) { wrapper.parentNode.insertBefore(wrapper.firstChild, wrapper); }
+				wrapper.remove();
+			}
+		}
+		root._apeironPreviewNavigation();
+		return true;
 	}
 
 	function initScope(scope) {

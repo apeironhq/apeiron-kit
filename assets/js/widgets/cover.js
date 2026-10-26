@@ -473,6 +473,37 @@
 		}
 	}
 
+	function updateEditorPreview(widget, change) {
+		var durations = { info_duration: ['info-duration', 'infoDuration', 4100, 100, 5000], panel_duration: ['panel-duration', 'panelDuration', 3650, 100, 5000], exit_duration: ['exit-duration', 'exitDuration', 2150, 0, 6000], open_delay: ['open-delay', 'openDelay', 150, 0, 2000] };
+		var flags = { lock_scroll: 'lock-scroll', close_on_escape: 'close-on-escape', first_visit_only: 'first-visit-only', show_desktop: 'show-desktop', show_tablet: 'show-tablet', show_mobile: 'show-mobile' };
+		if (!change.supports(Object.keys(durations).concat(Object.keys(flags), ['panel_effect', 'exit_effect', 'scroll_behavior']))) { return false; }
+		var el = widget.querySelector('[data-apeiron-cover="yes"]');
+		var state = el && instances.get(el);
+		if (!state || !isEditor(el)) { return false; }
+		function attribute(name, value) {
+			el.setAttribute('data-apeiron-cover-' + name, value);
+			el.setAttribute('data-' + name, value);
+		}
+		Object.keys(change.values).forEach(function(name) {
+			if (durations[name]) {
+				var rule = durations[name];
+				var value = Math.trunc(change.number(name, rule[2], rule[3], rule[4]));
+				attribute(rule[0], String(value));
+				state[rule[1]] = state.reducedMotion ? (name === 'open_delay' ? 0 : name === 'exit_duration' ? Math.min(value, 80) : 20) : value;
+			} else if (flags[name]) {
+				attribute(flags[name], change.get(name) === 'yes' ? 'yes' : 'no');
+			} else if (name === 'scroll_behavior') {
+				attribute('scroll-behavior', change.option(name, 'smooth'));
+			} else if (name === 'panel_effect' || name === 'exit_effect') {
+				var prefix = name === 'panel_effect' ? 'apeiron-cover--panel-' : 'apeiron-cover--exit-';
+				Array.from(el.classList).forEach(function(value) { if (value.indexOf(prefix) === 0) { el.classList.remove(value); } });
+				el.classList.add(prefix + change.option(name, name === 'panel_effect' ? 'slide' : 'down'));
+			}
+		});
+		return true;
+	}
+	updateEditorPreview.cssControls = ['info_duration', 'panel_duration', 'exit_duration'];
+
 	function initElement(el) {
 		if (!el || !el.getAttribute || el.getAttribute('data-apeiron-cover') !== 'yes') {
 			return;
@@ -530,6 +561,10 @@
 
 		instances.set(el, state);
 		initialized.add(el);
+		if (isEditor(el)) {
+			window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+			window.__apeironEditorPreviews['apeiron-cover'] = updateEditorPreview;
+		}
 		lockScroll(el);
 		markReady(el);
 
@@ -544,9 +579,9 @@
 			button.addEventListener('click', state.buttonHandler);
 		}
 
-		if (getAttribute(el, 'data-apeiron-cover-close-on-escape', 'data-close-on-escape') === 'yes') {
+		if (getAttribute(el, 'data-apeiron-cover-close-on-escape', 'data-close-on-escape') === 'yes' || isEditor(el)) {
 			state.escapeHandler = function (event) {
-				if (event.key === 'Escape') {
+				if (event.key === 'Escape' && getAttribute(el, 'data-apeiron-cover-close-on-escape', 'data-close-on-escape') === 'yes') {
 					openCover(el);
 				}
 			};

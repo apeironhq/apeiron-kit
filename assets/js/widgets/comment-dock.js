@@ -1960,6 +1960,43 @@
 		bootstrap(document);
 	}
 
+	function updateEditorPreview(widget, change) {
+		const sticker = ['sticker_popup_position', 'sticker_popup_animation', 'sticker_popup_close_animation', 'sticker_popup_background_scroll', 'sticker_popup_scroll_area'];
+		const modal = ['modal_position', 'modal_background_scroll', 'modal_scroll_area', 'comment_edit_mode', 'comment_reply_mode'];
+		if (!change.supports(sticker.concat(modal))) return false;
+		const dock = widget.querySelector('.apeiron-comment-dock');
+		if (!dock) return false;
+		const popovers = Array.from(dock.querySelectorAll('[data-sticker-popover]'));
+		dock.querySelectorAll('template[data-reply-sticker-template]').forEach((template) => popovers.push(...template.content.querySelectorAll('[data-sticker-popover]')));
+		const animation = change.option('sticker_popup_animation', 'fade-scale');
+		const close = change.option('sticker_popup_close_animation', 'same');
+		popovers.forEach((popover) => {
+			popover.dataset.stickerPopupPosition = change.option('sticker_popup_position', 'center');
+			popover.dataset.popupScroll = change.option('sticker_popup_scroll_area', 'picker');
+			popover.dataset.backgroundScroll = change.get('sticker_popup_background_scroll') === 'yes' ? 'yes' : 'no';
+			Array.from(popover.classList).forEach((name) => { if (name.startsWith('is-anim-') || name.startsWith('is-close-anim-')) popover.classList.remove(name); });
+			popover.classList.add('is-anim-' + animation, 'is-close-anim-' + (close === 'same' ? animation : close));
+			if (popover.classList.contains('is-open') && Object.prototype.hasOwnProperty.call(change.values, 'sticker_popup_background_scroll')) {
+				if (popover.dataset.backgroundScroll === 'yes') StickerPicker.unlockScroll(popover);
+				else StickerPicker.lockScroll(popover);
+			}
+		});
+		const fields = { modal_position: 'modalPosition', modal_scroll_area: 'modalScrollArea', comment_edit_mode: 'commentEditMode', comment_reply_mode: 'commentReplyMode' };
+		Object.keys(change.values).forEach((name) => {
+			if (fields[name]) dock.dataset[fields[name]] = change.option(name, name === 'modal_position' ? 'center' : name === 'modal_scroll_area' ? 'overlay' : 'popup');
+			else if (name === 'modal_background_scroll') dock.dataset.modalBackgroundScroll = change.get(name) === 'yes' ? 'yes' : 'no';
+		});
+		dock.querySelectorAll('.apeiron-kit-comment-modal').forEach((element) => {
+			element.dataset.popupPosition = dock.dataset.modalPosition || 'center';
+			element.dataset.popupScroll = dock.dataset.modalScrollArea || 'overlay';
+			if (Object.prototype.hasOwnProperty.call(change.values, 'modal_background_scroll')) {
+				if (dock.dataset.modalBackgroundScroll === 'yes') StickerPicker.unlockScroll(element);
+				else StickerPicker.lockScroll(element);
+			}
+		});
+		return true;
+	}
+
 	function registerEditorControls() {
 		let host;
 		try {
@@ -1970,6 +2007,8 @@
 		}
 
 		const editor = host.elementor;
+		window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+		window.__apeironEditorPreviews['apeiron-comment-dock'] = updateEditorPreview;
 		if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
 		host.__apeironCommentDockControls = true;
 

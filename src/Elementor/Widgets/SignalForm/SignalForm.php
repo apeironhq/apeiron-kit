@@ -258,6 +258,15 @@ class SignalForm extends BaseWidget {
 		$label      = $this->get_setting_string( $settings, $raw_settings, 'confirmation_label', __( 'Konfirmasi Kehadiran', 'apeiron-kit' ) );
 		$field_name = 'konfirmasi';
 		$field_id   = 'apeiron-confirmation-' . sanitize_key( (string) $this->get_id() );
+		$visible    = 'yes' === ( $settings['show_confirmation'] ?? 'yes' );
+		if ( ! $visible && empty( $options ) ) {
+			$element_data = method_exists( $this, 'get_data' ) ? $this->get_data() : [];
+			$stored = is_array( $element_data['settings'] ?? null ) ? $element_data['settings'] : $raw_settings;
+			$control = $this->get_controls( 'confirmation_options' );
+			$options = array_key_exists( 'confirmation_options', $stored ) ? $stored['confirmation_options'] : ( $control['default'] ?? [] );
+			$options = is_array( $options ) ? $options : [];
+			$raw_options = $options;
+		}
 
 		if ( empty( $options ) ) {
 			return;
@@ -288,9 +297,9 @@ class SignalForm extends BaseWidget {
 		}
 
 		?>
-		<label class="apeiron-signal-form__field apeiron-signal-form__confirmation" for="<?php echo esc_attr( $field_id ); ?>">
+		<label class="apeiron-signal-form__field apeiron-signal-form__confirmation" for="<?php echo esc_attr( $field_id ); ?>"<?php echo $visible ? '' : ' hidden style="display:none"'; ?>>
 			<span><?php echo esc_html( $label ); ?></span>
-			<select name="<?php echo esc_attr( $field_name ); ?>" id="<?php echo esc_attr( $field_id ); ?>" class="apeiron-signal-form__select" required aria-required="true">
+			<select name="<?php echo esc_attr( $field_name ); ?>" id="<?php echo esc_attr( $field_id ); ?>" class="apeiron-signal-form__select" required aria-required="true"<?php echo $visible ? '' : ' disabled'; ?>>
 				<option value="" selected disabled><?php esc_html_e( 'Pilih konfirmasi', 'apeiron-kit' ); ?></option>
 				<?php foreach ( $options as $option ) : ?>
 					<?php

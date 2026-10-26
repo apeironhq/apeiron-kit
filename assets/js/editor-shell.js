@@ -3,6 +3,77 @@
 
 	var config = window.ApeironEditorShellConfig || {};
 	var initialDisabled = Array.isArray(config.disabledWidgets) ? config.disabledWidgets.slice() : [];
+	var livePreviewBound = false;
+
+	function bindLivePreviews() {
+		var editor = window.elementor;
+		if (livePreviewBound || !editor || !editor.hooks) { return; }
+		livePreviewBound = true;
+		var views = new WeakMap();
+		editor.hooks.addFilter('element/view', function(View, model) {
+			var type = model.get('widgetType') || '';
+			if (type.indexOf('apeiron-') !== 0 || type === 'apeiron-depthscape') { return View; }
+			if (!views.has(View)) {
+				views.set(View, View.extend({
+					renderOnChange: function(settings) {
+						var changes = settings.changedAttributes && settings.changedAttributes();
+						var host = this.el.ownerDocument.defaultView;
+						var widgetType = this.getEditModel().get('widgetType');
+						var update = host.__apeironEditorPreviews && host.__apeironEditorPreviews[widgetType];
+						if (this.allowRender && !this.isRendering && changes && update && !this.$el.hasClass('elementor-loading')) {
+							var keys = Object.keys(changes);
+							var ui = [];
+							var styles = false;
+							var html = false;
+							keys.forEach(function(name) {
+								var control = settings.getControl(name);
+								var css = control && ((control.selectors && Object.keys(control.selectors).length) || control.prefix_class !== undefined);
+								styles = styles || !!css;
+								if (control && (['ui', 'none'].indexOf(control.render_type) >= 0 || (css && control.render_type !== 'template'))) { ui.push(name); }
+								else { html = true; }
+							});
+							if (keys.length && (html || (update.cssControls && keys.some(function(name) { return update.cssControls.indexOf(name) >= 0; })))) {
+								var owner = this.getContainer();
+								var scope = settings === owner.settings ? 'root' : '';
+								var index = -1;
+								Object.keys(owner.repeaters || {}).some(function(name) {
+									var rows = owner.settings.get(name);
+									var at = rows && rows.indexOf ? rows.indexOf(settings) : -1;
+									if (at < 0) { return false; }
+									scope = name; index = at; return true;
+								});
+								var change = {
+									scope: scope, index: index, id: settings.get('_id'), values: changes,
+									get: function(name) { return settings.get(name); },
+									getRoot: function(name) { return owner.settings.get(name); },
+									supports: function(fields, group) {
+										var allowed = function(name) { return Array.isArray(fields) ? fields.indexOf(name) >= 0 : Object.prototype.hasOwnProperty.call(fields, name); };
+										return scope === (group || 'root') && keys.some(allowed) && keys.every(function(name) { return allowed(name) || ui.indexOf(name) >= 0; });
+									},
+									number: function(name, fallback, min, max) {
+										var value = settings.get(name);
+										if (value && typeof value === 'object') { value = value.size; }
+										var parsed = typeof value === 'number' || (typeof value === 'string' && value.trim() !== '') ? Number(value) : NaN;
+										return Math.max(min, Math.min(max, Number.isFinite(parsed) ? parsed : fallback));
+									},
+									option: function(name, fallback) {
+										var control = settings.getControl(name), value = settings.get(name);
+										return control && control.options && Object.prototype.hasOwnProperty.call(control.options, value) ? String(value) : fallback;
+									},
+								};
+								if (scope && update(this.el, change) === true) {
+									if (styles) { this.renderUI(); }
+									return;
+								}
+							}
+						}
+						return View.prototype.renderOnChange.apply(this, arguments);
+					},
+				}));
+			}
+			return views.get(View);
+		});
+	}
 
 	function createToggleNotice() {
 		if (document.getElementById('apeiron-editor-toggle-notice')) {
@@ -63,4 +134,6 @@
 	}
 
 	bindHeartbeat();
+	bindLivePreviews();
+	if (window.elementor && window.elementor.once) { window.elementor.once('panel:init', bindLivePreviews); }
 })(window, document, window.jQuery);

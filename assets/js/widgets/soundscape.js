@@ -14,6 +14,10 @@
     var playersById = new Map();
     var videoMonitor = null;
 
+    function isEditorPreview() {
+        return !!(window.elementorFrontend && typeof window.elementorFrontend.isEditMode === 'function' && window.elementorFrontend.isEditMode());
+    }
+
     // One observer per document, used only by Sound Players that opt in.
     function createVideoMonitor() {
         var ac = new AbortController();
@@ -388,6 +392,7 @@
 
         var sync = {
             player: player,
+            setPauseHidden: function (value) { pauseHidden = value; },
             blocksPlayback: function () {
                 return !disposed && hasVideos && mode === 'pause' && !manualOverride;
             },
@@ -617,6 +622,29 @@
             var videoSync = null;
             var wasPlayingOnHide = false;
             var playbackStarted = !!audio && !audio.paused && audio.readyState >= 2;
+
+            if (isEditorPreview()) {
+                player._apeironPreviewPlayback = function (keys) {
+                    var wasAutoplay = autoplay;
+                    startSec = parseFloat(player.dataset.start) || 0;
+                    endSec = parseFloat(player.dataset.end) || 0;
+                    hasStart = startSec > 0;
+                    hasRange = endSec > startSec && endSec > 0;
+                    loop = player.dataset.loop === 'yes';
+                    pauseHidden = player.dataset.pauseHidden !== 'no';
+                    if (videoSync) { videoSync.setPauseHidden(pauseHidden); }
+                    autoplay = player.dataset.autoplay === 'yes';
+                    if (!audio) { return; }
+                    audio.loop = loop;
+                    if (audio.readyState > 0) { resetToStartIfNeeded(); }
+                    if (!wasAutoplay && autoplay && keys.indexOf('autoplay') >= 0) {
+                        playAudio(false, true).catch(function () {
+                            SoundscapePlayer.setPaused(player);
+                            SoundscapePlayer.clearStatus(player);
+                        });
+                    }
+                };
+            }
 
             if (!audio) {
                 player.classList.add('is-empty');
@@ -864,9 +892,9 @@
                 }
             }, { signal: signal });
 
-            if (hasRange) {
+            if (hasRange || isEditorPreview()) {
                 audio.addEventListener('timeupdate', function () {
-                    if (audio.currentTime >= endSec) {
+                    if (hasRange && audio.currentTime >= endSec) {
                         if (loop) {
                             audio.currentTime = startSec;
                         } else {
@@ -958,8 +986,9 @@
                 }
             }, { signal: signal });
 
-            if (pauseHidden) {
+            if (pauseHidden || isEditorPreview()) {
                 document.addEventListener('visibilitychange', function () {
+                    if (!pauseHidden) { return; }
                     if (document.visibilityState === 'hidden') {
                         wasPlayingOnHide = !audio.paused && (!videoSync || playbackStarted);
                         if (!audio.paused) {
@@ -1111,6 +1140,30 @@
                     }
                 }
             }, signal);
+
+            if (isEditorPreview()) {
+                player._apeironPreviewPlayback = function (keys) {
+                    startSec = parseFloat(player.dataset.start) || 0;
+                    endSec = parseFloat(player.dataset.end) || 0;
+                    hasRange = endSec > startSec && endSec > 0;
+                    autoplay = player.dataset.autoplay === 'yes';
+                    pauseHidden = player.dataset.pauseHidden !== 'no';
+                    if (videoSync) { videoSync.setPauseHidden(pauseHidden); }
+                    if (!ytReady) { return; }
+                    if (keys.indexOf('start') >= 0 || keys.indexOf('end') >= 0) {
+                        var playing = ytPlayer.getPlayerState() === stateValue('PLAYING', 1);
+                        var bounds = { videoId: videoId, startSeconds: Math.max(startSec, ytPlayer.getCurrentTime()) };
+                        if (hasRange) {
+                            bounds.endSeconds = endSec;
+                            if (bounds.startSeconds >= endSec) { bounds.startSeconds = startSec; }
+                        }
+                        if (playing) { ytPlayer.loadVideoById(bounds); }
+                        else { ytPlayer.cueVideoById(bounds); }
+                    } else if (keys.indexOf('autoplay') >= 0 && autoplay) {
+                        ytPlayer.playVideo();
+                    }
+                };
+            }
 
             function setYouTubeVolume(volume, temporary) {
                 if (videoSync) {
@@ -1380,8 +1433,9 @@
                 }
             });
 
-            if (pauseHidden) {
+            if (pauseHidden || isEditorPreview()) {
                 document.addEventListener('visibilitychange', function () {
+                    if (!pauseHidden) { return; }
                     if (!ytPlayer || !ytPlayer.getPlayerState) {
                         return;
                     }
@@ -1440,6 +1494,7 @@
                 player._apeironAbort.abort();
                 player._apeironAbort = null;
             }
+            delete player._apeironPreviewPlayback;
 
             var audio = player.querySelector(SELECTOR.audio);
             if (audio) {
@@ -1502,6 +1557,31 @@
         }
     };
 
+    function updateEditorPreview(widget, change) {
+        if (!change.supports(['start', 'end', 'loop', 'autoplay', 'pause_hidden', 'pulse_style', 'shape'])) { return false; }
+        var player = widget.querySelector(SELECTOR.root);
+        if (!player) { return false; }
+        var start = change.number('start', 0, 0, Infinity);
+        var end = change.number('end', 0, 0, Infinity);
+        if (end > 0 && end <= start) { return false; }
+        if (!player._apeironPreviewPlayback && !player.classList.contains('is-empty')) { return false; }
+        Object.keys(change.values).forEach(function (name) {
+            if (name === 'start' || name === 'end') {
+                player.dataset[name] = change.get(name) === '' ? '' : String(name === 'start' ? start : end);
+            } else if (name === 'loop' || name === 'autoplay' || name === 'pause_hidden') {
+                player.dataset[name === 'pause_hidden' ? 'pauseHidden' : name] = change.get(name) === 'yes' ? 'yes' : 'no';
+            } else if (name === 'shape' || name === 'pulse_style') {
+                var prefix = name === 'shape' ? 'is-shape-' : 'is-effect-';
+                Array.from(player.classList).forEach(function (value) { if (value.indexOf(prefix) === 0) { player.classList.remove(value); } });
+                var value = change.option(name, name === 'shape' ? 'circle' : 'spin');
+                if (value) { player.classList.add(prefix + value); }
+                if (name === 'pulse_style') { player.classList.toggle('has-playing-effect', !!value); }
+            }
+        });
+        if (player._apeironPreviewPlayback) { player._apeironPreviewPlayback(Object.keys(change.values)); }
+        return true;
+    }
+
     function registerEditorControls() {
         var host;
         try {
@@ -1511,6 +1591,8 @@
             return; // The containing page may be on another origin.
         }
         var editor = host.elementor;
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-soundscape'] = updateEditorPreview;
         if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
         host.__apeironSoundscapeControls = true;
 

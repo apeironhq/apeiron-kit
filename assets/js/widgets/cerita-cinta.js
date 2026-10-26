@@ -438,6 +438,54 @@
         container.querySelectorAll(ROOT).forEach(initializeRoot);
     }
 
+    function updateEditorPreview(widget, change) {
+        var root = widget.querySelector(ROOT);
+        var state = root && states.get(root);
+        if (!state) return false;
+        if (change.supports(['dot_shape', 'card_entrance_animation', 'timeline_skin'])) {
+            var timeline = change.option('timeline_skin', 'doodle-path');
+            if (Object.prototype.hasOwnProperty.call(change.values, 'timeline_skin') && timeline === 'journey-icon' && !state.marker) return false;
+            var fields = { dot_shape: ['dot', 'circle'], card_entrance_animation: ['entrance', 'slide-up'], timeline_skin: ['timeline', 'doodle-path'] };
+            Object.keys(change.values).forEach(function (name) {
+                if (!fields[name]) return;
+                var field = fields[name], prefix = 'apeiron-cerita-cinta--' + field[0] + '-';
+                Array.from(root.classList).forEach(function (value) { if (value.indexOf(prefix) === 0) root.classList.remove(value); });
+                root.classList.add(prefix + change.option(name, field[1]));
+                if (name === 'timeline_skin') {
+                    state.timeline = timeline;
+                    root.setAttribute('data-apeiron-cerita-cinta-timeline', timeline);
+                }
+            });
+            state.dirty = true;
+            schedule();
+            return true;
+        }
+        if (!change.supports(['slideshow_duration', 'slideshow_speed', 'slideshow_effect', 'slideshow_autoplay', 'slideshow_loop'], 'stories')) return false;
+        var item = root.querySelector('.elementor-repeater-item-' + window.CSS.escape(change.id));
+        if (!item) return false;
+        var element = item.querySelector('[data-apeiron-cerita-cinta-slideshow]');
+        if (!element) return true;
+        var speed = Math.trunc(change.number('slideshow_speed', 600, 0, 3000));
+        element.dataset.speed = String(speed);
+        element.dataset.duration = String(change.number('slideshow_duration', 4, 1, 60) * 1000);
+        element.dataset.autoplay = change.get('slideshow_autoplay') === 'yes' ? 'yes' : 'no';
+        element.dataset.loop = change.get('slideshow_loop') === 'yes' ? 'yes' : 'no';
+        element.style.setProperty('--cc-slide-speed', speed + 'ms');
+        element.classList.remove('is-slide', 'is-fade');
+        element.classList.add('is-' + change.option('slideshow_effect', 'slide'));
+        state.galleries.forEach(function (gallery) {
+            if (gallery.slides[0].closest('[data-apeiron-cerita-cinta-slideshow]') !== element) return;
+            gallery.duration = Math.max(speed + 100, Number(element.dataset.duration));
+            gallery.autoplay = element.dataset.autoplay !== 'no';
+            gallery.loop = element.dataset.loop !== 'no';
+            gallery.finished = !gallery.loop && gallery.index === gallery.slides.length - 1;
+            gallery.nextAt = null;
+            gallery.buttons.forEach(function (button) { button.disabled = !gallery.loop && (button.dataset.ccSlide === 'previous' ? gallery.index === 0 : gallery.index === gallery.slides.length - 1); });
+        });
+        refreshSlideshowTimer();
+        return true;
+    }
+
     function registerEditorSkinVisibility() {
         var host;
         try {
@@ -448,6 +496,8 @@
         }
 
         var editor = host.elementor;
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-cerita-cinta'] = updateEditorPreview;
         var panelView = editor.panel && editor.panel.currentView;
         if (!panelView) {
             if (!editorSkinWaiting) {

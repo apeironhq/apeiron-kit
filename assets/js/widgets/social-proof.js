@@ -567,6 +567,29 @@
         initializeScope(document);
     }
 
+    function updateEditorPreview(widget, change) {
+        if (!change.supports(['popup_animation_duration', 'animation_type', 'override_position', 'popup_box_shadow_box_shadow_type'])) { return false; }
+        var root = widget.querySelector(SELECTOR.root);
+        var state = root && states.get(root);
+        if (!root && widget.classList.contains('elementor-widget-empty')) { return true; }
+        if (!state) { return false; }
+        if (Object.prototype.hasOwnProperty.call(change.values, 'popup_animation_duration')) {
+            var seconds = change.number('popup_animation_duration', 0.4, 0.1, 2);
+            state.animationDuration = prefersReducedMotion() ? 1 : Math.round(seconds * 1000);
+            root.setAttribute('data-apeiron-social-proof-animation-duration', String(Math.round(seconds * 1000)));
+            root.style.setProperty('--apeiron-sp-duration', seconds + 's');
+        }
+        if (Object.prototype.hasOwnProperty.call(change.values, 'animation_type')) {
+            Array.from(root.classList).forEach(function(name) { if (name.indexOf('apeiron-sp-animation-') === 0) { root.classList.remove(name); } });
+            var animation = change.option('animation_type', 'slide-top');
+            root.classList.add('apeiron-sp-animation-' + (animation === 'global' ? (root.getAttribute('data-apeiron-social-proof-global-animation') || 'slide-top') : animation));
+        }
+        if (Object.prototype.hasOwnProperty.call(change.values, 'popup_box_shadow_box_shadow_type')) {
+            root.classList.toggle('apeiron-sp-shadow-disabled', change.get('popup_box_shadow_box_shadow_type') !== 'yes');
+        }
+        return true;
+    }
+
     function registerEditorControls() {
         var host;
         try {
@@ -577,6 +600,8 @@
         }
 
         var editor = host.elementor;
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-social-proof'] = updateEditorPreview;
         if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
         host.__apeironSocialProofControls = true;
 

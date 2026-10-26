@@ -2097,7 +2097,42 @@
                     autoStartTimer: autoStartTimer,
                     bodyObserver: bodyObserver,
                     contentObserver: null,
-                    resizeObserver: null
+                    resizeObserver: null,
+                    updatePreview: function (next, restart) {
+                        if (!isElementorEditor()) return false;
+                        next = normalizeConfig(next);
+                        if (restart) {
+                            var running = isScrolling && !isPaused;
+                            var temporary = Object.assign({}, next, { buttonAppearAnimation: 'none', buttonAppearDelay: 0 });
+                            AutoScroll.destroyWidget(container);
+                            container.classList.remove('is-hidden');
+                            container.setAttribute('data-config', JSON.stringify(temporary));
+                            AutoScroll.initWidget(container);
+                            container._apeironAutoScroll.updatePreview(next, false);
+                            if (running && !container.classList.contains('is-hidden')) container._apeironAutoScroll.start(false);
+                            return true;
+                        }
+                        var speedChanged = next.speed !== config.speed;
+                        var activeChanged = next.activeAnimation !== config.activeAnimation;
+                        var appearChanged = next.buttonAppearAnimation !== config.buttonAppearAnimation;
+                        Object.assign(config, next);
+                        if (container.classList.contains('is-hidden')) { container.setAttribute('data-config', JSON.stringify(config)); return true; }
+                        motionSettings = resolveMotionSettings();
+                        if (speedChanged) updateSpeedFn(config.speed);
+                        if (activeChanged) {
+                            removeButtonAnimationClasses();
+                            if (isScrolling) addActiveButtonAnimation();
+                        }
+                        if (appearChanged && btnContainer) {
+                            Array.from(btnContainer.classList).forEach(function (name) { if (name.indexOf('anim-') === 0) btnContainer.classList.remove(name); });
+                            if (config.buttonAppearAnimation !== 'none') btnContainer.classList.add('anim-' + config.buttonAppearAnimation);
+                        }
+                        var chevron = container.querySelector('.apeiron-capsule-chevron path');
+                        if (chevron) chevron.setAttribute('d', config.direction === 'up' ? 'M12 19V5M6 11l6-6 6 6' : 'M12 5v14M6 13l6 6 6-6');
+                        container.setAttribute('data-config', JSON.stringify(config));
+                        updateProgress(true);
+                        return true;
+                    }
                 };
             }
             storeInstance();
@@ -2107,6 +2142,53 @@
     var elementorHookRegistered = false;
     var detachObserver = null;
     var pruneRAF = null;
+
+    function updateEditorPreview(widget, change) {
+        var numbers = {
+            scroll_speed: ['speed', 30, 1, 100, 1], step_scroll_speed: ['speed', 30, 1, 100, 1],
+            auto_start_delay: ['autoStartDelay', 2, 0, 60, 1000], resume_idle_delay: ['resumeIdleDelay', 1.2, 0.15, 60, 1000],
+            step_scroll_range: ['stepScrollRange', 275, 60, 2000, 1], step_scroll_interval: ['stepScrollInterval', 2, 0.16, 30, 1000],
+            step_scroll_duration: ['stepScrollDuration', 1.25, 0.12, 10, 1000], scroll_top_show_after: ['scrollTopShowAfter', 20, 0, 100, 0.01],
+            button_appear_animation_delay: ['buttonAppearDelay', 0, 0, 60, 1000], speed_control_animation_duration: ['speedControlAnimationDuration', 0.4, 0, 10, 1000]
+        };
+        var enums = { scroll_engine: 'scrollEngine', scroll_mode: 'mode', scroll_direction: 'direction', smoothness: 'smoothness', user_interaction_behavior: 'userInteractionBehavior', button_active_animation: 'activeAnimation', speed_value_animation_type: 'speedValueAnimation', button_appear_animation: 'buttonAppearAnimation', speed_control_appear_animation: 'speedControlAppearAnimation', speed_control_disappear_animation: 'speedControlDisappearAnimation', progress_animation_type: 'progressAnimation' };
+        var flags = { auto_start: 'autoStart', pause_on_interaction: 'pauseOnInteraction', resume_after_idle: 'resumeAfterIdle', pause_on_hover: 'pauseOnHover', loop_scroll: 'loopScroll', disable_on_ios: 'disableOnIOS' };
+        var positions = ['button_position', 'capsule_position', 'widget_position_horizontal', 'widget_position_vertical'];
+        if (!change.supports(Object.keys(numbers).concat(Object.keys(enums), Object.keys(flags), positions, ['speed_control_show_animation']))) return false;
+        var root = widget.querySelector('.apeiron-autoscroll-wrap[data-config]');
+        var instance = root && root._apeironAutoScroll;
+        if (!instance || !instance.updatePreview) return false;
+        var config;
+        try { config = JSON.parse(root.getAttribute('data-config')); } catch (error) { return false; }
+        var restart = false;
+        Object.keys(change.values).forEach(function (name) {
+            if (numbers[name]) {
+                var rule = numbers[name];
+                if (name !== 'scroll_speed' && name !== 'step_scroll_speed') config[rule[0]] = change.number(name, rule[1], rule[2], rule[3]) * rule[4];
+            } else if (enums[name]) {
+                config[enums[name]] = change.option(name, config[enums[name]]);
+                restart = restart || ['scroll_engine', 'scroll_mode', 'user_interaction_behavior'].indexOf(name) >= 0;
+            } else if (flags[name]) {
+                config[flags[name]] = change.get(name) === 'yes';
+                restart = restart || ['pause_on_interaction', 'resume_after_idle', 'pause_on_hover', 'disable_on_ios'].indexOf(name) >= 0;
+            } else if (name === 'speed_control_show_animation') {
+                config.speedControlShowAnimation = change.get(name) === 'yes' ? 'yes' : 'no';
+            }
+        });
+        if (Object.keys(change.values).some(function (name) { return name === 'scroll_speed' || name === 'step_scroll_speed' || name === 'scroll_engine'; })) {
+            config.speed = Math.trunc(change.number(config.scrollEngine === 'step' ? 'step_scroll_speed' : 'scroll_speed', 30, 1, 100));
+        }
+        if (Object.keys(change.values).some(function (name) { return positions.indexOf(name) >= 0; })) {
+            var position = change.option(root.classList.contains('skin-simple-capsule') ? 'capsule_position' : 'button_position', 'bottom-right');
+            var axes = { 'bottom-right': ['bottom', 'right'], 'bottom-left': ['bottom', 'left'], 'bottom-center': ['bottom', 'center'], 'right-center': ['center', 'right'], 'left-center': ['center', 'left'] }[position] || ['bottom', 'right'];
+            var vertical = root.classList.contains('skin-simple-capsule') ? axes[0] : (change.option('widget_position_vertical', axes[0]) || axes[0]);
+            var horizontal = root.classList.contains('skin-simple-capsule') ? axes[1] : (change.option('widget_position_horizontal', axes[1]) || axes[1]);
+            Array.from(root.classList).forEach(function (name) { if (name.indexOf('pos-') === 0) root.classList.remove(name); });
+            root.classList.add('pos-' + vertical + '-' + horizontal);
+        }
+        return instance.updatePreview(config, restart);
+    }
+    updateEditorPreview.cssControls = ['button_appear_animation_delay', 'speed_control_animation_duration'];
 
     function registerEditorStyleControls() {
         var host;
@@ -2118,6 +2200,8 @@
         }
 
         var editor = host.elementor;
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-autoscroll'] = updateEditorPreview;
         if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
         host.__apeironAutoScrollStyleControls = true;
 

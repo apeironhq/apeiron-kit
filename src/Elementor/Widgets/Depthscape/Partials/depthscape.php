@@ -50,8 +50,8 @@ $render_layer = static function ( array $layer ): void {
 			?>
 		</div>
 
-		<?php if ( $show_hint ) : ?>
-			<div class="apeiron-depthscape__hint" aria-hidden="true" style="opacity: <?php echo esc_attr( (string) $hint_opacity ); ?>; visibility: <?php echo $hint_opacity > 0 ? 'inherit' : 'hidden'; ?>;">
+		<?php if ( $show_hint || $this->is_content_editor() ) : ?>
+			<div class="apeiron-depthscape__hint" aria-hidden="true"<?php echo $show_hint ? '' : ' hidden'; ?> style="opacity: <?php echo esc_attr( (string) $hint_opacity ); ?>; visibility: <?php echo $hint_opacity > 0 ? 'inherit' : 'hidden'; ?>;<?php echo $show_hint ? '' : ' display:none;'; ?>">
 				<span class="apeiron-depthscape__hint-arrow">
 					<svg class="apeiron-depthscape__hint-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
 						<path d="M6 15l6-6 6 6"></path>

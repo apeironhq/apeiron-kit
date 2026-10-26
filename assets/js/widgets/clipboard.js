@@ -279,6 +279,14 @@
         initializeScope(document);
     }
 
+    function updateEditorPreview(widget, change) {
+        if (!change.supports(['feedback_duration'])) { return false; }
+        var button = widget.querySelector(SELECTOR.button);
+        if (!button) { return false; }
+        button.setAttribute('data-feedback-duration', String(clampFeedbackDuration(change.number('feedback_duration', 1800, 800, 5000))));
+        return true;
+    }
+
     function registerEditorControls() {
         var host;
         try {
@@ -288,6 +296,8 @@
             return; // The containing page may be on another origin.
         }
         var editor = host.elementor;
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-clipboard-tap'] = updateEditorPreview;
         if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
         host.__apeironClipboardControls = true;
 

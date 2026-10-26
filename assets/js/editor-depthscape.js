@@ -3,6 +3,70 @@
 
     var registered = false;
 
+    function registerLivePreview(editor) {
+        var LiveView;
+        editor.hooks.addFilter('element/view', function (View, model) {
+            if (model.get('widgetType') !== 'apeiron-depthscape') { return View; }
+            if (!LiveView) {
+                LiveView = View.extend({
+                    renderOnChange: function (settings) {
+                        var changes = settings.changedAttributes && settings.changedAttributes();
+                        var root = this.el.querySelector('[data-apeiron-depthscape]');
+                        if (this.allowRender && !this.isRendering && changes && root && !this.$el.hasClass('elementor-loading')) {
+                            var owner = this.getEditModel().get('settings');
+                            var scope = 'root';
+                            var index = -1;
+                            var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_mode|cam_start_(x|y|z|rx|ry|rz))$/;
+                            if (settings !== owner) {
+                                var layers = owner.get('layers');
+                                var scenes = owner.get('scenes');
+                                index = layers ? layers.indexOf(settings) : -1;
+                                if (index >= 0) {
+                                    scope = 'layer';
+                                    pattern = /^(depth|anchor|layer_key|layer_space|fit|video_loop|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/;
+                                } else {
+                                    scope = 'scene';
+                                    index = scenes ? scenes.indexOf(settings) : -1;
+                                    pattern = /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
+                                    if (index < 0) {
+                                        var keyframes = owner.get('keyframes');
+                                        index = keyframes ? keyframes.indexOf(settings) : -1;
+                                        scope = 'keyframe';
+                                        pattern = /^kf_(layer|scene|at|duration|ease|x|y|scale|rotate|opacity|blur|reveal)$/;
+                                    }
+                                }
+                            }
+                            var values = {};
+                            var renderStyles = false;
+                            var supported = (scope === 'root' || index >= 0) && Object.keys(changes).every(function (name) {
+                                if (pattern.test(name)) { values[name] = changes[name]; return true; }
+                                var control = settings.getControl(name);
+                                if (control && control.render_type !== 'template' && control.selectors && Object.keys(control.selectors).length) {
+                                    renderStyles = true;
+                                    return true;
+                                }
+                                return false;
+                            });
+                            if (supported && Object.keys(values).length) {
+                                if (scope === 'layer' && Object.prototype.hasOwnProperty.call(values, 'layer_space')) { values.depth = settings.get('depth'); }
+                                var event = new root.ownerDocument.defaultView.CustomEvent('apeiron:depthscape:preview-change', {
+                                    bubbles: true, cancelable: true, detail: { scope: scope, index: index, values: values, settings: settings, css: renderStyles, rows: scope === 'keyframe' ? owner.get('keyframes').toJSON() : null },
+                                });
+                                // The engine acknowledges only updates it can apply to the existing DOM.
+                                if (!root.dispatchEvent(event)) {
+                                    if (renderStyles) { this.renderUI(); }
+                                    return;
+                                }
+                            }
+                        }
+                        return View.prototype.renderOnChange.apply(this, arguments);
+                    },
+                });
+            }
+            return LiveView;
+        });
+    }
+
     function registerStylePanel() {
         var editor = window.elementor;
         var panel = editor && editor.panel && editor.panel.currentView;
@@ -277,6 +341,7 @@
         }));
 
         registered = true;
+        registerLivePreview(editor);
         registerStylePanel();
         editor.on('preview:loaded', registerStylePanel);
         editor.once('panel:init', registerStylePanel);

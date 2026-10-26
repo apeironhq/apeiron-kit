@@ -46,6 +46,7 @@ if ( false === ( $context['box_shadow_enabled'] ?? true ) ) {
 	data-apeiron-social-proof-interval-duration="<?php echo esc_attr( (string) $context['interval_duration'] ); ?>"
 	data-apeiron-social-proof-max-notifications="<?php echo esc_attr( (string) $context['max_notifications'] ); ?>"
 	data-apeiron-social-proof-animation-duration="<?php echo esc_attr( (string) $context['animation_duration'] ); ?>"
+	data-apeiron-social-proof-global-animation="<?php echo esc_attr( (string) ( $context['global_animation_type'] ?? 'slide-top' ) ); ?>"
 >
 	<button type="button" class="apeiron-social-proof__close apeiron-popup-close" aria-label="<?php esc_attr_e( 'Tutup notifikasi social proof', 'apeiron-kit' ); ?>">
 		<span aria-hidden="true">&times;</span>

@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</label>
 		<?php endforeach; ?>
 
-		<?php if ( ! empty( $settings['show_confirmation'] ) && 'yes' === $settings['show_confirmation'] ) : ?>
+		<?php if ( 'yes' === ( $settings['show_confirmation'] ?? '' ) || $this->is_elementor_editor_preview() || ( function_exists( 'wp_doing_ajax' ) && wp_doing_ajax() && 'elementor_ajax' === ( $_REQUEST['action'] ?? '' ) ) ) : ?>
 			<?php $this->render_confirmation_select( $settings ); ?>
 		<?php endif; ?>
 

@@ -352,6 +352,22 @@
 		initScope(event.target || document);
 	});
 
+	function updateEditorPreview(widget, change) {
+		if (!change.supports(['show_confirmation'])) { return false; }
+		var root = widget.querySelector(SELECTOR.root);
+		var field = root && root.querySelector('.apeiron-signal-form__confirmation');
+		var show = change.get('show_confirmation') === 'yes';
+		var options = change.getRoot('confirmation_options');
+		options = options && options.toJSON ? options.toJSON() : options;
+		var dynamic = change.getRoot('__dynamic__') || {};
+		if (show && (dynamic.confirmation_label || (Array.isArray(options) && options.some(function(option) { return option.__dynamic__ && option.__dynamic__.option_text; })))) { return false; }
+		if (!field) { return !!root && Array.isArray(options) && options.length === 0; }
+		field.hidden = !show;
+		field.style.display = show ? '' : 'none';
+		field.querySelector('select').disabled = !show;
+		return true;
+	}
+
 	function registerEditorControls() {
 		var host;
 		try {
@@ -361,6 +377,8 @@
 			return; // The containing page may be on another origin.
 		}
 		var editor = host.elementor;
+		window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+		window.__apeironEditorPreviews['apeiron-signal-form'] = updateEditorPreview;
 		if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) { return; }
 		host.__apeironSignalFormControls = true;
 

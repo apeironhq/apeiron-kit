@@ -18,7 +18,7 @@
 		}
 		var track = state.track;
 		var maximum = track.scrollWidth - track.clientWidth;
-		state.navigation.hidden = getComputedStyle(track).overflowX !== 'auto' || maximum <= 1;
+		state.navigation.hidden = state.navigation.dataset.giftNavigationMode === 'none' || getComputedStyle(track).overflowX !== 'auto' || maximum <= 1;
 		if (state.navigation.hidden) {
 			return;
 		}
@@ -696,6 +696,32 @@
 		}
 	}
 
+	function updateEditorPreview(widget, change) {
+		if (!change.supports(['mobile_display', 'swipe_navigation'])) { return false; }
+		var root = widget.querySelector(ROOT);
+		var state = root && instances.get(root);
+		if (!state || !state.track) { return false; }
+		var swipe = change.get('mobile_display') !== 'grid';
+		root.classList.toggle('apeiron-daftar-hadiah--mobile-swipe', swipe);
+		if (swipe) {
+			state.track.setAttribute('tabindex', '0');
+			state.track.setAttribute('role', 'group');
+			var label = state.track.getAttribute('data-gift-swipe-label') || state.track.getAttribute('aria-label');
+			if (label) { state.track.setAttribute('aria-label', label); }
+		} else {
+			['tabindex', 'role', 'aria-label'].forEach(function(name) { state.track.removeAttribute(name); });
+		}
+		if (state.navigation) {
+			var mode = change.option('swipe_navigation', 'dots');
+			state.navigation.dataset.giftNavigationMode = mode;
+			state.navigation.querySelectorAll('[data-gift-card-prev], [data-gift-card-next]').forEach(function(button) { button.style.display = mode === 'arrows' || mode === 'both' ? '' : 'none'; });
+			var dots = state.navigation.querySelector('.apeiron-daftar-hadiah__swipe-dots');
+			if (dots) { dots.style.display = mode === 'dots' || mode === 'both' ? '' : 'none'; }
+			if (state.queueNavigation) { state.queueNavigation(); }
+		}
+		return true;
+	}
+
 	function registerEditorControls() {
 		var host;
 		try {
@@ -705,6 +731,8 @@
 			return; // The containing page may be on another origin.
 		}
 		var editor = host.elementor;
+		window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+		window.__apeironEditorPreviews['apeiron-daftar-hadiah'] = updateEditorPreview;
 		if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) { return; }
 		host.__apeironDaftarHadiahControls = true;
 

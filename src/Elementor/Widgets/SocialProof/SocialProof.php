@@ -145,6 +145,7 @@ class SocialProof extends BaseWidget {
 			'max_notifications'    => max( 0, absint( $global_settings['max_notifications'] ?? 0 ) ),
 			'image_radius'         => max( 0, min( 50, absint( $global_settings['image_border_radius'] ?? 10 ) ) ),
 			'animation_type'       => $animation_type,
+			'global_animation_type' => $this->resolve_animation( (string) ( $global_settings['animation_type'] ?? '' ) ),
 			'animation_duration'   => $animation_duration,
 			'box_shadow_enabled'    => 'yes' === ( $settings['popup_box_shadow_box_shadow_type'] ?? 'yes' ),
 			'position_horizontal'  => $position_map[ $popup_position ][0],

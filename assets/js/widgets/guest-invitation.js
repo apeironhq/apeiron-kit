@@ -1171,7 +1171,29 @@
         api.init();
     }
 
+    function updateEditorPreview(widget, change) {
+        if (!change.supports(['skip_excel_header', 'excel_import_mode'])) { return false; }
+        var root = widget.querySelector('.apeiron-invitation-container');
+        if (!root) { return false; }
+        root.setAttribute('data-skip-header', change.get('skip_excel_header') === 'yes' ? 'yes' : 'no');
+        root.setAttribute('data-import-mode', change.option('excel_import_mode', 'append'));
+        return true;
+    }
+
+    function registerLivePreview() {
+        try {
+            if (!window.parent || window.parent === window || !window.parent.elementor) return;
+        } catch (error) {
+            return; // An embedded frontend may have a parent on another origin.
+        }
+        window.__apeironEditorPreviews = window.__apeironEditorPreviews || {};
+        window.__apeironEditorPreviews['apeiron-guest-invitation-manager'] = updateEditorPreview;
+    }
+
+    registerLivePreview();
+
     window.addEventListener('elementor/frontend/init', function () {
+        registerLivePreview();
         if (typeof elementorFrontend === 'undefined' || !elementorFrontend.hooks) {
             return;
         }

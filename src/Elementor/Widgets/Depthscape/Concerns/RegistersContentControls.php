@@ -320,13 +320,16 @@ trait RegistersContentControls {
 			[
 				'label'      => __( 'Posisi Vertikal', 'apeiron-kit' ),
 				'type'       => Controls_Manager::SLIDER,
-				'size_units' => [ '%' ],
+				'size_units' => [ '%', 'dvh', 'lvh' ],
 				'range'      => [
 					'%' => [ 'min' => -50, 'max' => 150 ],
+					'dvh' => [ 'min' => -50, 'max' => 150 ],
+					'lvh' => [ 'min' => -50, 'max' => 150 ],
 				],
 				'default'    => [ 'size' => 50, 'unit' => '%' ],
+				'description' => __( '% mengikuti area layer, dvh mengikuti tinggi layar yang terlihat, dan lvh memakai tinggi layar maksimum. Untuk gradasi: pilih Ruang Layer "Tetap di layar", posisi 100 dvh, dan Titik Jangkar "Bawah".', 'apeiron-kit' ),
 				'selectors'  => [
-					'{{WRAPPER}} {{CURRENT_ITEM}}' => '--ds-top: {{SIZE}}%;',
+					'{{WRAPPER}} {{CURRENT_ITEM}}' => '--ds-top: {{SIZE}}{{UNIT}};',
 				],
 				'conditions' => $this->free_layer_conditions(),
 			]

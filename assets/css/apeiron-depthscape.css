@@ -21,6 +21,10 @@
     .apeiron-depthscape {
         overflow-x: clip;
     }
+
+    html:has(.apeiron-depthscape.is-stay-fixed) {
+        overscroll-behavior-y: none;
+    }
 }
 
 .apeiron-depthscape__stage {
@@ -40,16 +44,38 @@
     z-index: -1;
 }
 
-/*
- * The pinned stage keeps the pixel height it had when pinned. On phones the address bar then collapses
- * while scrolling and the viewport grows (100svh -> 100lvh), which opened a gap under the stage. A
- * full-height stage now lets its world bleed down by exactly that difference; the sides stay clipped and
- * custom heights (stage shorter than 100svh) keep a bleed of 0.
- */
+/* Compatibility bleed for small-viewport stages. Touch canvases below use a stable large viewport
+ * instead, so filling the screen never depends on image overscan. */
 @supports (height: 100lvh) {
     .apeiron-depthscape.is-stay-fixed .apeiron-depthscape__stage {
         overflow: visible;
         clip-path: inset(0 0 max(calc(100svh - 100lvh), min(0px, calc(100svh - 100lvh + (100svh - var(--ds-stage-height)) * 1000))) 0);
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+        /* Browser chrome must not change the canvas's height or camera coordinate space. */
+        .apeiron-depthscape {
+            --ds-stage-height: 100lvh;
+        }
+
+        .apeiron-depthscape.is-stay-fixed .apeiron-depthscape__stage {
+            overflow: hidden;
+            overflow: clip;
+            clip-path: none;
+        }
+
+        /* Keep screen-space UI where it was; explicit custom frame heights retain their own layout. */
+        .apeiron-depthscape__screen {
+            height: min(100%, calc(100svh + max(0px, calc(100lvh - var(--ds-stage-height) - 1px), calc(var(--ds-stage-height) - 100lvh - 1px)) * 1000));
+        }
+
+        .apeiron-depthscape .apeiron-depthscape__screen > .apeiron-depthscape__layer.is-fit-cover {
+            bottom: calc(100% - var(--ds-stage-height) - var(--ds-overscan, 12%));
+        }
+
+        .apeiron-depthscape__hint {
+            margin-bottom: max(0px, min(calc(100lvh - 100svh), calc((var(--ds-stage-height) - 100lvh + 1px) * 1000)));
+        }
     }
 }
 
@@ -338,6 +364,24 @@
     inset: 0;
     z-index: 3;
     pointer-events: none;
+}
+
+/* "Meluncur" motion: depthscape.js adds one invisible snap point per scene while the story is on screen. */
+/* scroll-padding is reset because WordPress pads it for the admin bar, which would shift every scene. */
+html.apeiron-depthscape-snap {
+    scroll-snap-type: y mandatory;
+    scroll-padding-top: 0;
+}
+
+.apeiron-depthscape__snap {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
 }
 
 /* Scroll hint */

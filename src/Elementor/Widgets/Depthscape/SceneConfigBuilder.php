@@ -88,6 +88,8 @@ final class SceneConfigBuilder {
 			'scrub'       => self::num( self::slider_size( $settings['smoothness'] ?? null ), 1.0, 0.0, 3.0 ),
 			'snap'        => 'yes' === ( $settings['snap'] ?? '' ),
 			'snapEase'    => self::ease( $settings['snap_ease'] ?? 'power2.inOut', 'power2.inOut' ),
+			'motion'      => self::pick( $settings['motion_style'] ?? 'scrub', [ 'scrub', 'glide' ], 'scrub' ),
+			'glide'       => self::num( self::slider_size( $settings['glide_smoothing'] ?? null ), 0.015, 0.003, 0.1 ),
 			'coverPlay'   => 'yes' === ( $settings['cover_autoplay'] ?? '' ),
 			'stayFixed'   => 'yes' === ( $settings['stay_fixed'] ?? '' ),
 			'perspective' => self::num( self::slider_size( $settings['perspective'] ?? null ), 1000.0, 200.0, 4000.0 ),

@@ -857,6 +857,34 @@ trait RegistersContentControls {
 		);
 
 		$this->add_control(
+			'motion_style',
+			[
+				'label'       => __( 'Gaya Gerak', 'apeiron-kit' ),
+				'type'        => Controls_Manager::SELECT,
+				'options'     => [
+					'scrub' => __( 'Scrub (ikut scroll)', 'apeiron-kit' ),
+					'glide' => __( 'Meluncur halus (seperti film)', 'apeiron-kit' ),
+				],
+				'default'     => 'scrub',
+				'description' => __( 'Meluncur: satu geseran = tepat satu adegan, lalu gambar meluncur pelan dan melambat sampai berhenti. Kehalusan Scroll dan Pola Berhenti tidak dipakai di mode ini.', 'apeiron-kit' ),
+			]
+		);
+
+		$this->add_control(
+			'glide_smoothing',
+			[
+				'label'       => __( 'Kecepatan Meluncur', 'apeiron-kit' ),
+				'type'        => Controls_Manager::SLIDER,
+				'range'       => [
+					'px' => [ 'min' => 0.005, 'max' => 0.08, 'step' => 0.001 ],
+				],
+				'default'     => [ 'size' => 0.015 ],
+				'description' => __( 'Porsi jarak yang ditempuh tiap frame. Kecil = lebih lambat dan lembut (0.015 ≈ 3 detik).', 'apeiron-kit' ),
+				'condition'   => [ 'motion_style' => 'glide' ],
+			]
+		);
+
+		$this->add_control(
 			'smoothness',
 			[
 				'label'       => __( 'Kehalusan Scroll', 'apeiron-kit' ),
@@ -1227,6 +1255,9 @@ trait RegistersContentControls {
 		);
 
 		foreach ( $templates as $template ) {
+			if ( 'kit' === get_post_meta( $template->ID, '_elementor_template_type', true ) ) {
+				continue;
+			}
 			$options[ (string) $template->ID ] = '' !== $template->post_title ? $template->post_title : '#' . $template->ID;
 		}
 

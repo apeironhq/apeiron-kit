@@ -726,6 +726,7 @@
             }));
         }
 
+        var glide = config.motion === 'glide' && !reduce;
         var trigger = ScrollTrigger.create({
             trigger: ctx.root,
             start: 'top top',
@@ -741,12 +742,18 @@
             },
             onEnterBack: function () {
                 ctx.root.classList.remove('is-backdrop');
+                // A refresh in backdrop mode can copy its negative stacking into the pin spacer.
+                var spacer = ctx.stage.parentNode;
+                if (stayFixed && spacer && spacer.classList.contains('pin-spacer') && spacer.style.zIndex === '-1') {
+                    spacer.style.zIndex = '';
+                }
             },
-            scrub: reduce || toNumber(config.scrub, 0) <= 0 ? true : toNumber(config.scrub, 1),
-            animation: built.timeline,
+            // Glide drives the timeline itself (see setupGlide); scrub mode hands it to ScrollTrigger.
+            scrub: glide ? false : (reduce || toNumber(config.scrub, 0) <= 0 ? true : toNumber(config.scrub, 1)),
+            animation: glide ? null : built.timeline,
             // ScrollTrigger hands snapTo a velocity-projected value; a fast flick would then skip whole
             // scenes. Snapping from the real progress keeps the story one scene per gesture.
-            snap: config.snap ? {
+            snap: config.snap && !glide ? {
                 snapTo: function (value, self) {
                     if (ctx.state.opening) { return self.progress; }
                     return pickSnap(snapPoints, self.progress, self.direction);
@@ -757,8 +764,9 @@
             } : false,
         });
 
-        ctx.state.scroll = { trigger: trigger, points: snapPoints };
+        ctx.state.scroll = { trigger: trigger, points: snapPoints, glide: glide };
         triggers.push(trigger);
+        var stopGlide = glide ? setupGlide(ctx, built, trigger, snapPoints, distance, triggers) : null;
 
         // Idle loops and tilt only run while the stage is on screen (to the end of the page as a backdrop).
         triggers.push(ScrollTrigger.create({
@@ -770,9 +778,81 @@
             },
         }));
         return function () {
+            if (stopGlide) { stopGlide(); }
             if (releaseRoot) { releaseRoot(); }
             triggers.forEach(function (item) { item.kill(true, true); });
             ctx.state.scroll = null;
+        };
+    }
+
+    // "Meluncur" mode. The page snaps natively to exactly one scene per swipe (CSS scroll snap with
+    // snap-stop), while the picture follows the scroll position with exponential smoothing: quick at
+    // first, then a long, slow settle. The factor is per 60 fps frame and scaled by real frame time, so
+    // 60 Hz and 120 Hz phones glide at the same speed.
+    function setupGlide(ctx, built, trigger, snapPoints, distance, triggers) {
+        var gsap = ctx.gsap;
+        var ScrollTrigger = window.ScrollTrigger;
+        var factor = clamp(toNumber(ctx.config.glide, 0.015), 0.003, 0.1);
+        var current = trigger.progress;
+        var html = document.documentElement;
+        var markers = [];
+
+        built.timeline.progress(current, true);
+
+        var tick = function () {
+            var target = trigger.progress;
+            var gap = target - current;
+            if (Math.abs(gap) < 0.00005) {
+                if (current !== target) {
+                    current = target;
+                    built.timeline.progress(current, true);
+                }
+                return;
+            }
+            current += gap * (1 - Math.pow(1 - factor, gsap.ticker.deltaRatio(60)));
+            built.timeline.progress(current, true);
+        };
+        gsap.ticker.add(tick);
+
+        // Native snap points: one per scene label plus the widget's end, where the next content starts.
+        // The editor keeps free scrolling so the page stays easy to edit.
+        var placeMarkers = function () {
+            var length = distance();
+            markers.forEach(function (marker, index) {
+                marker.style.top = index < snapPoints.length ? Math.round(snapPoints[index] * length) + 'px' : '100%';
+            });
+        };
+        if (!isEditMode()) {
+            snapPoints.concat([null]).forEach(function () {
+                var marker = document.createElement('span');
+                marker.className = 'apeiron-depthscape__snap';
+                marker.setAttribute('aria-hidden', 'true');
+                ctx.root.appendChild(marker);
+                markers.push(marker);
+            });
+            placeMarkers();
+            ScrollTrigger.addEventListener('refreshInit', placeMarkers);
+
+            // Snapping is switched on only while the story is on screen; it ends just before the next
+            // content so swipes after the last scene scroll the page freely again.
+            // The start sits 2px early so the first scene (scroll exactly at the widget top) already snaps.
+            triggers.push(ScrollTrigger.create({
+                trigger: ctx.root,
+                start: 'top top+=2',
+                end: 'bottom top+=2',
+                onToggle: function (self) {
+                    html.classList.toggle('apeiron-depthscape-snap', self.isActive);
+                },
+            }));
+        }
+
+        return function () {
+            gsap.ticker.remove(tick);
+            ScrollTrigger.removeEventListener('refreshInit', placeMarkers);
+            html.classList.remove('apeiron-depthscape-snap');
+            markers.forEach(function (marker) {
+                if (marker.parentNode) { marker.parentNode.removeChild(marker); }
+            });
         };
     }
 
@@ -1312,7 +1392,8 @@
         var target = trigger.start + (trigger.end - trigger.start) * next;
         var reduce = window.matchMedia && window.matchMedia(MEDIA.reduce).matches;
         if (state.opening) { state.opening.stop(); }
-        if (!reduce && next === scroll.points[1]) {
+        // In glide mode the picture already eases on its own, so the page only needs to land on the scene.
+        if (!reduce && next === scroll.points[1] && !scroll.glide) {
             playOpening(state, target);
         } else {
             window.scrollTo({ top: Math.round(target), behavior: reduce ? 'auto' : 'smooth' });

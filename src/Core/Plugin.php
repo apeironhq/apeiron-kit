@@ -13,6 +13,7 @@ use ApeironKit\Rest\FormOrderController;
 use ApeironKit\Rest\DaftarHadiahController;
 use ApeironKit\Support\AssetManager;
 use ApeironKit\Support\CommentDockSettingsStore;
+use ApeironKit\Support\FormOrderOutbox;
 use ApeironKit\Support\LegacyContentCleanup;
 use ApeironKit\Support\StickerManager;
 use ApeironKit\Support\WidgetUsageIndex;
@@ -73,6 +74,8 @@ class Plugin {
 
 		( new WidgetManager() )->register();
 		CommentDockSettingsStore::register();
+		// Kirim ulang Form Order yang tertunda (WP-Cron) & tombol admin "Kirim ulang sekarang".
+		FormOrderOutbox::register();
 
 		add_action( 'init', [ $this, 'init' ] );
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );

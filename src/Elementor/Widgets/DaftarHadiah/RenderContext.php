@@ -51,6 +51,13 @@ final class RenderContext {
 		return $post instanceof \WP_Post && $post->ID > 0 && ! in_array( $post->post_type, [ 'elementor_library', 'revision', 'attachment' ], true ) ? $post : null;
 	}
 
+	/** Jumlah foto hadiah yang memakai http:// (diperingatkan khusus di editor Elementor). */
+	public static function insecure_image_count( array $gifts ): int {
+		return count( array_filter( $gifts, static function ( $gift ): bool {
+			return is_array( $gift ) && 0 === stripos( (string) ( $gift['image_url'] ?? '' ), 'http://' );
+		} ) );
+	}
+
 	public static function gifts( array $settings ): array {
 		$rows   = is_array( $settings['gifts'] ?? null ) ? array_values( array_filter( $settings['gifts'], 'is_array' ) ) : [];
 		$counts = [];
@@ -73,23 +80,23 @@ final class RenderContext {
 			if ( 'unavailable' === ( $row['availability'] ?? 'available' ) ) {
 				$available_quantity = 0;
 			}
-			$name     = self::text( $row['name'] ?? '' );
+			$name     = self::field_text( $row, 'name' );
 			$gifts[]  = [
 				// Elementor persists _id and regenerates it on native repeater duplication.
 				// Invalid/duplicate IDs fail closed; never derive an ID from a name/index.
 				'gift_id'          => '' !== $id && 1 === $counts[ $id ] ? 'gift-' . $id : '',
 				'row_id'           => $id,
 				'name'             => $name,
-				'category'         => self::text( $row['category'] ?? '' ),
-				'description'      => self::text( $row['description'] ?? '' ),
+				'category'         => self::field_text( $row, 'category' ),
+				'description'      => self::field_text( $row, 'description' ),
 				'initial_quantity' => $quantity,
 				'available_quantity' => $available_quantity,
 				'availability'     => $available_quantity > 0 ? 'available' : 'unavailable',
 				'image_url'        => $images[0]['url'] ?? '',
 				'image_alt'        => $images[0]['alt'] ?? $name,
 				'images'           => $images,
-				'purchase_url'     => esc_url_raw( self::text( $link['url'] ?? '' ), [ 'http', 'https' ] ),
-				'purchase_label'   => self::text( $row['purchase_label'] ?? '' ),
+				'purchase_url'     => esc_url_raw( self::field_text( $row, 'purchase_url', 'url' ), [ 'http', 'https' ] ),
+				'purchase_label'   => self::field_text( $row, 'purchase_label' ),
 				'purchase_new_tab' => ! empty( $link['is_external'] ),
 				'purchase_nofollow' => ! empty( $link['nofollow'] ),
 			];
@@ -101,6 +108,7 @@ final class RenderContext {
 	private static function images( array $row ): array {
 		$gallery = is_array( $row['gallery'] ?? null ) ? $row['gallery'] : [];
 		$primary = is_array( $row['image'] ?? null ) ? $row['image'] : [];
+		$name    = self::field_text( $row, 'name' );
 		$images  = [];
 		$seen    = [];
 		foreach ( array_merge( [ $primary ], $gallery ) as $image ) {
@@ -115,7 +123,7 @@ final class RenderContext {
 			$seen[ $url ] = true;
 			$images[] = [
 				'url' => $url,
-				'alt' => $id ? self::text( get_post_meta( $id, '_wp_attachment_image_alt', true ) ) ?: self::text( $row['name'] ?? '' ) : self::text( $row['name'] ?? '' ),
+				'alt' => $id ? self::text( get_post_meta( $id, '_wp_attachment_image_alt', true ) ) ?: $name : $name,
 			];
 		}
 		return $images;
@@ -128,5 +136,15 @@ final class RenderContext {
 
 	private static function text( $value ): string {
 		return is_scalar( $value ) ? (string) $value : '';
+	}
+
+	private static function field_text( array $settings, string $key, string $property = '' ): string {
+		$value = $settings[ $key ] ?? '';
+		if ( '' !== $property ) {
+			$value = is_array( $value ) ? ( $value[ $property ] ?? '' ) : '';
+		}
+		$text = self::text( $value );
+		// Dynamic Tags return HTML-safe text; catalogue JSON and popup textContent need plain text.
+		return ! empty( $settings['__dynamic__'][ $key ] ) ? html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) : $text;
 	}
 }

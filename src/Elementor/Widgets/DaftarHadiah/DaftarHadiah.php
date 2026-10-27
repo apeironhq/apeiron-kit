@@ -30,7 +30,7 @@ class DaftarHadiah extends BaseWidget {
 	}
 
 	public function get_icon() {
-		return 'eicon-products';
+		return 'apeiron-icon-gift';
 	}
 
 	public function get_keywords() {
@@ -93,6 +93,22 @@ class DaftarHadiah extends BaseWidget {
 				'stockSynced'   => 'api' === DaftarHadiahSettings::get()['provider'] ? __( 'Ketersediaan sudah diperbarui dari reservasi API Daftar Hadiah.', 'apeiron-kit' ) : __( 'Ketersediaan sudah diperbarui dari reservasi GAS.', 'apeiron-kit' ),
 			],
 		];
+
+		// Khusus editor Elementor: ingatkan bila foto hadiah memakai http:// (dapat diblokir browser di halaman HTTPS dan
+		// hanya bisa ditampilkan dashboard bila website dapat diakses publik). Tidak pernah tampil ke tamu.
+		if ( $is_editor ) {
+			$insecure = RenderContext::insecure_image_count( $gifts );
+			if ( $insecure > 0 ) {
+				printf(
+					'<div class="apeiron-daftar-hadiah-editor-notice" role="note" style="margin:0 0 12px;padding:10px 14px;border:1px solid #f5c26b;border-radius:8px;background:#fff8eb;color:#7a4b00;font-size:13px;line-height:1.5;">%s</div>',
+					esc_html( sprintf(
+						/* translators: %d: jumlah foto hadiah */
+						_n( '%d foto hadiah memakai alamat http:// (bukan https://). Browser dapat memblokirnya di halaman HTTPS, dan dashboard Daftar Hadiah hanya dapat menampilkannya bila website dapat diakses publik. Gunakan HTTPS untuk website ini, lalu unggah ulang foto lewat Media Library.', '%d foto hadiah memakai alamat http:// (bukan https://). Browser dapat memblokirnya di halaman HTTPS, dan dashboard Daftar Hadiah hanya dapat menampilkannya bila website dapat diakses publik. Gunakan HTTPS untuk website ini, lalu unggah ulang foto lewat Media Library.', $insecure, 'apeiron-kit' ),
+						$insecure
+					) )
+				);
+			}
+		}
 
 		require __DIR__ . '/Partials/daftar-hadiah.php';
 	}

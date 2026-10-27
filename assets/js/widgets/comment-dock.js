@@ -2111,7 +2111,10 @@
 						view._renderChildren();
 						openPopovers.forEach((name) => {
 							const toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
-							if (toggle) toggle.activate();
+							if (toggle) {
+								if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) toggle.onShow();
+								toggle.activate();
+							}
 						});
 						if (focused && focusIndex >= 0) {
 							const control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));

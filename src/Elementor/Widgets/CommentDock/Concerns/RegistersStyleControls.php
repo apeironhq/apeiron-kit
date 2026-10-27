@@ -177,6 +177,46 @@ trait RegistersStyleControls {
 		);
 	}
 
+	private function register_state_style_controls( string $prefix, array $selectors, string $label, array $properties = [ 'color', 'background', 'border_color' ] ): void {
+		$this->add_control(
+			$prefix . '_heading',
+			[
+				'label'        => $label,
+				'type'         => Controls_Manager::POPOVER_TOGGLE,
+				'return_value' => 'yes',
+				'default'      => 'yes',
+				'toggle'       => false,
+				'render_type'  => 'ui',
+				'separator'    => 'before',
+			]
+		);
+		$this->start_popover();
+
+		$rules = [
+			'color'            => [ __( 'Warna Teks', 'apeiron-kit' ), 'color: {{VALUE}};' ],
+			'background'       => [ __( 'Latar', 'apeiron-kit' ), 'background: {{VALUE}};' ],
+			'background_color' => [ __( 'Latar', 'apeiron-kit' ), 'background-color: {{VALUE}};' ],
+			'border_color'     => [ __( 'Warna Border', 'apeiron-kit' ), 'border-color: {{VALUE}};' ],
+			'opacity'          => [ __( 'Opacity (0–1)', 'apeiron-kit' ), 'opacity: {{VALUE}};' ],
+		];
+		$selectors = array_map( static fn( string $selector ): string => str_replace( '{{WRAPPER}} ', '{{WRAPPER}} .apeiron-comment-dock ', $selector ), $selectors );
+
+		foreach ( $properties as $property ) {
+			$args = [
+				'label'     => $rules[ $property ][0],
+				'type'      => 'opacity' === $property ? Controls_Manager::NUMBER : Controls_Manager::COLOR,
+				'condition' => [ $prefix . '_heading' => 'yes' ],
+				'selectors' => array_fill_keys( $selectors, $rules[ $property ][1] ),
+			];
+			if ( 'opacity' === $property ) {
+				$args += [ 'min' => 0, 'max' => 1, 'step' => 0.05 ];
+			}
+			// No defaults: existing invitations keep their current interaction styles.
+			$this->add_control( $prefix . '_' . $property, $args );
+		}
+		$this->end_popover();
+	}
+
 	private function register_layout_style_controls(): void {
 		$this->start_controls_section(
 			'section_style_layout',
@@ -509,6 +549,20 @@ trait RegistersStyleControls {
 			]
 		);
 
+		$fields = explode( ', ', $field_selector_all );
+		$this->register_state_style_controls(
+			'fields_hover',
+			array_map( static fn( string $selector ): string => $selector . ':hover:not(:focus):not(:active)', $fields ),
+			__( 'Hover Field', 'apeiron-kit' ),
+			[ 'color', 'background_color', 'border_color' ]
+		);
+		$this->register_state_style_controls(
+			'fields_focus',
+			array_map( static fn( string $selector ): string => $selector . ':is(:focus, :active, :focus-visible)', $fields ),
+			__( 'Warna Teks Saat Fokus', 'apeiron-kit' ),
+			[ 'color' ]
+		);
+
 		$this->end_controls_section();
 	}
 
@@ -596,6 +650,11 @@ trait RegistersStyleControls {
 			]
 		);
 
+		$buttons = explode( ', ', $submit_selectors );
+		$this->register_state_style_controls( 'button_hover', array_map( static fn( string $selector ): string => $selector . ':hover:not(:disabled)', $buttons ), __( 'Hover Tombol Kirim', 'apeiron-kit' ), [ 'color', 'background', 'border_color', 'opacity' ] );
+		$this->register_state_style_controls( 'button_focus', array_map( static fn( string $selector ): string => $selector . ':is(:focus, :active, :focus-visible)', $buttons ), __( 'Fokus Tombol Kirim', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'button_disabled', array_map( static fn( string $selector ): string => $selector . ':disabled', $buttons ), __( 'Tombol Kirim Nonaktif / Mengirim', 'apeiron-kit' ), [ 'opacity' ] );
+
 		$this->end_controls_section();
 	}
 
@@ -659,6 +718,28 @@ trait RegistersStyleControls {
 				'type'      => Controls_Manager::COLOR,
 				'selectors' => [
 					'{{WRAPPER}} .apeiron-kit-comment-list > .apeiron-kit-comment-item' => 'border-bottom-color: {{VALUE}};',
+				],
+			]
+		);
+
+		foreach ( [ 'thumb' => __( 'Warna Scrollbar', 'apeiron-kit' ), 'track' => __( 'Latar Scrollbar', 'apeiron-kit' ) ] as $part => $label ) {
+			$this->add_control(
+				'comment_list_scrollbar_' . $part . '_color',
+				[
+					'label'     => $label,
+					'type'      => Controls_Manager::COLOR,
+					'selectors' => [ $selector => '--apeiron-comment-scrollbar-' . $part . ': {{VALUE}};' ],
+				]
+			);
+		}
+		$this->add_control(
+			'comment_list_scrollbar_hover_color',
+			[
+				'label'     => __( 'Warna Scrollbar Saat Hover', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => [
+					$selector => '--apeiron-comment-scrollbar-hover: {{VALUE}};',
+					$selector . '.is-scrollable:hover, ' . $selector . '.apeiron-kit-comment-list-scrollable:hover' => 'scrollbar-color: {{VALUE}} var(--apeiron-comment-scrollbar-track, transparent);',
 				],
 			]
 		);
@@ -731,6 +812,26 @@ trait RegistersStyleControls {
 				],
 			]
 		);
+
+		$this->add_control(
+			'comment_item_hover_color',
+			[
+				'label'     => __( 'Warna Teks Saat Hover', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => [
+					'{{WRAPPER}} .apeiron-kit-comment-item:hover > .apeiron-kit-comment-wrapper .apeiron-kit-comment-author, {{WRAPPER}} .apeiron-kit-comment-item:hover > .apeiron-kit-comment-wrapper .apeiron-kit-comment-text, {{WRAPPER}} .apeiron-kit-comment-item:hover > .apeiron-kit-comment-wrapper .apeiron-kit-comment-time' => 'color: {{VALUE}};',
+				],
+			]
+		);
+		$this->add_control(
+			'comment_item_hover_border_color',
+			[
+				'label'     => __( 'Border Saat Hover', 'apeiron-kit' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => [ $selector . ':hover' => 'border-color: {{VALUE}};' ],
+			]
+		);
+		$this->register_state_style_controls( 'comment_reply_hover', [ '{{WRAPPER}} .apeiron-kit-comment-replies > .apeiron-kit-comment-item.is-reply:hover' ], __( 'Hover Balasan', 'apeiron-kit' ), [ 'background' ] );
 
 		$this->add_responsive_control(
 			'reply_indent',
@@ -885,6 +986,9 @@ trait RegistersStyleControls {
 				],
 			]
 		);
+
+		$this->register_state_style_controls( 'action_hover', [ '{{WRAPPER}} .apeiron-kit-comment-action:hover', '{{WRAPPER}} .apeiron-kit-comment-action:focus-visible' ], __( 'Latar Aksi Hover / Fokus', 'apeiron-kit' ), [ 'background' ] );
+		$this->register_state_style_controls( 'action_danger', [ '{{WRAPPER}} .apeiron-kit-comment-action.is-danger:hover', '{{WRAPPER}} .apeiron-kit-comment-action.is-danger:focus-visible' ], __( 'Latar Hapus Hover / Fokus', 'apeiron-kit' ), [ 'background' ] );
 
 		$this->end_controls_section();
 	}
@@ -1229,6 +1333,13 @@ trait RegistersStyleControls {
 			]
 		);
 
+		$this->register_state_style_controls( 'sticker_trigger_hover', [ $trigger_selector . ':hover' ], __( 'Hover Tombol Stiker', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'sticker_trigger_focus', [ $trigger_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Tombol Stiker', 'apeiron-kit' ) );
+		$clear_selector = '{{WRAPPER}} .apeiron-kit-sticker-clear';
+		$this->register_state_style_controls( 'sticker_clear', [ $clear_selector ], __( 'Tombol Hapus Stiker', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'sticker_clear_hover', [ $clear_selector . ':hover' ], __( 'Hover Hapus Stiker', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'sticker_clear_focus', [ $clear_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Hapus Stiker', 'apeiron-kit' ), [ 'border_color' ] );
+
 		$this->add_control(
 			'sticker_options_heading',
 			[
@@ -1301,6 +1412,11 @@ trait RegistersStyleControls {
 				'selectors' => [ $option_selector . '.is-selected' => 'border-color: {{VALUE}};' ],
 			]
 		);
+
+		$this->register_state_style_controls( 'sticker_option', [ $option_selector . ':not(.is-selected)' ], __( 'Latar Opsi Stiker', 'apeiron-kit' ), [ 'background' ] );
+		$this->register_state_style_controls( 'sticker_option_hover', [ $option_selector . ':hover:not(.is-selected)' ], __( 'Hover Opsi Stiker', 'apeiron-kit' ), [ 'background', 'border_color', 'opacity' ] );
+		$this->register_state_style_controls( 'sticker_option_focus', [ $option_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Opsi Stiker', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'sticker_option_selected_hover', [ $option_selector . '.is-selected:hover' ], __( 'Hover Stiker Terpilih', 'apeiron-kit' ), [ 'opacity' ] );
 
 		$this->end_controls_section();
 	}
@@ -1491,6 +1607,15 @@ trait RegistersStyleControls {
 				'selectors' => [ $tab_selector . '.is-active' => 'background: {{VALUE}};' ],
 			]
 		);
+
+		$this->register_state_style_controls( 'sticker_tab', [ $tab_selector . ':not(.is-active)' ], __( 'Border Tab', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'sticker_tab_active', [ $tab_selector . '.is-active' ], __( 'Border Tab Aktif', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'sticker_tab_hover', [ $tab_selector . ':hover' ], __( 'Hover Tab', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'sticker_tab_focus', [ $tab_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Tab', 'apeiron-kit' ), [ 'border_color' ] );
+		$close_selector = '{{WRAPPER}} .apeiron-kit-sticker-popover-close';
+		$this->register_state_style_controls( 'sticker_popup_close', [ $close_selector ], __( 'Tombol Tutup Popup', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'sticker_popup_close_hover', [ $close_selector . ':hover' ], __( 'Hover Tutup Popup', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'sticker_popup_close_focus', [ $close_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Tutup Popup', 'apeiron-kit' ), [ 'border_color' ] );
 
 		$this->end_controls_section();
 	}
@@ -1760,6 +1885,14 @@ trait RegistersStyleControls {
 			]
 		);
 
+		$cancel_selector = '{{WRAPPER}} .apeiron-kit-comment-modal .apeiron-kit-comment-inline-actions button:not([type="submit"]):not([data-delete-confirm])';
+		$this->register_state_style_controls( 'modal_button_hover', [ $cancel_selector . ':hover:not(:disabled)' ], __( 'Hover Tombol Batal', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'modal_button_focus', [ $cancel_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Tombol Batal', 'apeiron-kit' ), [ 'border_color' ] );
+		$delete_selector = '{{WRAPPER}} .apeiron-kit-comment-modal [data-delete-confirm]';
+		$this->register_state_style_controls( 'modal_delete_button_hover', [ $delete_selector . ':hover:not(:disabled)' ], __( 'Hover Tombol Hapus', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'modal_delete_button_focus', [ $delete_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Tombol Hapus', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'modal_delete_button_disabled', [ $delete_selector . ':disabled' ], __( 'Tombol Hapus Saat Memproses', 'apeiron-kit' ), [ 'opacity' ] );
+
 		$this->end_controls_section();
 	}
 
@@ -1820,6 +1953,14 @@ trait RegistersStyleControls {
 				],
 			]
 		);
+
+		$cancel_buttons = [
+			'{{WRAPPER}} .apeiron-kit-comment-inline-form .apeiron-kit-comment-inline-actions button:not([type="submit"])',
+			'{{WRAPPER}} .apeiron-kit-comment-edit-form .apeiron-kit-comment-inline-actions button:not([type="submit"])',
+		];
+		$this->register_state_style_controls( 'inline_form_button', $cancel_buttons, __( 'Latar Tombol Batal Inline', 'apeiron-kit' ), [ 'background' ] );
+		$this->register_state_style_controls( 'inline_form_button_hover', array_map( static fn( string $selector ): string => $selector . ':hover:not(:disabled)', $cancel_buttons ), __( 'Hover Tombol Batal Inline', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'inline_form_button_focus', array_map( static fn( string $selector ): string => $selector . ':is(:focus, :active, :focus-visible)', $cancel_buttons ), __( 'Fokus Tombol Batal Inline', 'apeiron-kit' ), [ 'border_color' ] );
 
 		$this->end_controls_section();
 	}
@@ -1923,6 +2064,10 @@ trait RegistersStyleControls {
 			]
 		);
 
+		$this->register_state_style_controls( 'pagination_hover', [ $button_selector . ':hover:not(:disabled)' ], __( 'Hover Navigasi', 'apeiron-kit' ), [ 'color', 'background', 'border_color', 'opacity' ] );
+		$this->register_state_style_controls( 'pagination_focus', [ $button_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Navigasi', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'pagination_disabled', [ $button_selector . ':disabled' ], __( 'Navigasi Nonaktif', 'apeiron-kit' ), [ 'color', 'background', 'opacity' ] );
+
 		$this->end_controls_section();
 	}
 
@@ -1989,6 +2134,10 @@ trait RegistersStyleControls {
 				],
 			]
 		);
+
+		$this->register_state_style_controls( 'load_more_hover', [ $button_selector . ':hover:not(:disabled)' ], __( 'Hover Muat Lebih Banyak', 'apeiron-kit' ) );
+		$this->register_state_style_controls( 'load_more_focus', [ $button_selector . ':is(:focus, :active, :focus-visible)' ], __( 'Fokus Muat Lebih Banyak', 'apeiron-kit' ), [ 'border_color' ] );
+		$this->register_state_style_controls( 'load_more_disabled', [ $button_selector . ':disabled' ], __( 'Muat Lebih Banyak Saat Memproses', 'apeiron-kit' ), [ 'opacity' ] );
 
 		$this->end_controls_section();
 	}

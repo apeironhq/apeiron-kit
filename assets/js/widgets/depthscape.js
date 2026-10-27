@@ -546,7 +546,13 @@
             }
 
             if (flags.reveal[key]) {
-                record.units = splitLayer(layer, layerConfig.split, layerConfig.reveal, reduce);
+                if (isEditMode()) {
+                    record.splitContext = gsap.context(function () {
+                        record.units = splitLayer(layer, layerConfig.split, layerConfig.reveal, reduce);
+                    }, layer);
+                } else {
+                    record.units = splitLayer(layer, layerConfig.split, layerConfig.reveal, reduce);
+                }
             }
 
             if (layerConfig.type === 'container' && flags.reveal[key] && layerConfig.split !== 'none' && hasSplitText()) {
@@ -573,12 +579,13 @@
         measureWorld(ctx);
     }
 
-    function buildTimeline(ctx, reduce) {
+    function buildTimeline(ctx, reduce, existingTimeline) {
         var gsap = ctx.gsap;
         var config = ctx.config;
         var scenes = config.scenes || [];
         var keyframes = config.keyframes || [];
-        var timeline = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
+        var timeline = existingTimeline || gsap.timeline({ paused: true, defaults: { ease: 'none' } });
+        if (existingTimeline) { timeline.clear(); }
         var camera = mergeCamera({}, config.camera || {});
         var time = 0;
         var liveSize = isEditMode();
@@ -678,7 +685,19 @@
         });
 
         var distance = function () {
-            return Math.round(built.total * window.innerHeight);
+            var height = window.innerHeight;
+            if (!isEditMode() && ScrollTrigger.isTouch === 1) {
+                // Browser chrome changes height while scrolling; only a width change resets the mobile reference.
+                var frame = document.documentElement;
+                var width = frame && frame.clientWidth || window.innerWidth;
+                height = frame && frame.clientHeight || height;
+                var viewport = ctx.state.scrollViewport;
+                if (!viewport || viewport.width !== width) {
+                    viewport = ctx.state.scrollViewport = { width: width, height: height };
+                }
+                height = viewport.height;
+            }
+            return Math.round(built.total * height);
         };
         var stayFixed = !!config.stayFixed;
 
@@ -1092,27 +1111,48 @@
                         state.scroll.trigger.scrubDuration(value);
                     }
                 },
-                timelineUpdate: function (preserve) {
+                content: function (layer, updateContent) {
+                    var records = (ctx.layersByKey[layer.getAttribute('data-ds-layer')] || []).filter(function (record) {
+                        return record.inner.parentNode === layer;
+                    });
+                    records.forEach(function (record) { if (record.splitContext) { record.splitContext.revert(); } });
+                    updateContent();
+                    records.forEach(function (record) {
+                        if (record.splitContext) {
+                            record.splitContext.add(function () {
+                                record.units = splitLayer(layer, record.config.split, record.config.reveal, reduce);
+                            });
+                        }
+                    });
+                    return records.some(function (record) { return !!record.splitContext; });
+                },
+                timelineUpdate: function (preserve, keepScroll, scrollOnly) {
                     var progress = built.timeline.progress();
                     var active = state.scroll && state.scroll.trigger.isActive;
-                    stopScroll();
-                    // The replacement timeline resets poses itself; keep split-text styles until then.
-                    if (liveTimelineContext) { liveTimelineContext.kill(false); }
-                    else { built.timeline.kill(); }
-                    liveTimelineContext = gsap.context(function () {
-                        Object.assign(ctx.view, cameraState(ctx.config.camera));
-                        Object.keys(ctx.layersByKey).forEach(function (key) {
-                            ctx.layersByKey[key].forEach(function (record) {
-                                gsap.set(record.inner, layerVars(reduce ? calmProps(record.config.start) : record.config.start, ctx.size, record.useBlur && !reduce));
-                            });
-                        });
-                        var hint = stage.querySelector(SELECTOR.hint);
-                        ctx.hint = hint && !hint.hidden ? hint : null;
-                        built = buildTimeline(ctx, reduce);
+                    var existingTimeline = keepScroll ? built.timeline : null;
+                    if (!keepScroll) { stopScroll(); }
+                    if (scrollOnly) {
                         stopScroll = setupScroll(ctx, built, reduce);
-                    }, root);
+                    } else {
+                        // The replacement timeline resets poses itself; keep split-text styles until then.
+                        if (liveTimelineContext) { liveTimelineContext.kill(false); }
+                        else if (keepScroll) { built.timeline.getChildren().forEach(function (tween) { tween.kill(); }); }
+                        else { built.timeline.kill(); }
+                        liveTimelineContext = gsap.context(function () {
+                            Object.assign(ctx.view, cameraState(ctx.config.camera));
+                            Object.keys(ctx.layersByKey).forEach(function (key) {
+                                ctx.layersByKey[key].forEach(function (record) {
+                                    gsap.set(record.inner, layerVars(reduce ? calmProps(record.config.start) : record.config.start, ctx.size, record.useBlur && !reduce));
+                                });
+                            });
+                            var hint = stage.querySelector(SELECTOR.hint);
+                            ctx.hint = hint && !hint.hidden ? hint : null;
+                            built = buildTimeline(ctx, reduce, existingTimeline);
+                            if (!keepScroll) { stopScroll = setupScroll(ctx, built, reduce); }
+                        }, root);
+                    }
                     state.editorPreview.timeline = built.timeline;
-                    if (hasScrollTrigger()) { window.ScrollTrigger.sort(); window.ScrollTrigger.refresh(); }
+                    if (!keepScroll && hasScrollTrigger()) { window.ScrollTrigger.sort(); window.ScrollTrigger.refresh(); }
                     if (preserve && ctx.config.editorScene < 0) {
                         if (active && state.scroll) { var trigger = state.scroll.trigger; trigger.scroll(trigger.start + (trigger.end - trigger.start) * progress); }
                         built.timeline.progress(progress, true);
@@ -1126,19 +1166,21 @@
                 });
             });
 
-            state.resize = function (size, reflowLines) {
-                var progress = built.timeline.progress();
-                built.timeline.progress(0, true);
-                ctx.size.width = size.width;
-                ctx.size.height = size.height;
-                Object.assign(ctx.view, cameraState(ctx.config.camera));
-                Object.keys(ctx.layersByKey).forEach(function (key) {
-                    ctx.layersByKey[key].forEach(function (record) {
-                        var start = record.config.start || {};
-                        gsap.set(record.inner, layerVars(reduce ? calmProps(start) : start, ctx.size, record.useBlur && !reduce));
+            state.resize = function (size, reflowLines, resetPoses) {
+                if (resetPoses || size.width !== ctx.size.width || size.height !== ctx.size.height) {
+                    var progress = built.timeline.progress();
+                    built.timeline.progress(0, true);
+                    ctx.size.width = size.width;
+                    ctx.size.height = size.height;
+                    Object.assign(ctx.view, cameraState(ctx.config.camera));
+                    Object.keys(ctx.layersByKey).forEach(function (key) {
+                        ctx.layersByKey[key].forEach(function (record) {
+                            var start = record.config.start || {};
+                            gsap.set(record.inner, layerVars(reduce ? calmProps(start) : start, ctx.size, record.useBlur && !reduce));
+                        });
                     });
-                });
-                built.timeline.invalidate().progress(progress, true);
+                    built.timeline.invalidate().progress(progress, true);
+                }
                 measureWorld(ctx);
                 ctx.lastSignature = '';
                 renderWorld(ctx);
@@ -1405,13 +1447,14 @@
         stopLifecycleWatchers();
     }
 
-    function rebuild(root) {
+    function rebuild(root, updateContent) {
         var state = states.get(root);
         if (!state || !state.mm) {
             return;
         }
 
         state.mm.revert();
+        if (updateContent) { updateContent(); }
         build(state);
     }
 
@@ -1449,16 +1492,67 @@
     var editorWatchBound = false;
     var editorRefreshTimer = null;
 
+    function editorTextUpdate(layer, values, settings) {
+        var parts = { eyebrow: 'eyebrow', title: 'title', subtitle: 'subtitle', button_text: 'button' };
+        var keys = Object.keys(values).filter(function (key) { return Object.prototype.hasOwnProperty.call(parts, key); });
+        if (!keys.length) { return null; }
+        if (!layer || !layer.classList.contains('is-type-text')) { return false; }
+        var link = settings && settings.get('button_link');
+        var dynamic = settings && settings.get('__dynamic__');
+        if (dynamic && dynamic.toJSON) { dynamic = dynamic.toJSON(); }
+        if (keys.indexOf('button_text') >= 0 && !layer.querySelector('.apeiron-depthscape__button')
+            && ((link && link.url) || (dynamic && dynamic.button_link))) { return false; }
+        return function () {
+            var doc = layer.ownerDocument;
+            var text = layer.querySelector('.apeiron-depthscape__text');
+            var idle = layer.querySelector(SELECTOR.idle);
+            var order = ['eyebrow', 'title', 'subtitle', 'body', 'button'];
+            keys.forEach(function (key) {
+                var value = typeof values[key] === 'string' || typeof values[key] === 'number' ? String(values[key]).trim() : '';
+                var name = parts[key];
+                var node = text && text.querySelector('.apeiron-depthscape__' + name);
+                if (!value) { if (node) { node.remove(); } return; }
+                if (!text) {
+                    text = doc.createElement('div');
+                    text.className = 'apeiron-depthscape__text';
+                    idle.appendChild(text);
+                }
+                if (!node) {
+                    node = doc.createElement(name === 'button' ? 'a' : 'span');
+                    node.className = 'apeiron-depthscape__' + name;
+                    if (name === 'button') { node.setAttribute('role', 'button'); }
+                    else { node.setAttribute('data-ds-split', ''); }
+                    var next = Array.from(text.children).find(function (child) {
+                        return order.indexOf(child.className.replace('apeiron-depthscape__', '')) > order.indexOf(name);
+                    });
+                    text.insertBefore(node, next || null);
+                }
+                node.textContent = '';
+                (name === 'title' ? value.split(/\r\n|\r|\n/) : [value]).forEach(function (line, index) {
+                    if (index) { node.appendChild(doc.createElement('br')); }
+                    node.appendChild(doc.createTextNode(line));
+                });
+            });
+            var empty = idle.querySelector('.apeiron-depthscape__empty');
+            if (text && text.children.length) { if (empty) { empty.remove(); } }
+            else {
+                if (text) { text.remove(); }
+                if (!empty) { empty = doc.createElement('div'); empty.className = 'apeiron-depthscape__empty'; idle.appendChild(empty); }
+                empty.textContent = layer.getAttribute('data-ds-layer');
+            }
+        };
+    }
+
     function updateEditorPreview(root, update) {
         var state = states.get(root);
         if (!state || !state.editorPreview || !update || !update.values) { return false; }
         var config = state.config;
         var target = config;
-        var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_mode|cam_start_(x|y|z|rx|ry|rz))$/;
+        var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
         if (update.scope === 'layer' || update.scope === 'scene') {
             if (!Number.isInteger(update.index) || update.index < 0) { return false; }
             target = (update.scope === 'layer' ? config.layers : config.scenes)[update.index];
-            pattern = update.scope === 'layer' ? /^(depth|anchor|layer_key|layer_space|fit|video_loop|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/ : /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
+            pattern = update.scope === 'layer' ? /^(depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/ : /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
         } else if (update.scope === 'keyframe') {
             if (!Array.isArray(update.rows)) { return false; }
             pattern = /^kf_(layer|scene|at|duration|ease|x|y|scale|rotate|opacity|blur|reveal)$/;
@@ -1469,13 +1563,16 @@
         if (update.scope === 'layer' && !layer) { return false; }
         if (keys.indexOf('anchor') >= 0 && ['center', 'top', 'bottom'].indexOf(update.values.anchor) < 0) { return false; }
         var hint = root.querySelector(SELECTOR.hint);
-        if (keys.indexOf('show_hint') >= 0 && !hint) { return false; }
+        if ((keys.indexOf('show_hint') >= 0 || keys.indexOf('hint_text') >= 0) && !hint) { return false; }
+        var updateText = editorTextUpdate(layer, update.values, update.settings);
+        if (updateText === false) { return false; }
 
         var startLimits = { x: [0, -500, 500], y: [0, -500, 500], scale: [1, 0, 20], rotate: [0, -720, 720], opacity: [1, 0, 1], blur: [0, 0, 40] };
         var cameraLimits = { x: [0, -200, 200], y: [0, -200, 200], z: [0, -3000, 2000], rx: [0, -60, 60], ry: [0, -60, 60], rz: [0, -180, 180] };
         var numeric = { smoothness: ['scrub', 1, 0, 3], wind_strength: ['wind', 7, 0, 20], camera_breath: ['breath', 0, 0, 10], tilt_strength: ['tilt', 4, 0, 20] };
         var switches = { snap: 'snap', stay_fixed: 'stayFixed', cover_autoplay: 'coverPlay', idle_enabled: 'idle', pointer_tilt: 'pointer', gyro_tilt: 'gyro' };
         var rebuildTimeline = false;
+        var scrollChanged = false;
         var fullRebuild = false;
         var idleChanged = false;
         var particlesChanged = false;
@@ -1517,7 +1614,14 @@
         }
         keys.forEach(function (key) {
             var value = update.values[key];
-            if (key === 'depth') {
+            if (/^(eyebrow|title|subtitle|button_text)$/.test(key)) {
+                resize = true;
+            } else if (key === 'hint_text') {
+                var label = hint.querySelector('.apeiron-depthscape__hint-text');
+                var text = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+                if (text && !label) { label = root.ownerDocument.createElement('span'); label.className = 'apeiron-depthscape__hint-text'; hint.appendChild(label); }
+                if (label) { if (text) { label.textContent = text; } else { label.remove(); } }
+            } else if (key === 'depth') {
                 target.z = target.space === 'screen' ? 0 : number(value, [0, -3000, 900]);
             } else if (key === 'anchor') {
                 layer.classList.remove('is-anchor-center', 'is-anchor-top', 'is-anchor-bottom');
@@ -1543,7 +1647,7 @@
             } else if (key === 'video_loop') {
                 var video = layer.querySelector('video');
                 if (video) { video.loop = value === 'yes'; }
-            } else if (key.indexOf('idle_') === 0) {
+            } else if (update.scope === 'layer' && key.indexOf('idle_') === 0) {
                 var idle = key.slice(5);
                 target.idle[idle] = idle === 'type' ? option(value, ['none', 'float', 'sway', 'breathe', 'drift'], 'none') : number(value, idle === 'speed' ? [6, 0.5, 60] : [10, 0, 200]);
                 idleChanged = true;
@@ -1562,12 +1666,13 @@
                 config.compensate = value === 'yes';
             } else if (key === 'editor_preview') {
                 config.editorScene = rawNumber(value) === null ? -1 : Math.trunc(number(value, [0, 0, 99]));
-                rebuildTimeline = true;
+                scrollChanged = true;
             } else if (key === 'scene_label') {
                 // The label is editor-only; the timeline uses stable numbered labels.
             } else if (key === 'scene_length' || key === 'scene_ease') {
                 target[key === 'scene_length' ? 'length' : 'ease'] = key === 'scene_length' ? number(value, [100, 10, 600]) : ease(value, 'power2.inOut');
                 rebuildTimeline = true;
+                scrollChanged = scrollChanged || key === 'scene_length';
             } else if (Object.prototype.hasOwnProperty.call(numeric, key)) {
                 var definition = numeric[key];
                 config[definition[0]] = number(value, definition.slice(1));
@@ -1577,10 +1682,10 @@
                 config[switches[key]] = value === 'yes';
                 idleChanged = idleChanged || key === 'idle_enabled';
                 motionChanged = motionChanged || key === 'pointer_tilt' || key === 'gyro_tilt';
-                rebuildTimeline = rebuildTimeline || key === 'snap' || key === 'stay_fixed';
+                scrollChanged = scrollChanged || key === 'snap' || key === 'stay_fixed';
             } else if (key === 'snap_ease') {
                 config.snapEase = ease(value, 'power2.inOut');
-                rebuildTimeline = true;
+                scrollChanged = true;
             } else if (key.indexOf('particle_') === 0) {
                 var part = key.slice(9);
                 if (part === 'count') { config.particles.count = Math.trunc(number(value, [0, 0, 60])); }
@@ -1607,7 +1712,7 @@
         if (fullRebuild) {
             var progress = state.editorPreview.timeline.progress();
             var activeScroll = state.scroll && state.scroll.trigger.isActive;
-            rebuild(root);
+            rebuild(root, updateText);
             if (config.editorScene < 0 && keys.indexOf('editor_preview') < 0 && state.editorPreview) {
                 if (activeScroll && state.scroll) {
                     var trigger = state.scroll.trigger;
@@ -1617,13 +1722,19 @@
                 state.editorPreview.render();
             }
         } else {
+            var keepScroll = !scrollChanged;
+            if (updateText) {
+                var resplit = state.editorPreview.content(layer, updateText);
+                rebuildTimeline = resplit || rebuildTimeline;
+            }
             state.editorPreview.render();
             if (idleChanged) { state.editorPreview.idle(); }
             if (particlesChanged) { state.editorPreview.particles(); }
             if (motionChanged) { state.editorPreview.motion(keys); }
             if (scrubChanged) { state.editorPreview.scrub(); }
-            if (rebuildTimeline) { state.editorPreview.timelineUpdate(keys.indexOf('editor_preview') < 0); }
-            else if (resize) { state.resize(state.size, false); }
+            if (rebuildTimeline) { state.editorPreview.timelineUpdate(keys.indexOf('editor_preview') < 0, keepScroll); }
+            else if (scrollChanged) { state.editorPreview.timelineUpdate(keys.indexOf('editor_preview') < 0, false, true); }
+            else if (resize) { state.resize(state.size, false, true); }
         }
         state.lastEditorChange = update.settings && !update.css ? { settings: update.settings, keys: Object.keys(update.settings.changedAttributes() || update.values) } : null;
         return true;

@@ -71,6 +71,11 @@
     mask-image: url('../icon/cover.svg');
 }
 
+.apeiron-icon-gift {
+    -webkit-mask-image: url('../icon/gift.svg');
+    mask-image: url('../icon/gift.svg');
+}
+
 .apeiron-icon-depthscape {
     -webkit-mask-image: url('../icon/depthscape.svg');
     mask-image: url('../icon/depthscape.svg');

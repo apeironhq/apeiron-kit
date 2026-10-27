@@ -17,6 +17,45 @@ final class LayerRepeater extends \Elementor\Control_Repeater {
 		return 'apeiron_depthscape_layers';
 	}
 
+	/**
+	 * On template import Elementor fills every row with field defaults, so non-image layers (container,
+	 * text, …) carry the placeholder image and the importer downloads it once per row. Only real images
+	 * are imported; the skipped values are put back unchanged.
+	 *
+	 * @param mixed $settings
+	 * @param array $control_data
+	 * @return mixed
+	 */
+	public function on_import( $settings, $control_data = [] ) {
+		if ( ! is_array( $settings ) ) {
+			return parent::on_import( $settings, $control_data );
+		}
+
+		$placeholder = \Elementor\Utils::get_placeholder_image_src();
+		$skipped     = [];
+
+		foreach ( $settings as $index => $item ) {
+			if ( ! is_array( $item ) || ! isset( $item['image'] ) ) {
+				continue;
+			}
+
+			$image  = is_array( $item['image'] ) ? $item['image'] : [];
+			$is_set = ! empty( $image['id'] ) || ( ! empty( $image['url'] ) && $placeholder !== $image['url'] );
+			if ( 'image' !== ( $item['layer_type'] ?? 'image' ) || ! $is_set ) {
+				$skipped[ $index ]           = $item['image'];
+				$settings[ $index ]['image'] = [];
+			}
+		}
+
+		$settings = parent::on_import( $settings, $control_data );
+
+		foreach ( $skipped as $index => $image ) {
+			$settings[ $index ]['image'] = $image;
+		}
+
+		return $settings;
+	}
+
 	public function enqueue() {
 		$relative = 'assets/css/editor-depthscape.css';
 		$path     = APEIRON_KIT_PATH . $relative;

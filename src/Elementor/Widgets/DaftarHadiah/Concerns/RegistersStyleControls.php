@@ -117,7 +117,7 @@ trait RegistersStyleControls {
 		$this->add_group_control( Group_Control_Border::get_type(), [ 'name' => 'status_border', 'selector' => $this->hadiah_selector( 'status' ) ] );
 		$this->add_control( 'quantity_style_heading', [ 'label' => __( 'Jumlah Awal', 'apeiron-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ] );
 		$this->hadiah_text_style( 'quantity', $this->hadiah_selector( 'quantity' ) );
-		$this->hadiah_text_style( 'manual_note', $this->hadiah_selector( 'manual-note' ) );
+		$this->hadiah_text_style( 'manual_note', $this->hadiah_selector( 'manual-note' ) . ', ' . $this->hadiah_selector( 'notice' ) . '[data-gift-notice]:not(.is-error):not(.is-success)' );
 		$this->end_controls_section();
 
 		$this->hadiah_section( 'buttons', __( 'Tombol', 'apeiron-kit' ) );
@@ -194,7 +194,13 @@ trait RegistersStyleControls {
 		$this->end_controls_tabs();
 		$this->add_control( 'notice_style_heading', [ 'label' => __( 'Keterangan & Validasi', 'apeiron-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ] );
 		$this->hadiah_text_style( 'notice', $this->hadiah_selector( 'notice' ) );
-		$this->hadiah_color( 'error_color', __( 'Warna Pesan Error', 'apeiron-kit' ), '{{WRAPPER}} .apeiron-daftar-hadiah', '--dh-error' );
+		$this->add_control( 'error_color', [
+			'label' => __( 'Warna Pesan Error', 'apeiron-kit' ), 'type' => Controls_Manager::COLOR,
+			'selectors' => [
+				'{{WRAPPER}} .apeiron-daftar-hadiah' => '--dh-error: {{VALUE}};',
+				$this->hadiah_selector( 'notice' ) . '.is-error, ' . $this->hadiah_selector( 'field-error' ) => 'color: {{VALUE}};',
+			],
+		] );
 		$this->hadiah_color( 'notice_background', __( 'Latar Keterangan', 'apeiron-kit' ), $this->hadiah_selector( 'notice' ), 'background-color' );
 		$this->hadiah_dimensions( 'notice_padding', __( 'Padding Keterangan', 'apeiron-kit' ), $this->hadiah_selector( 'notice' ), 'padding' );
 		$this->hadiah_dimensions( 'notice_radius', __( 'Radius Keterangan', 'apeiron-kit' ), $this->hadiah_selector( 'notice' ), 'border-radius' );

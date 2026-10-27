@@ -101,6 +101,7 @@ return [
 	'ApeironKit\Support\DaftarHadiahSettings' => 'Support/DaftarHadiahSettings.php',
 	'ApeironKit\Support\CoverSettings' => 'Support/CoverSettings.php',
 	'ApeironKit\Support\FormOrderSettings' => 'Support/FormOrderSettings.php',
+	'ApeironKit\Support\FormOrderOutbox' => 'Support/FormOrderOutbox.php',
 	'ApeironKit\Support\CoverTypeRegistry' => 'Support/CoverTypeRegistry.php',
 	'ApeironKit\Support\ErrorLogger' => 'Support/ErrorLogger.php',
 	'ApeironKit\Support\LegacyContentCleanup' => 'Support/LegacyContentCleanup.php',

@@ -17,6 +17,12 @@
     }
 }
 
+@media (hover: none) and (pointer: coarse) {
+    .apeiron-depthscape {
+        overflow-x: clip;
+    }
+}
+
 .apeiron-depthscape__stage {
     position: relative;
     width: 100%;

@@ -3,6 +3,7 @@
 namespace ApeironKit\Admin\Tabs;
 
 use ApeironKit\Admin\Ajax\FormOrderHandler;
+use ApeironKit\Support\FormOrderOutbox;
 use ApeironKit\Support\FormOrderSettings;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -102,6 +103,7 @@ class FormOrderTab extends AbstractTab {
 									</div>
 								</div>
 								<button type="button" class="apeiron-btn apeiron-btn--secondary" id="apeiron-form-order-test"><?php esc_html_e( 'Test Connection', 'apeiron-kit' ); ?></button>
+								<?php $this->render_outbox(); ?>
 								</fieldset>
 							</div>
 							<div class="apeiron-actions apeiron-form-order-admin__actions">
@@ -114,6 +116,44 @@ class FormOrderTab extends AbstractTab {
 			</div>
 		</section>
 		<?php $this->render_config_payload( 'form-order', [ 'ajaxUrl' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( FormOrderHandler::NONCE_ACTION ), 'storageProvider' => $settings['storage_provider'] ] ); ?>
+		<?php
+	}
+
+	/** Status antrean kirim ulang: pesanan yang tertunda karena API Form Order sempat tidak dapat dihubungi. */
+	private function render_outbox(): void {
+		$summary = FormOrderOutbox::summary();
+		$sent = isset( $_GET['outbox_sent'] ) ? absint( $_GET['outbox_sent'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- hanya tampilan hasil.
+		$discarded = isset( $_GET['outbox_discarded'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$retry_url = wp_nonce_url( admin_url( 'admin-post.php?action=' . FormOrderOutbox::RETRY_ACTION ), FormOrderOutbox::RETRY_ACTION );
+		$discard_url = wp_nonce_url( admin_url( 'admin-post.php?action=' . FormOrderOutbox::DISCARD_ACTION ), FormOrderOutbox::DISCARD_ACTION );
+		$last_error = '';
+		foreach ( FormOrderOutbox::items() as $item ) {
+			if ( is_array( $item ) && ! empty( $item['last_error'] ) ) { $last_error = (string) $item['last_error']; }
+		}
+		?>
+		<div class="apeiron-form-order-admin__outbox" data-order-outbox>
+			<p class="apeiron-label"><?php esc_html_e( 'Antrean kirim ulang', 'apeiron-kit' ); ?></p>
+			<?php if ( null !== $sent ) : ?>
+				<p class="apeiron-hint" role="status"><?php echo esc_html( sprintf( /* translators: %d: jumlah pesanan */ __( '%d pesanan berhasil dikirim ulang.', 'apeiron-kit' ), $sent ) ); ?></p>
+			<?php endif; ?>
+			<?php if ( $discarded ) : ?>
+				<p class="apeiron-hint" role="status"><?php esc_html_e( 'Pesanan yang berhenti dikirim ulang telah dibuang.', 'apeiron-kit' ); ?></p>
+			<?php endif; ?>
+			<?php if ( 0 === $summary['waiting'] + $summary['stopped'] ) : ?>
+				<p class="apeiron-hint"><?php esc_html_e( 'Tidak ada pesanan tertunda. Bila API sempat tidak dapat dihubungi, pesanan disimpan di sini dan dikirim ulang otomatis.', 'apeiron-kit' ); ?></p>
+			<?php else : ?>
+				<p class="apeiron-hint"><?php echo esc_html( sprintf( /* translators: 1: menunggu, 2: berhenti */ __( '%1$d pesanan menunggu dikirim ulang otomatis, %2$d berhenti (perlu diperiksa).', 'apeiron-kit' ), $summary['waiting'], $summary['stopped'] ) ); ?></p>
+				<?php if ( '' !== $last_error ) : ?>
+					<p class="apeiron-hint"><?php echo esc_html( sprintf( /* translators: %s: pesan error */ __( 'Kendala terakhir: %s', 'apeiron-kit' ), $last_error ) ); ?></p>
+				<?php endif; ?>
+				<p>
+					<a class="apeiron-btn apeiron-btn--secondary" href="<?php echo esc_url( $retry_url ); ?>"><?php esc_html_e( 'Kirim ulang sekarang', 'apeiron-kit' ); ?></a>
+					<?php if ( $summary['stopped'] > 0 ) : ?>
+						<a class="apeiron-btn apeiron-btn--secondary" href="<?php echo esc_url( $discard_url ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Buang pesanan yang berhenti dikirim ulang? Data pesanan tersebut akan hilang dari antrean.', 'apeiron-kit' ) ); ?>');"><?php esc_html_e( 'Buang yang berhenti', 'apeiron-kit' ); ?></a>
+					<?php endif; ?>
+				</p>
+			<?php endif; ?>
+		</div>
 		<?php
 	}
 }

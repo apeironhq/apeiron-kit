@@ -102,8 +102,13 @@ final class FormOrderSettings {
 	}
 
 	/** Write-only API contract; neither records nor credentials are returned to guests. */
-	public static function send_to_api( array $fields, array $labels, array $context, string $submission_id, ?string &$failure = null, bool $test = false ): bool {
+	/**
+	 * @param array{sections?:array<string,string>,options?:array<string,array<string,string>>} $meta Nama step per field & teks opsi pilihan (opsional).
+	 * @param bool|null $retryable Diisi false bila kegagalan tidak akan berhasil walau dikirim ulang (data ditolak server / bentrok identitas).
+	 */
+	public static function send_to_api( array $fields, array $labels, array $context, string $submission_id, ?string &$failure = null, bool $test = false, array $meta = [], ?bool &$retryable = null ): bool {
 		$failure = null;
+		$retryable = true;
 		$url = self::api_url();
 		$token = DaftarHadiahSettings::api_token();
 		if ( ! self::valid_api_url( $url ) || ! DaftarHadiahSettings::valid_api_token( $token ) ) {
@@ -122,6 +127,7 @@ final class FormOrderSettings {
 				|| ! is_string( $context['element_id'] ?? null ) || ! preg_match( '/^[A-Za-z0-9_-]{1,100}$/D', $context['element_id'] )
 				|| ! preg_match( '/^[a-f0-9]{64}$/D', $submission_id ) || ! $fields || count( $fields ) > 200 ) {
 				$failure = __( 'Konteks atau data pesanan Form Order tidak valid.', 'apeiron-kit' );
+				$retryable = false;
 				return false;
 			}
 			$scope += array_intersect_key( $context, array_flip( [ 'post_id', 'document_id', 'element_id' ] ) );
@@ -129,6 +135,22 @@ final class FormOrderSettings {
 				'post_title' => sanitize_text_field( html_entity_decode( (string) get_the_title( $context['post_id'] ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) ),
 				'request_id' => $submission_id, 'fields' => $fields, 'labels' => $labels,
 			];
+			// Opsional: server lama mengabaikannya. Dipaksa objek JSON (kunci angka tidak menjadi array).
+			$sections = array_filter( (array) ( $meta['sections'] ?? [] ), static function ( $title, $key ) use ( $fields ): bool {
+				return is_string( $title ) && '' !== trim( $title ) && array_key_exists( $key, $fields );
+			}, ARRAY_FILTER_USE_BOTH );
+			if ( $sections ) {
+				$body['field_sections'] = (object) $sections;
+			}
+			$options = [];
+			foreach ( (array) ( $meta['options'] ?? [] ) as $key => $map ) {
+				if ( array_key_exists( $key, $fields ) && is_array( $map ) && $map ) {
+					$options[ $key ] = (object) array_slice( $map, 0, 50, true );
+				}
+			}
+			if ( $options ) {
+				$body['option_labels'] = (object) $options;
+			}
 		}
 		$local_api = DaftarHadiahSettings::is_local_api_url( $url );
 		$args = [
@@ -143,12 +165,19 @@ final class FormOrderSettings {
 		if ( in_array( $status, [ 401, 403 ], true ) ) { $failure = __( 'Token Website tidak memiliki akses penyimpanan Form Order.', 'apeiron-kit' ); return false; }
 		if ( 429 === $status ) { $failure = __( 'Batas permintaan API Form Order tercapai. Silakan coba lagi nanti.', 'apeiron-kit' ); return false; }
 		$result = json_decode( wp_remote_retrieve_body( $response ), true );
+		// Data ditolak server (selain izin, batas permintaan, atau gangguan server) tidak akan berhasil walau dikirim ulang.
+		if ( $status >= 400 && $status < 500 && ! in_array( $status, [ 401, 403, 408, 429 ], true ) ) {
+			$retryable = false;
+		}
 		if ( ! is_array( $result ) || self::API_SERVICE !== ( $result['service'] ?? '' ) || self::API_VERSION !== ( $result['version'] ?? '' )
 			|| 1 !== ( $result['schema_version'] ?? null ) || $body['operation'] !== ( $result['operation'] ?? '' ) || $body['correlation_id'] !== ( $result['correlation_id'] ?? '' ) ) {
 			$failure = __( 'Respons API Form Order tidak sesuai kontrak form-order-api-v1.', 'apeiron-kit' );
 			return false;
 		}
 		if ( $status < 200 || $status >= 300 || true !== ( $result['success'] ?? false ) ) {
+			if ( 'request_conflict' === ( $result['error'] ?? '' ) ) {
+				$retryable = false;
+			}
 			$failure = 'request_conflict' === ( $result['error'] ?? '' ) ? __( 'Identitas pengiriman sudah dipakai untuk pesanan berbeda. Muat ulang formulir.', 'apeiron-kit' ) : __( 'Backend API Form Order belum mengonfirmasi penyimpanan pesanan.', 'apeiron-kit' );
 			return false;
 		}

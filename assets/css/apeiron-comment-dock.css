@@ -1067,7 +1067,7 @@
 	overflow-y: auto;
 	overflow-x: hidden;
 	scrollbar-width: thin;
-	scrollbar-color: rgba(15, 23, 42, 0.15) transparent;
+	scrollbar-color: var(--apeiron-comment-scrollbar-thumb, rgba(15, 23, 42, 0.15)) var(--apeiron-comment-scrollbar-track, transparent);
 }
 
 .apeiron-comment-dock .apeiron-kit-comment-list.apeiron-kit-comment-list-scrollable {
@@ -1081,18 +1081,18 @@
 
 .apeiron-comment-dock .apeiron-kit-comment-list.is-scrollable::-webkit-scrollbar-track,
 .apeiron-comment-dock .apeiron-kit-comment-list.apeiron-kit-comment-list-scrollable::-webkit-scrollbar-track {
-	background: transparent;
+	background: var(--apeiron-comment-scrollbar-track, transparent);
 }
 
 .apeiron-comment-dock .apeiron-kit-comment-list.is-scrollable::-webkit-scrollbar-thumb,
 .apeiron-comment-dock .apeiron-kit-comment-list.apeiron-kit-comment-list-scrollable::-webkit-scrollbar-thumb {
-	background: rgba(15, 23, 42, 0.15);
+	background: var(--apeiron-comment-scrollbar-thumb, rgba(15, 23, 42, 0.15));
 	border-radius: 8px;
 }
 
 .apeiron-comment-dock .apeiron-kit-comment-list.is-scrollable::-webkit-scrollbar-thumb:hover,
 .apeiron-comment-dock .apeiron-kit-comment-list.apeiron-kit-comment-list-scrollable::-webkit-scrollbar-thumb:hover {
-	background: rgba(15, 23, 42, 0.25);
+	background: var(--apeiron-comment-scrollbar-hover, rgba(15, 23, 42, 0.25));
 }
 
 /* -------------------------------------------------------------------------

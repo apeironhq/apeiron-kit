@@ -87,7 +87,7 @@ trait RegistersContentControls {
 				'label'       => __( 'File Video', 'apeiron-kit' ),
 				'type'        => Controls_Manager::MEDIA,
 				'media_types' => [ 'video' ],
-				'dynamic'     => [ 'active' => true ],
+				'dynamic'     => [ 'active' => true, 'categories' => [ \Elementor\Modules\DynamicTags\Module::MEDIA_CATEGORY ] ],
 				'condition'   => [ 'layer_type' => 'video' ],
 				'description' => __( 'Pilih video dari Media Library. Video diputar otomatis tanpa suara saat layer terlihat dan dijeda saat tersembunyi.', 'apeiron-kit' ),
 			]

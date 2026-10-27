@@ -2,6 +2,28 @@
     'use strict';
 
     var registered = false;
+    var WysiwygView;
+
+    function isCurrentDeviceControl(control) {
+        // Group boundaries must stay mounted even when their responsive field is hidden.
+        var popover = control.get('popover');
+        if (popover && (popover.start || popover.end)) { return true; }
+        var responsive = control.get('responsive');
+        if (!responsive || (responsive.min && responsive.max)) { return true; }
+        var device = responsive.max || responsive.min;
+        return !device || device === window.elementor.channels.deviceMode.request('currentMode');
+    }
+
+    function orderControlViews(view, controls) {
+        var ordered = Object.create(null);
+        var index = 0;
+        controls.forEach(function (control) {
+            var child = view.children.findByModel(control);
+            if (child) { child._index = index++; ordered[child.cid] = child; }
+        });
+        // Marionette's findByIndex reads insertion order, including for popover ownership.
+        view.children._views = ordered;
+    }
 
     function registerLivePreview(editor) {
         var LiveView;
@@ -16,14 +38,14 @@
                             var owner = this.getEditModel().get('settings');
                             var scope = 'root';
                             var index = -1;
-                            var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_mode|cam_start_(x|y|z|rx|ry|rz))$/;
+                            var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
                             if (settings !== owner) {
                                 var layers = owner.get('layers');
                                 var scenes = owner.get('scenes');
                                 index = layers ? layers.indexOf(settings) : -1;
                                 if (index >= 0) {
                                     scope = 'layer';
-                                    pattern = /^(depth|anchor|layer_key|layer_space|fit|video_loop|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/;
+                                    pattern = /^(depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/;
                                 } else {
                                     scope = 'scene';
                                     index = scenes ? scenes.indexOf(settings) : -1;
@@ -38,7 +60,10 @@
                             }
                             var values = {};
                             var renderStyles = false;
+                            var dynamic = settings.get('__dynamic__') || {};
+                            if (dynamic.toJSON) { dynamic = dynamic.toJSON(); }
                             var supported = (scope === 'root' || index >= 0) && Object.keys(changes).every(function (name) {
+                                if (dynamic[name]) { return false; }
                                 if (pattern.test(name)) { values[name] = changes[name]; return true; }
                                 var control = settings.getControl(name);
                                 if (control && control.render_type !== 'template' && control.selectors && Object.keys(control.selectors).length) {
@@ -77,7 +102,7 @@
 
         var NativeEditor = page.view;
         function isDepthscapeStyle(view) {
-            return view.model.get('widgetType') === 'apeiron-depthscape' && view.getOption('tab') === 'style';
+            return view.model.get('widgetType') === 'apeiron-depthscape';
         }
 
         page.view = NativeEditor.extend({
@@ -93,6 +118,10 @@
                     control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
                     control.depthscapeDefaultsReady = true;
                 }
+                if (isDepthscapeStyle(this) && control.get('type') === 'repeater' && /^(scenes|keyframes)$/.test(control.get('name'))) {
+                    return editor.getControlView('apeiron_depthscape_layers');
+                }
+                if (isDepthscapeStyle(this) && control.get('type') === 'wysiwyg') { return WysiwygView; }
                 return NativeEditor.prototype.getChildView.apply(this, arguments);
             },
             filter: function (control, index, collection) {
@@ -102,9 +131,11 @@
                 if (!isDepthscapeStyle(this)) {
                     return true;
                 }
+                if (!isCurrentDeviceControl(control)) { return false; }
                 var owner = this.depthscapePopoverOwners && this.depthscapePopoverOwners.get(control.cid);
                 if (owner) { return this.depthscapeLoadedPopovers.has(owner); }
-                if (control.get('popover')) { return true; }
+                var popover = control.get('popover');
+                if (popover && (popover.start || popover.end)) { return true; }
                 var settings = this.model.get('settings');
                 return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
             },
@@ -125,7 +156,7 @@
                         this.depthscapePendingPopover = owner;
                         this.scheduleDepthscapePopover();
                     } else {
-                        this._renderChildren();
+                        this.syncDepthscapeControls();
                         control = NativeEditor.prototype.getControlViewByName.call(this, name);
                     }
                 }
@@ -134,6 +165,9 @@
             onRenderCollection: function () {
                 NativeEditor.prototype.onRenderCollection.apply(this, arguments);
                 if (!isDepthscapeStyle(this)) { return; }
+                this.addDepthscapePopoverHeaders();
+            },
+            addDepthscapePopoverHeaders: function () {
                 this.children.each(function (control) {
                     if (control.model.get('type') !== 'popover_toggle' || control.isGlobalActive()) { return; }
                     var popover = control.$el.next('.elementor-controls-popover');
@@ -146,6 +180,39 @@
                     popover.prepend(header.append(tools));
                 });
             },
+            syncDepthscapeControls: function () {
+                var view = this;
+                var controls = this.collection.filter(this.filter, this);
+                var active = new Set(controls.map(function (control) { return control.cid; }));
+                this.children.filter(function (child) { return !active.has(child.model.cid); }).forEach(function (child) {
+                    view.removeChildView(child);
+                });
+                orderControlViews(this, controls);
+                var owners = new Set();
+                controls.forEach(function (control, index) {
+                    if (!view.children.findByModel(control)) {
+                        view.addChild(control, view.getChildView(control), index);
+                        orderControlViews(view, controls);
+                        var owner = view.depthscapePopoverOwners.get(control.cid);
+                        if (owner) { owners.add(owner); }
+                    }
+                });
+                owners.forEach(function (owner) {
+                    var members = view.children.filter(function (child) { return view.depthscapePopoverOwners.get(child.model.cid) === owner; });
+                    var popover = (view.popovers || []).find(function (item) { return item.popoverToggleView.model.get('name') === owner; });
+                    if (popover) {
+                        members.forEach(function (child) { popover.addChild(child); });
+                    } else {
+                        var group = { children: { each: function (callback) { members.forEach(callback); } } };
+                        window.elementorModules.editor.views.ControlsStack.handlePopovers(group);
+                        view.popovers = (view.popovers || []).concat(group.popovers);
+                        popover = group.popovers[0];
+                    }
+                    if (popover) { popover.$popover.insertAfter(popover.popoverToggleView.$el); }
+                });
+                this.addDepthscapePopoverHeaders();
+                this.depthscapeVisibleControls = this.depthscapeControlSignature();
+            },
             activateSection: function (section) {
                 if (isDepthscapeStyle(this) && this.activeSection !== section && this.depthscapeLoadedPopovers) {
                     this.depthscapeLoadedPopovers.clear();
@@ -154,6 +221,10 @@
                     this.depthscapePopoverFrame = null;
                 }
                 return NativeEditor.prototype.activateSection.apply(this, arguments);
+            },
+            onDeviceModeChange: function () {
+                NativeEditor.prototype.onDeviceModeChange.apply(this, arguments);
+                if (isDepthscapeStyle(this)) { this.scheduleDepthscapePopover(); }
             },
             initialize: function () {
                 NativeEditor.prototype.initialize.apply(this, arguments);
@@ -170,7 +241,7 @@
                 this.depthscapeLoadedPopovers = new Set();
                 this.collection.each(function (control) {
                     var popover = control.get('popover');
-                    if (popover && popover.start && control.get('tab') === 'style') {
+                    if (popover && popover.start && control.get('tab') === view.getOption('tab')) {
                         owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
                         if (owner) { view.depthscapePopoverToggles.add(owner); }
                     }
@@ -206,12 +277,13 @@
                     var selector = 'input, select, textarea, button, [tabindex]';
                     var focused = view.children.find(function (child) { return child.el.contains(document.activeElement); });
                     var focusIndex = focused ? Array.from(focused.el.querySelectorAll(selector)).indexOf(document.activeElement) : -1;
-                    view._renderChildren();
+                    view.syncDepthscapeControls();
                     open.forEach(function (name) {
                         var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
                         if (!toggle) { return; }
-                        if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) { toggle.onShow(); }
-                        toggle.activate();
+                        var popover = toggle.$el.next('.elementor-controls-popover');
+                        if (!popover.attr('data-on-hide')) { toggle.onShow(); }
+                        if (!popover.is(':visible')) { toggle.activate(); }
                     });
                     if (focused && focusIndex >= 0) {
                         var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
@@ -244,25 +316,55 @@
             }
         }
 
+        var NativeWysiwyg = editor.getControlView('wysiwyg');
+        WysiwygView = NativeWysiwyg.extend({
+            onBeforeDestroy: function () {
+                flushEditor(this);
+                var id = this.editorID;
+                var quicktags = window.QTags && window.QTags.instances[id];
+                NativeWysiwyg.prototype.onBeforeDestroy.apply(this, arguments);
+                if (quicktags && !quicktags.theButtons) {
+                    // WordPress schedules toolbar initialization after ready; let it finish before disposal.
+                    window.QTags.instances[id] = quicktags;
+                    var event = 'quicktags-init.apeironDepthscape' + id;
+                    window.jQuery(document).on(event, function (e, initialized) {
+                        if (initialized !== quicktags) { return; }
+                        delete window.QTags.instances[id];
+                        window.jQuery(document).off(event);
+                    });
+                }
+            },
+        });
+
         var DeferredRow = NativeRow.extend({
             initialize: function (options) {
                 // Closed rows need their title and settings, not a collection of field models.
                 NativeRow.prototype.initialize.call(this, Object.assign({}, options, { controlFields: {} }));
+                this.listenTo(editor.channels.deviceMode, 'change', this.onModelChange);
             },
             filter: function (control) {
                 if (!this.controlsLoaded) {
                     return false;
                 }
+                if (!isCurrentDeviceControl(control)) { return false; }
 
                 var settings = this.getOption('container').settings;
                 return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+            },
+            getChildView: function (control) {
+                if (!control.depthscapeDefaultsReady) {
+                    control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+                    control.depthscapeDefaultsReady = true;
+                }
+                if (control.get('type') === 'wysiwyg') { return WysiwygView; }
+                return NativeRow.prototype.getChildView.apply(this, arguments);
             },
             openControls: function () {
                 if (!this.controlsLoaded) {
                     this.controlsLoaded = true;
                     this.syncingControls = true;
                     try {
-                        this.collection.reset(Object.values(editor.mergeControlsSettings(this.getOption('controlFields'))), { silent: true });
+                        this.collection.reset(Object.values(this.getOption('controlFields')), { silent: true });
                         this.render();
                     } finally {
                         this.syncingControls = false;
@@ -304,6 +406,7 @@
                     controls.forEach(function (control, index) {
                         if (!this.children.findByModel(control)) {
                             this.addChild(control, this.getChildView(control), index);
+                            orderControlViews(this, controls);
                             changed = true;
                         }
                     }, this);

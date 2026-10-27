@@ -1192,8 +1192,234 @@
 
     registerLivePreview();
 
+    function registerEditorControls() {
+        var host;
+        try {
+            host = window.parent;
+            if (!host || host === window || !host.elementor || host.__apeironGuestControls) return;
+        } catch (error) {
+            return; // The containing page may be on another origin.
+        }
+
+        var editor = host.elementor;
+        if (!editor.hooks || !editor.helpers || !editor.helpers.isActiveControl) return;
+        host.__apeironGuestControls = true;
+
+        function registerPanel() {
+            var panel = editor.panel && editor.panel.currentView;
+            var page = panel && panel.getPages('editor');
+            if (!page || !page.view || !page.view.extend || page.view.__apeironGuestControls) return;
+            var NativeEditor = page.view;
+            var isGuest = function (view) { return view.model.get('widgetType') === 'apeiron-guest-invitation-manager'; };
+            var isGuestTab = function (tab) { return tab === 'content' || tab === 'style' || tab === 'advanced'; };
+
+            function deferColorPicker(child) {
+                var applySavedValue = child.applySavedValue;
+                var dynamicBehaviors = Object.values(child._behaviors || {}).filter(function (behavior) {
+                    return typeof behavior.moveDynamicSwitcherToColorPicker === 'function';
+                });
+                dynamicBehaviors.forEach(function (behavior) {
+                    var move = behavior.moveDynamicSwitcherToColorPicker;
+                    behavior.moveDynamicSwitcherToColorPicker = function () {
+                        if (child.isDestroyed || !this.ui.dynamicSwitcher) return;
+                        if (child.colorPicker) return move.apply(this, arguments);
+                        this.ui.dynamicSwitcher.detach();
+                    };
+                });
+                child.applySavedValue = function () {
+                    if (this.colorPicker) return applySavedValue.apply(this, arguments);
+                    var value = this.getCurrentValue();
+                    var placeholder = this.ui.pickerContainer[0];
+                    var button = placeholder.querySelector('button');
+                    if (!button) {
+                        placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+                        button = host.document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'pcr-button';
+                        button.setAttribute('aria-label', 'toggle color picker dialog');
+                        placeholder.appendChild(button);
+                        button.addEventListener('click', function (event) {
+                            event.stopPropagation();
+                            child.applySavedValue = applySavedValue;
+                            child.initPicker();
+                            dynamicBehaviors.forEach(function (behavior) { behavior.moveDynamicSwitcherToColorPicker(); });
+                            child.colorPicker.picker.on('init', function () {
+                                if (child.isDestroyed) return;
+                                child.$pickerButton[0].click();
+                                child.$pickerButton[0].focus();
+                            });
+                        });
+                    }
+                    button.classList.toggle('clear', !value);
+                    button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+                    this.$el.toggleClass('e-control-color--no-value', !value);
+                };
+            }
+
+            page.view = NativeEditor.extend({
+                initCollection: function () {
+                    if (!isGuest(this)) return NativeEditor.prototype.initCollection.apply(this, arguments);
+                    // Merge native defaults only for controls whose views are actually needed.
+                    this.collection = new host.Backbone.Collection(Object.values(this.getOption('controls')));
+                    this.__guestControlsByName = new Map(this.collection.map(function (control) { return [control.get('name'), control]; }));
+                },
+                getControlModel: function (name) {
+                    return this.__guestControlsByName ? this.__guestControlsByName.get(name) : NativeEditor.prototype.getControlModel.apply(this, arguments);
+                },
+                getChildView: function (control) {
+                    if (isGuest(this) && !control.__apeironGuestDefaults) {
+                        control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+                        control.__apeironGuestDefaults = true;
+                    }
+                    return NativeEditor.prototype.getChildView.apply(this, arguments);
+                },
+                buildChildView: function (control) {
+                    var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+                    if (isGuest(this) && control.get('type') === 'color' && child.initPicker) deferColorPicker(child);
+                    return child;
+                },
+                _renderChildren: function () {
+                    var result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+                    if (isGuest(this) && this.__guestActiveTabs) {
+                        var view = this;
+                        this.__guestActiveTabs.forEach(function (name) {
+                            var tab = NativeEditor.prototype.getControlViewByName.call(view, name);
+                            if (tab && !tab.$el.hasClass('e-tab-active')) tab.el.click();
+                        });
+                    }
+                    return result;
+                },
+                filter: function (control, index, collection) {
+                    if (!NativeEditor.prototype.filter.call(this, control, index, collection)) return false;
+                    if (!isGuest(this) || !isGuestTab(control.get('tab'))) return true;
+                    var innerTab = control.get('inner_tab');
+                    if (innerTab && this.__guestActiveTabs && this.__guestActiveTabs.get(control.get('tabs_wrapper')) !== innerTab) return false;
+                    var owner = this.__guestPopoverOwners && this.__guestPopoverOwners.get(control.cid);
+                    if (owner) return this.__guestLoadedPopovers.has(owner);
+                    // Preserve native boundaries for popovers supplied by other extensions.
+                    if (control.get('popover')) return true;
+                    var settings = this.model.get('settings');
+                    return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+                },
+                getControlViewByName: function (name) {
+                    var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                    if (!isGuest(this) || !isGuestTab(this.activeTab) || !this.__guestPopoverOwners) return control;
+                    var model = this.getControlModel(name);
+                    if (!model || model.get('section') !== this.activeSection) return control;
+                    var innerTab = model.get('inner_tab');
+                    if (innerTab && this.__guestActiveTabs.get(model.get('tabs_wrapper')) !== innerTab) {
+                        this.__guestActiveTabs.set(model.get('tabs_wrapper'), innerTab);
+                        this._renderChildren();
+                        control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                    }
+                    var owner = this.__guestPopoverToggles.has(name) ? name : this.__guestPopoverOwners.get(model.cid);
+                    if (owner && !this.__guestLoadedPopovers.has(owner)) {
+                        this.__guestLoadedPopovers.add(owner);
+                        if (control && name === owner) {
+                            // Let the native radio change finish before replacing its input.
+                            this.__guestPendingPopover = owner;
+                            this.__guestScheduleControls();
+                        } else {
+                            this._renderChildren();
+                            control = NativeEditor.prototype.getControlViewByName.call(this, name);
+                        }
+                    }
+                    return control;
+                },
+                activateSection: function (section) {
+                    if (isGuest(this) && this.activeSection !== section && this.__guestLoadedPopovers) {
+                        this.__guestLoadedPopovers.clear();
+                        this.__guestPendingPopover = null;
+                    }
+                    return NativeEditor.prototype.activateSection.apply(this, arguments);
+                },
+                initialize: function () {
+                    NativeEditor.prototype.initialize.apply(this, arguments);
+                    if (!isGuest(this)) return;
+
+                    var view = this;
+                    var settings = view.model.get('settings');
+                    view.__guestActiveTabs = new Map();
+                    view.__guestPopoverOwners = new Map();
+                    view.__guestPopoverToggles = new Set();
+                    view.__guestLoadedPopovers = new Set();
+                    var previous = null;
+                    var owner = null;
+                    view.collection.each(function (control) {
+                        if (control.get('type') === 'tab' && !view.__guestActiveTabs.has(control.get('tabs_wrapper'))) {
+                            view.__guestActiveTabs.set(control.get('tabs_wrapper'), control.get('name'));
+                        }
+                        var popover = control.get('popover');
+                        if (popover && popover.start && isGuestTab(control.get('tab'))) {
+                            owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+                            if (owner) view.__guestPopoverToggles.add(owner);
+                        }
+                        if (owner) view.__guestPopoverOwners.set(control.cid, owner);
+                        if (popover && popover.end) owner = null;
+                        previous = control;
+                    });
+
+                    var refreshFrame = null;
+                    var visibleControls = '';
+                    var signature = function () { return view.collection.filter(view.filter, view).map(function (control) { return control.cid; }).join('|'); };
+                    function refreshControls() {
+                        refreshFrame = null;
+                        if (view.isDestroyed || !isGuestTab(view.activeTab)) return;
+                        var pendingPopover = view.__guestPendingPopover;
+                        view.__guestPendingPopover = null;
+                        if (signature() === visibleControls && !pendingPopover) return;
+                        var openPopovers = view.children.filter(function (child) {
+                            return child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible');
+                        }).map(function (child) { return child.model.get('name'); });
+                        if (pendingPopover && openPopovers.indexOf(pendingPopover) === -1) openPopovers.push(pendingPopover);
+                        var focusSelector = 'input, select, textarea, button, [tabindex]';
+                        var focused = view.children.find(function (child) { return child.el.contains(host.document.activeElement); });
+                        var focusIndex = focused ? Array.from(focused.el.querySelectorAll(focusSelector)).indexOf(host.document.activeElement) : -1;
+                        view._renderChildren();
+                        openPopovers.forEach(function (name) {
+                            var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+                            if (toggle) {
+                                if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) toggle.onShow();
+                                toggle.activate();
+                            }
+                        });
+                        if (focused && focusIndex >= 0) {
+                            var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+                            var input = control && control.el.querySelectorAll(focusSelector)[focusIndex];
+                            if (input) input.focus({ preventScroll: true });
+                        }
+                    }
+                    view.on('render:collection', function () { visibleControls = signature(); });
+                    view.__guestScheduleControls = function () {
+                        if (isGuestTab(view.activeTab) && !refreshFrame) refreshFrame = host.requestAnimationFrame(refreshControls);
+                    };
+                    view.listenTo(settings, 'change', view.__guestScheduleControls);
+                    view.on('childview:control:tab:clicked', function (tab) {
+                        var wrapper = tab.model.get('tabs_wrapper');
+                        var name = tab.model.get('name');
+                        if (view.__guestActiveTabs.get(wrapper) === name) return;
+                        view.__guestActiveTabs.set(wrapper, name);
+                        view.__guestScheduleControls();
+                    });
+                    view.on('destroy', function () {
+                        if (refreshFrame) host.cancelAnimationFrame(refreshFrame);
+                    });
+                }
+            });
+            page.view.__apeironGuestControls = true;
+        }
+
+        editor.hooks.addAction('panel/open_editor/widget/apeiron-guest-invitation-manager', registerPanel);
+        editor.on('preview:loaded', registerPanel);
+        if (editor.panel && editor.panel.currentView) registerPanel();
+        else editor.once('panel:init', registerPanel);
+    }
+
+    registerEditorControls();
+
     window.addEventListener('elementor/frontend/init', function () {
         registerLivePreview();
+        registerEditorControls();
         if (typeof elementorFrontend === 'undefined' || !elementorFrontend.hooks) {
             return;
         }

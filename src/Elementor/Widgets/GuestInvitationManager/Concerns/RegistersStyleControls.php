@@ -773,7 +773,7 @@ trait RegistersStyleControls {
 				'type'      => Controls_Manager::COLOR,
 				'default'   => '#1d2939',
 				'selectors' => [
-					'{{WRAPPER}} .apeiron-guest-table tbody td' => 'color: {{VALUE}};',
+					'{{WRAPPER}} .apeiron-guest-table tbody td, {{WRAPPER}} .apeiron-guest-name' => 'color: {{VALUE}};',
 				],
 			]
 		);

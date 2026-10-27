@@ -4,6 +4,7 @@ namespace ApeironKit\Rest;
 
 use ApeironKit\Core\LicenseManager;
 use ApeironKit\Elementor\Widgets\FormOrder\FieldSchema;
+use ApeironKit\Support\FormOrderOutbox;
 use ApeironKit\Support\FormOrderSettings;
 use ApeironKit\Support\WidgetRegistry;
 use WP_Error;
@@ -87,6 +88,9 @@ final class FormOrderController {
 		$details = [];
 		$labels = [];
 		$label_contexts = [];
+		// Meta untuk dashboard: nama step per field & teks tampilan opsi (nilai pilihan dikirim sebagai kodenya).
+		$field_sections = [];
+		$option_labels = [];
 		foreach ( FieldSchema::resolve( $widget_settings ) as $step ) {
 			if ( 'confirmation' === $step['kind'] ) {
 				continue;
@@ -150,6 +154,12 @@ final class FormOrderController {
 				continue;
 			}
 			$fields[ $name ] = $value;
+			if ( '' !== $step['title'] ) {
+				$field_sections[ $name ] = $step['title'];
+			}
+			if ( in_array( $definition['type'], [ 'select', 'radio', 'checkbox' ], true ) && ! empty( $definition['options'] ) ) {
+				$option_labels[ $name ] = $definition['options'];
+			}
 			$display = is_array( $value ) ? $value : ( '' === $value ? [] : [ $value ] );
 			if ( 'date' === $definition['type'] && '' !== $value ) {
 				$display = [ FieldSchema::display_date( $value ) ];
@@ -185,8 +195,12 @@ final class FormOrderController {
 			return $this->error( 'invalid_request', __( 'Identitas pengiriman belum tersedia. Muat ulang formulir dan coba lagi.', 'apeiron-kit' ), 422 );
 		}
 		if ( $send_storage ) {
-			$stored = FormOrderSettings::send_to_api( $fields, $labels, [ 'post_id' => $post_id, 'document_id' => $document_id, 'element_id' => $element_id ], $submission_id, $storage_failure );
-			if ( ! $stored ) {
+			$context = [ 'post_id' => $post_id, 'document_id' => $document_id, 'element_id' => $element_id ];
+			$meta = [ 'sections' => $field_sections, 'options' => $option_labels ];
+			$retryable = true;
+			$stored = FormOrderSettings::send_to_api( $fields, $labels, $context, $submission_id, $storage_failure, false, $meta, $retryable );
+			// Backend sementara tidak dapat dihubungi → pesanan masuk antrean & dikirim ulang otomatis (tidak hilang).
+			if ( ! $stored && ( ! $retryable || ! FormOrderOutbox::enqueue( $fields, $labels, $meta, $context, $submission_id, (string) $storage_failure ) ) ) {
 				return $this->error( 'sheet_failed', __( 'Gagal menyimpan pesanan. Data belum diteruskan ke WhatsApp; coba lagi atau hubungi pengelola.', 'apeiron-kit' ), 502 );
 			}
 		}

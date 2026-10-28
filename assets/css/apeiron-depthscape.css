@@ -129,6 +129,13 @@
     transform-origin: var(--ds-origin, 50% 50%);
 }
 
+/* Like the reference demo: every moving element gets its own GPU layer once the scene runs, so a glide frame
+   only moves and scales finished textures instead of repainting the large images (which stuttered on phones). */
+.apeiron-depthscape.is-ready .apeiron-depthscape__layer.is-space-world,
+.apeiron-depthscape.is-ready .apeiron-depthscape__layer > .apeiron-depthscape__inner {
+    will-change: transform, opacity;
+}
+
 .is-fit-cover > .apeiron-depthscape__inner,
 .is-fit-cover .apeiron-depthscape__idle {
     height: 100%;

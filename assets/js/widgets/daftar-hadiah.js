@@ -168,6 +168,24 @@
 		track.addEventListener('pointercancel', state.dragEnd);
 	}
 
+	// Inside a Paralaks stage the widget sits in a phone-sized column even on a desktop screen, so the phone layout
+	// (CSS .is-compact) follows the widget's own width there instead of the window's media queries.
+	function initCompactLayout(state) {
+		if (!window.ResizeObserver || !state.root.closest('.apeiron-depthscape__stage')) {
+			return;
+		}
+		state.compactResize = new window.ResizeObserver(function () {
+			var compact = state.root.clientWidth > 0 && state.root.clientWidth <= 767;
+			if (state.root.classList.contains('is-compact') !== compact) {
+				state.root.classList.toggle('is-compact', compact);
+				if (state.queueNavigation) {
+					state.queueNavigation();
+				}
+			}
+		});
+		state.compactResize.observe(state.root);
+	}
+
 	function collectFormData(form) {
 		var data = new FormData(form);
 		return {
@@ -658,6 +676,10 @@
 		state.dialog.removeEventListener('keydown', state.keydown);
 		state.dialog.removeEventListener('cancel', state.cancel);
 		state.dialog.removeEventListener('close', state.close);
+		if (state.compactResize) {
+			state.compactResize.disconnect();
+			root.classList.remove('is-compact');
+		}
 		if (state.dragStart) {
 			state.track.removeEventListener('pointerdown', state.dragStart);
 			state.track.removeEventListener('dragstart', state.dragImage);
@@ -798,6 +820,7 @@
 		dialog.addEventListener('close', state.close);
 		instances.set(root, state);
 		initCardNavigation(state);
+		initCompactLayout(state);
 		if (state.track) {
 			initCardDrag(state);
 		}

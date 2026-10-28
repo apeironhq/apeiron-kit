@@ -976,6 +976,51 @@
 	}
 }
 
+/* Inside a Paralaks stage the widget sits in a phone-sized column even on a desktop screen. daftar-hadiah.js
+   adds .is-compact there while the widget is at most 767px wide, so the phone layout (one column, or the
+   sideways swipe row) follows the widget's own width instead of the window's. */
+.apeiron-daftar-hadiah.is-compact .apeiron-daftar-hadiah__grid {
+	grid-template-columns: minmax(0, var(--dh-card-max-width, var(--dh-card-default-max-width, 260px)));
+}
+
+.elementor-element.elementor-widget-apeiron-daftar-hadiah .apeiron-daftar-hadiah.is-compact.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__grid {
+	grid-template-columns: none;
+	grid-auto-flow: column;
+	grid-auto-columns: min(var(--dh-swipe-width, 86%), var(--dh-card-max-width, var(--dh-card-default-max-width, 260px)));
+	justify-content: start;
+	padding: 2px 2px 10px;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scroll-padding-inline: 2px;
+	overscroll-behavior-x: contain;
+	scrollbar-width: none;
+}
+
+.apeiron-daftar-hadiah.is-compact.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__grid::-webkit-scrollbar {
+	display: none;
+	height: 0;
+}
+
+.elementor-element.elementor-widget-apeiron-daftar-hadiah .apeiron-daftar-hadiah.is-compact.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__grid.is-dragging {
+	scroll-snap-type: none;
+	cursor: grabbing;
+	user-select: none;
+}
+
+.apeiron-daftar-hadiah.is-compact .apeiron-daftar-hadiah__swipe-navigation {
+	display: flex;
+}
+
+.apeiron-daftar-hadiah.is-compact.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__card {
+	scroll-snap-align: start;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.apeiron-daftar-hadiah.is-compact.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__grid {
+		cursor: grab;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__button,
 	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__input {

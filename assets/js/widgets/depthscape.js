@@ -664,7 +664,7 @@
         return { timeline: timeline, total: time };
     }
 
-    function setupScroll(ctx, built, reduce) {
+    function setupScroll(ctx, built, reduce, editorProgress) {
         var config = ctx.config;
         var ScrollTrigger = window.ScrollTrigger;
         var editorScene = isEditMode() ? toNumber(config.editorScene, -1) : -1;
@@ -766,7 +766,7 @@
 
         ctx.state.scroll = { trigger: trigger, points: snapPoints, glide: glide };
         triggers.push(trigger);
-        var stopGlide = glide ? setupGlide(ctx, built, trigger, snapPoints, distance, triggers) : null;
+        var stopGlide = glide ? setupGlide(ctx, built, trigger, snapPoints, distance, triggers, editorProgress) : null;
 
         // Idle loops and tilt only run while the stage is on screen (to the end of the page as a backdrop).
         triggers.push(ScrollTrigger.create({
@@ -789,11 +789,11 @@
     // snap-stop), while the picture follows the scroll position with exponential smoothing: quick at
     // first, then a long, slow settle. The factor is per 60 fps frame and scaled by real frame time, so
     // 60 Hz and 120 Hz phones glide at the same speed.
-    function setupGlide(ctx, built, trigger, snapPoints, distance, triggers) {
+    function setupGlide(ctx, built, trigger, snapPoints, distance, triggers, editorProgress) {
         var gsap = ctx.gsap;
         var ScrollTrigger = window.ScrollTrigger;
         var factor = clamp(toNumber(ctx.config.glide, 0.015), 0.003, 0.1);
-        var current = trigger.progress;
+        var current = typeof editorProgress === 'number' ? editorProgress : trigger.progress;
         var html = document.documentElement;
         var markers = [];
 
@@ -1185,7 +1185,7 @@
                     state.editorPreview.render();
                 },
                 scrub: function () {
-                    if (state.scroll) {
+                    if (state.scroll && !state.scroll.glide) {
                         var value = reduce || toNumber(ctx.config.scrub, 0) <= 0 ? true : ctx.config.scrub;
                         state.scroll.trigger.vars.scrub = value;
                         state.scroll.trigger.scrubDuration(value);
@@ -1211,8 +1211,19 @@
                     var active = state.scroll && state.scroll.trigger.isActive;
                     var existingTimeline = keepScroll ? built.timeline : null;
                     if (!keepScroll) { stopScroll(); }
+                    var hint = stage.querySelector(SELECTOR.hint);
+                    ctx.hint = hint && !hint.hidden ? hint : null;
+                    if (ctx.hint) { gsap.set(ctx.hint, { autoAlpha: ctx.config.hintMode === 'after_first' ? 0 : 1, y: 0 }); }
                     if (scrollOnly) {
-                        stopScroll = setupScroll(ctx, built, reduce);
+                        built.timeline.progress(0, true);
+                        Object.assign(ctx.view, cameraState(ctx.config.camera));
+                        Object.keys(ctx.layersByKey).forEach(function (key) {
+                            ctx.layersByKey[key].forEach(function (record) {
+                                gsap.set(record.inner, layerVars(reduce ? calmProps(record.config.start) : record.config.start, ctx.size, record.useBlur && !reduce));
+                            });
+                        });
+                        built.timeline.invalidate();
+                        stopScroll = setupScroll(ctx, built, reduce, preserve ? progress : undefined);
                     } else {
                         // The replacement timeline resets poses itself; keep split-text styles until then.
                         if (liveTimelineContext) { liveTimelineContext.kill(false); }
@@ -1225,16 +1236,16 @@
                                     gsap.set(record.inner, layerVars(reduce ? calmProps(record.config.start) : record.config.start, ctx.size, record.useBlur && !reduce));
                                 });
                             });
-                            var hint = stage.querySelector(SELECTOR.hint);
-                            ctx.hint = hint && !hint.hidden ? hint : null;
                             built = buildTimeline(ctx, reduce, existingTimeline);
-                            if (!keepScroll) { stopScroll = setupScroll(ctx, built, reduce); }
+                            if (!keepScroll) { stopScroll = setupScroll(ctx, built, reduce, preserve ? progress : undefined); }
                         }, root);
                     }
                     state.editorPreview.timeline = built.timeline;
                     if (!keepScroll && hasScrollTrigger()) { window.ScrollTrigger.sort(); window.ScrollTrigger.refresh(); }
-                    if (preserve && ctx.config.editorScene < 0) {
-                        if (active && state.scroll) { var trigger = state.scroll.trigger; trigger.scroll(trigger.start + (trigger.end - trigger.start) * progress); }
+                    if (ctx.config.editorScene >= 0) {
+                        built.timeline.seek('s' + Math.min(ctx.config.editorScene, (ctx.config.scenes || []).length), true);
+                    } else if (preserve) {
+                        if (active && state.scroll && !state.scroll.glide) { var trigger = state.scroll.trigger; trigger.scroll(trigger.start + (trigger.end - trigger.start) * progress); }
                         built.timeline.progress(progress, true);
                     }
                     state.editorPreview.render();
@@ -1573,6 +1584,33 @@
     var editorWatchBound = false;
     var editorRefreshTimer = null;
 
+    function editorImageUpdate(layer, attributes) {
+        if (!attributes || !layer || !layer.classList.contains('is-type-image')) { return false; }
+        var idle = layer.querySelector(SELECTOR.idle);
+        if (!idle) { return false; }
+        if (attributes.src) {
+            try {
+                if (['http:', 'https:'].indexOf(new window.URL(attributes.src, layer.ownerDocument.baseURI).protocol) < 0) { return false; }
+            } catch (error) { return false; }
+        }
+        return function () {
+            var image = idle.querySelector('.apeiron-depthscape__img');
+            var empty = idle.querySelector('.apeiron-depthscape__empty');
+            if (!attributes.src) {
+                if (image) { image.remove(); }
+                if (!empty) { empty = layer.ownerDocument.createElement('div'); empty.className = 'apeiron-depthscape__empty'; idle.appendChild(empty); }
+                empty.textContent = layer.getAttribute('data-ds-layer');
+                return;
+            }
+            if (empty) { empty.remove(); }
+            if (!image) { image = layer.ownerDocument.createElement('img'); image.className = 'apeiron-depthscape__img'; idle.appendChild(image); }
+            ['width', 'height', 'alt', 'loading', 'decoding', 'draggable', 'sizes', 'srcset', 'src'].forEach(function (name) {
+                if (Object.prototype.hasOwnProperty.call(attributes, name)) { image.setAttribute(name, attributes[name]); }
+                else { image.removeAttribute(name); }
+            });
+        };
+    }
+
     function editorTextUpdate(layer, values, settings) {
         var parts = { eyebrow: 'eyebrow', title: 'title', subtitle: 'subtitle', button_text: 'button' };
         var keys = Object.keys(values).filter(function (key) { return Object.prototype.hasOwnProperty.call(parts, key); });
@@ -1629,11 +1667,11 @@
         if (!state || !state.editorPreview || !update || !update.values) { return false; }
         var config = state.config;
         var target = config;
-        var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
+        var pattern = /^(perspective|depth_compensation|editor_preview|motion_style|glide_smoothing|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
         if (update.scope === 'layer' || update.scope === 'scene') {
             if (!Number.isInteger(update.index) || update.index < 0) { return false; }
             target = (update.scope === 'layer' ? config.layers : config.scenes)[update.index];
-            pattern = update.scope === 'layer' ? /^(depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/ : /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
+            pattern = update.scope === 'layer' ? /^(image|depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/ : /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
         } else if (update.scope === 'keyframe') {
             if (!Array.isArray(update.rows)) { return false; }
             pattern = /^kf_(layer|scene|at|duration|ease|x|y|scale|rotate|opacity|blur|reveal)$/;
@@ -1647,10 +1685,12 @@
         if ((keys.indexOf('show_hint') >= 0 || keys.indexOf('hint_text') >= 0) && !hint) { return false; }
         var updateText = editorTextUpdate(layer, update.values, update.settings);
         if (updateText === false) { return false; }
+        var updateImage = keys.indexOf('image') >= 0 ? editorImageUpdate(layer, update.image) : null;
+        if (updateImage === false) { return false; }
 
         var startLimits = { x: [0, -500, 500], y: [0, -500, 500], scale: [1, 0, 20], rotate: [0, -720, 720], opacity: [1, 0, 1], blur: [0, 0, 40] };
         var cameraLimits = { x: [0, -200, 200], y: [0, -200, 200], z: [0, -3000, 2000], rx: [0, -60, 60], ry: [0, -60, 60], rz: [0, -180, 180] };
-        var numeric = { smoothness: ['scrub', 1, 0, 3], wind_strength: ['wind', 7, 0, 20], camera_breath: ['breath', 0, 0, 10], tilt_strength: ['tilt', 4, 0, 20] };
+        var numeric = { smoothness: ['scrub', 1, 0, 3], glide_smoothing: ['glide', 0.015, 0.003, 0.1], wind_strength: ['wind', 7, 0, 20], camera_breath: ['breath', 0, 0, 10], tilt_strength: ['tilt', 4, 0, 20] };
         var switches = { snap: 'snap', stay_fixed: 'stayFixed', cover_autoplay: 'coverPlay', idle_enabled: 'idle', pointer_tilt: 'pointer', gyro_tilt: 'gyro' };
         var rebuildTimeline = false;
         var scrollChanged = false;
@@ -1694,6 +1734,7 @@
             keys = [];
         }
         keys.forEach(function (key) {
+            if (key === 'image') { return; }
             var value = update.values[key];
             if (/^(eyebrow|title|subtitle|button_text)$/.test(key)) {
                 resize = true;
@@ -1745,6 +1786,9 @@
                 config.perspective = number(value, [1000, 200, 4000]);
             } else if (key === 'depth_compensation') {
                 config.compensate = value === 'yes';
+            } else if (key === 'motion_style') {
+                config.motion = option(value, ['scrub', 'glide'], 'scrub');
+                scrollChanged = true;
             } else if (key === 'editor_preview') {
                 config.editorScene = rawNumber(value) === null ? -1 : Math.trunc(number(value, [0, 0, 99]));
                 scrollChanged = true;
@@ -1758,6 +1802,7 @@
                 var definition = numeric[key];
                 config[definition[0]] = number(value, definition.slice(1));
                 scrubChanged = scrubChanged || key === 'smoothness';
+                scrollChanged = scrollChanged || key === 'glide_smoothing';
                 motionChanged = motionChanged || key === 'camera_breath' || key === 'tilt_strength';
             } else if (Object.prototype.hasOwnProperty.call(switches, key)) {
                 config[switches[key]] = value === 'yes';
@@ -1789,6 +1834,7 @@
             }
         });
         if (update.scope === 'layer' && keys.indexOf('layer_space') >= 0) { target.z = target.space === 'screen' ? 0 : number(update.values.depth, [0, -3000, 900]); }
+        if (updateImage) { updateImage(); }
         root.setAttribute('data-apeiron-depthscape', JSON.stringify(config));
         if (fullRebuild) {
             var progress = state.editorPreview.timeline.progress();

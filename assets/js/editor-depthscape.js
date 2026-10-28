@@ -25,6 +25,29 @@
         view.children._views = ordered;
     }
 
+    function imagePreviewAttributes(value) {
+        if (!value || typeof value !== 'object' || typeof value.url !== 'string') { return null; }
+        var id = Math.floor(Number(value.id) || 0);
+        if (!value.url) { return id > 0 ? null : { src: '' }; }
+        function allowedUrl(url) {
+            if (typeof url !== 'string' || !url) { return false; }
+            try { return ['http:', 'https:'].indexOf(new window.URL(url, document.baseURI).protocol) >= 0; }
+            catch (error) { return false; }
+        }
+        if (!allowedUrl(value.url)) { return null; }
+        var attributes = { src: value.url, alt: '', loading: 'eager', decoding: 'async', draggable: 'false' };
+        if (id <= 0) { return attributes; }
+        var attachment = window.wp && window.wp.media && typeof window.wp.media.attachment === 'function' && window.wp.media.attachment(id);
+        if (!attachment || attachment.get('url') !== value.url) { return null; }
+        var width = Number(attachment.get('width'));
+        var height = Number(attachment.get('height'));
+        attributes.alt = String(attachment.get('alt') || '').replace(/<[^>]*>/g, '').trim();
+        if (!(width > 0 && height > 0)) { return attributes; }
+        attributes.width = width;
+        attributes.height = height;
+        return attributes;
+    }
+
     function registerLivePreview(editor) {
         var LiveView;
         editor.hooks.addFilter('element/view', function (View, model) {
@@ -34,18 +57,18 @@
                     renderOnChange: function (settings) {
                         var changes = settings.changedAttributes && settings.changedAttributes();
                         var root = this.el.querySelector('[data-apeiron-depthscape]');
-                        if (this.allowRender && !this.isRendering && changes && root && !this.$el.hasClass('elementor-loading')) {
+                        if (this.allowRender && !this.isRendering && root && !this.$el.hasClass('elementor-loading')) {
                             var owner = this.getEditModel().get('settings');
                             var scope = 'root';
                             var index = -1;
-                            var pattern = /^(perspective|depth_compensation|editor_preview|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
+                            var pattern = /^(perspective|depth_compensation|editor_preview|motion_style|glide_smoothing|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
                             if (settings !== owner) {
                                 var layers = owner.get('layers');
                                 var scenes = owner.get('scenes');
                                 index = layers ? layers.indexOf(settings) : -1;
                                 if (index >= 0) {
                                     scope = 'layer';
-                                    pattern = /^(depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/;
+                                    pattern = /^(image|depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/;
                                 } else {
                                     scope = 'scene';
                                     index = scenes ? scenes.indexOf(settings) : -1;
@@ -62,7 +85,9 @@
                             var renderStyles = false;
                             var dynamic = settings.get('__dynamic__') || {};
                             if (dynamic.toJSON) { dynamic = dynamic.toJSON(); }
-                            var supported = (scope === 'root' || index >= 0) && Object.keys(changes).every(function (name) {
+                            var knownScope = scope === 'root' || index >= 0;
+                            if (knownScope && (!changes || !Object.keys(changes).length) && root.classList.contains('is-ready') && !Object.keys(dynamic).length) { return; }
+                            var supported = knownScope && changes && Object.keys(changes).every(function (name) {
                                 if (dynamic[name]) { return false; }
                                 if (pattern.test(name)) { values[name] = changes[name]; return true; }
                                 var control = settings.getControl(name);
@@ -73,9 +98,11 @@
                                 return false;
                             });
                             if (supported && Object.keys(values).length) {
+                                var image = Object.prototype.hasOwnProperty.call(values, 'image') ? imagePreviewAttributes(values.image) : null;
+                                if (Object.prototype.hasOwnProperty.call(values, 'image') && !image) { return View.prototype.renderOnChange.apply(this, arguments); }
                                 if (scope === 'layer' && Object.prototype.hasOwnProperty.call(values, 'layer_space')) { values.depth = settings.get('depth'); }
                                 var event = new root.ownerDocument.defaultView.CustomEvent('apeiron:depthscape:preview-change', {
-                                    bubbles: true, cancelable: true, detail: { scope: scope, index: index, values: values, settings: settings, css: renderStyles, rows: scope === 'keyframe' ? owner.get('keyframes').toJSON() : null },
+                                    bubbles: true, cancelable: true, detail: { scope: scope, index: index, values: values, settings: settings, css: renderStyles, rows: scope === 'keyframe' ? owner.get('keyframes').toJSON() : null, image: image },
                                 });
                                 // The engine acknowledges only updates it can apply to the existing DOM.
                                 if (!root.dispatchEvent(event)) {

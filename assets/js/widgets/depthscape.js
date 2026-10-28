@@ -858,8 +858,8 @@
 
     // "Meluncur" mode. The page snaps natively to exactly one scene per swipe (CSS scroll snap with
     // snap-stop), while the picture follows the scroll position with exponential smoothing: quick at
-    // first, then a long, slow settle. The factor is per 60 fps frame and scaled by real frame time, so
-    // 60 Hz and 120 Hz phones glide at the same speed.
+    // first, then a long, slow settle. Like the reference demo, the factor is applied once per screen frame:
+    // a 60 Hz phone glides slower and dreamier, a 120 Hz phone twice as fast, exactly as the demo does there.
     function setupGlide(ctx, built, trigger, snapPoints, distance, triggers, editorProgress) {
         var gsap = ctx.gsap;
         var ScrollTrigger = window.ScrollTrigger;
@@ -880,7 +880,7 @@
                 }
                 return;
             }
-            current += gap * (1 - Math.pow(1 - factor, gsap.ticker.deltaRatio(60)));
+            current += gap * factor;
             built.timeline.progress(current, true);
         };
         gsap.ticker.add(tick);

@@ -422,6 +422,11 @@ html.apeiron-depthscape-lock body {
     pointer-events: auto;
 }
 
+/* Sideways card rows (Daftar Hadiah) must still be swiped and mouse-dragged inside a locked stage. */
+.apeiron-depthscape.is-scroll-locked .apeiron-depthscape__stage .apeiron-daftar-hadiah__grid {
+    pointer-events: auto;
+}
+
 html.apeiron-depthscape-snap .apeiron-depthscape-scroller {
     scroll-snap-type: y mandatory;
     scroll-padding-top: 0;

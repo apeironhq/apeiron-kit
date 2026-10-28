@@ -894,10 +894,11 @@
         window.scrollTo(0, top);
     }
 
-    // On a locked page a swipe that starts on a link or button in the pinned stage still chains to the locked
-    // document, so it moved nothing: going back and forth over scenes with buttons felt stuck. Such vertical
-    // swipes are passed to the scroll box as one scene forward or back. Taps, sideways swipes (carousels) and
-    // swipes inside an element that scrolls by itself stay native.
+    // On a locked page a swipe that starts on a link, button or sideways card row in the pinned stage still chains
+    // to the locked document, so it moved nothing: going back and forth over such scenes felt stuck. Everything else
+    // in the stage ignores touches (CSS), so any touch target in it is one of those. Vertical swipes are passed to
+    // the scroll box as one scene forward or back. Taps, sideways swipes (carousels) and swipes inside an element
+    // that scrolls by itself stay native.
     function relayStageSwipes(ctx, scroller) {
         var stage = ctx.stage;
         var start = null;
@@ -913,7 +914,7 @@
             return false;
         };
         var onStart = function (event) {
-            var target = event.target && event.target.closest ? event.target.closest('a, button, input, select, textarea, label, summary, [role="button"]') : null;
+            var target = event.target && event.target.nodeType === 1 ? event.target : null;
             var touch = event.touches.length === 1 ? event.touches[0] : null;
             start = touch && target && stage.contains(target) && !canScrollY(target)
                 ? { x: touch.clientX, y: touch.clientY, top: scroller.scrollTop }

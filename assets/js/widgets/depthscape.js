@@ -449,6 +449,49 @@
         });
     }
 
+    // Chrome draws a GPU layer that holds only an image straight from its file ("directly composited image"). When the
+    // file has fewer pixels than the layer shows, a rounding check on that path fails whenever the camera rescales the
+    // layer, so phones re-rasterised the whole image every frame (the glide stutter). Such images get a no-op clip in
+    // CSS that keeps them on the normal path, rasterised once; sharper files keep the direct path, crisper when zoomed.
+    function markUpscaledImages(ctx) {
+        var ratio = window.devicePixelRatio || 1;
+        Array.prototype.forEach.call(ctx.root.querySelectorAll('.apeiron-depthscape__img'), function (img) {
+            if (!img.complete || !img.naturalWidth) {
+                img.addEventListener('load', function () { markUpscaledImages(ctx); }, { once: true });
+                return;
+            }
+            var width = sourceWidth(img);
+            var scaleX = img.offsetWidth * ratio / width;
+            var scaleY = img.offsetHeight * ratio / (width * img.naturalHeight / img.naturalWidth);
+            var cover = window.getComputedStyle(img).objectFit === 'cover';
+            img.classList.toggle('is-upscaled', (cover ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY)) > 1);
+        });
+    }
+
+    // Pixel width of the file the browser picked from srcset (naturalWidth is divided by the srcset density).
+    function sourceWidth(img) {
+        var width = img.naturalWidth;
+        (img.getAttribute('srcset') || '').split(',').forEach(function (candidate) {
+            var parts = candidate.trim().split(/\s+/);
+            var descriptor = parts[1] || '';
+            var url = '';
+            try {
+                url = new window.URL(parts[0], img.baseURI).href;
+            } catch (error) {
+                return;
+            }
+            if (url !== img.currentSrc) {
+                return;
+            }
+            if (/^\d+w$/.test(descriptor)) {
+                width = parseInt(descriptor, 10);
+            } else if (/^[\d.]+x$/.test(descriptor)) {
+                width = img.naturalWidth * parseFloat(descriptor);
+            }
+        });
+        return width;
+    }
+
     // How strongly a plane reacts to scroll wind: far planes barely move, near foreground bends most.
     function windFactor(depth) {
         return clamp(0.35 + (toNumber(depth, 0) + 700) / 1100, 0.15, 1.4);
@@ -1158,6 +1201,7 @@
         prepareLayers(ctx, reduce);
         var particles = createParticles(ctx, reduce);
         measureWorld(ctx);
+        markUpscaledImages(ctx);
         setupBreath(ctx, reduce);
         renderWorld(ctx);
         var built = buildTimeline(ctx, reduce);
@@ -1359,6 +1403,7 @@
                     built.timeline.invalidate().progress(progress, true);
                 }
                 measureWorld(ctx);
+                markUpscaledImages(ctx);
                 ctx.lastSignature = '';
                 renderWorld(ctx);
 

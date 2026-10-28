@@ -160,6 +160,11 @@
     object-fit: cover;
 }
 
+/* Set by markUpscaledImages() in depthscape.js: an invisible clip that stops phones re-rasterising this image every frame. */
+.apeiron-depthscape__img.is-upscaled {
+    clip-path: inset(0);
+}
+
 /* Shape layers (gradients, colour washes): height comes from "Tinggi Bentuk", or the stage when full-cover. */
 .apeiron-depthscape__layer.is-type-shape {
     height: 50%;

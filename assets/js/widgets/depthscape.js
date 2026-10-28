@@ -1805,7 +1805,7 @@
             return Math.round(clamp(parsed === null ? limits[0] : parsed, limits[1], limits[2]) * 10000) / 10000;
         }
         function option(value, allowed, fallback) { return allowed.indexOf(value) >= 0 ? value : fallback; }
-        function ease(value, fallback) { return option(value, ['none', 'sine.inOut', 'power1.inOut', 'power2.inOut', 'power3.inOut', 'power4.inOut', 'expo.inOut', 'circ.inOut', 'power2.out', 'power3.out', 'expo.out', 'power2.in', 'back.out(1.4)', 'back.inOut(1.2)'], fallback); }
+        function ease(value, fallback) { return option(value, ['none', 'sine.inOut', 'power1.inOut', 'power2.inOut', 'power3.inOut', 'power4.inOut', 'expo.inOut', 'circ.inOut', 'sine.out', 'power2.out', 'power3.out', 'expo.out', 'power2.in', 'back.out(1.4)', 'back.inOut(1.2)'], fallback); }
         function layerKey(value, index) {
             var key = typeof value === 'string' || typeof value === 'number' ? String(value).trim().replace(/ /g, '-').toLowerCase().replace(/[^a-z0-9_-]/g, '') : '';
             return key || 'layer-' + (index + 1);

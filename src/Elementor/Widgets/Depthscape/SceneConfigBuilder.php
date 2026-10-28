@@ -67,6 +67,7 @@ final class SceneConfigBuilder {
 			'power4.inOut'    => __( 'Power 4 – dramatis', 'apeiron-kit' ),
 			'expo.inOut'      => __( 'Expo – sangat dramatis', 'apeiron-kit' ),
 			'circ.inOut'      => __( 'Circ – melingkar', 'apeiron-kit' ),
+			'sine.out'        => __( 'Sine – melambat lembut di akhir', 'apeiron-kit' ),
 			'power2.out'      => __( 'Power 2 – melambat di akhir', 'apeiron-kit' ),
 			'power3.out'      => __( 'Power 3 – melambat di akhir', 'apeiron-kit' ),
 			'expo.out'        => __( 'Expo – melambat di akhir', 'apeiron-kit' ),

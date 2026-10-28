@@ -881,23 +881,37 @@
         gsap.ticker.add(tick);
 
         // Native snap points: one per scene label plus the widget's end, where the next content starts.
+        // They live directly in the scroll box (or <body>), not inside the widget: an ancestor container with
+        // overflow: hidden is a scroll container too and would capture them, so snapping silently stopped.
+        // Positions come from the trigger's own start/end, then are corrected by the host's measured origin.
         // The editor keeps free scrolling so the page stays easy to edit.
+        var scroller = trigger.scroller;
+        var host = scroller === window ? document.body : scroller;
         var placeMarkers = function () {
-            var length = distance();
-            markers.forEach(function (marker, index) {
-                marker.style.top = index < snapPoints.length ? Math.round(snapPoints[index] * length) + 'px' : '100%';
+            if (!markers.length) { return; }
+            var start = trigger.start;
+            var span = trigger.end - trigger.start;
+            var wanted = markers.map(function (marker, index) {
+                return index < snapPoints.length ? start + snapPoints[index] * span : start + ctx.root.offsetHeight;
             });
+            markers.forEach(function (marker, index) { marker.style.top = Math.round(wanted[index]) + 'px'; });
+            var viewportTop = scroller === window ? 0 : scroller.getBoundingClientRect().top;
+            var actual = markers[0].getBoundingClientRect().top - viewportTop + scrollPosition(scroller);
+            var shift = Math.round(actual - wanted[0]);
+            if (shift !== 0) {
+                markers.forEach(function (marker, index) { marker.style.top = Math.round(wanted[index] - shift) + 'px'; });
+            }
         };
         if (!isEditMode()) {
             snapPoints.concat([null]).forEach(function () {
                 var marker = document.createElement('span');
                 marker.className = 'apeiron-depthscape__snap';
                 marker.setAttribute('aria-hidden', 'true');
-                ctx.root.appendChild(marker);
+                host.appendChild(marker);
                 markers.push(marker);
             });
             placeMarkers();
-            ScrollTrigger.addEventListener('refreshInit', placeMarkers);
+            ScrollTrigger.addEventListener('refresh', placeMarkers);
 
             // Snapping is switched on only while the story is on screen; it ends just before the next
             // content so swipes after the last scene scroll the page freely again.
@@ -915,7 +929,7 @@
 
         return function () {
             gsap.ticker.remove(tick);
-            ScrollTrigger.removeEventListener('refreshInit', placeMarkers);
+            ScrollTrigger.removeEventListener('refresh', placeMarkers);
             html.classList.remove('apeiron-depthscape-snap');
             markers.forEach(function (marker) {
                 if (marker.parentNode) { marker.parentNode.removeChild(marker); }

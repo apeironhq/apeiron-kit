@@ -584,7 +584,10 @@
         var config = ctx.config;
         var scenes = config.scenes || [];
         var keyframes = config.keyframes || [];
-        var timeline = existingTimeline || gsap.timeline({ paused: true, defaults: { ease: 'none' } });
+        // force3D: false keeps layer transforms 2D like the projected world layers. GSAP's default switches a
+        // layer to translate3d while a tween runs and back to 2D when it ends; on phones each switch repaints the
+        // layer, which showed as a flicker every time a scene finished gliding.
+        var timeline = existingTimeline || gsap.timeline({ paused: true, defaults: { ease: 'none', force3D: false } });
         if (existingTimeline) { timeline.clear(); }
         var camera = mergeCamera({}, config.camera || {});
         var time = 0;

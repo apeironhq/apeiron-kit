@@ -61,7 +61,7 @@
                             var owner = this.getEditModel().get('settings');
                             var scope = 'root';
                             var index = -1;
-                            var pattern = /^(perspective|depth_compensation|editor_preview|motion_style|glide_smoothing|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
+                            var pattern = /^(perspective|depth_compensation|editor_preview|motion_style|glide_smoothing|lock_browser_bar|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
                             if (settings !== owner) {
                                 var layers = owner.get('layers');
                                 var scenes = owner.get('scenes');

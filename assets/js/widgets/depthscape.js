@@ -1735,7 +1735,7 @@
         if (!state || !state.editorPreview || !update || !update.values) { return false; }
         var config = state.config;
         var target = config;
-        var pattern = /^(perspective|depth_compensation|editor_preview|motion_style|glide_smoothing|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
+        var pattern = /^(perspective|depth_compensation|editor_preview|motion_style|glide_smoothing|lock_browser_bar|smoothness|snap|snap_ease|stay_fixed|cover_autoplay|idle_enabled|wind_strength|camera_breath|pointer_tilt|gyro_tilt|tilt_strength|particle_(count|style|color|size)|show_hint|hint_(mode|text)|cam_start_(x|y|z|rx|ry|rz))$/;
         if (update.scope === 'layer' || update.scope === 'scene') {
             if (!Number.isInteger(update.index) || update.index < 0) { return false; }
             target = (update.scope === 'layer' ? config.layers : config.scenes)[update.index];
@@ -1759,7 +1759,7 @@
         var startLimits = { x: [0, -500, 500], y: [0, -500, 500], scale: [1, 0, 20], rotate: [0, -720, 720], opacity: [1, 0, 1], blur: [0, 0, 40] };
         var cameraLimits = { x: [0, -200, 200], y: [0, -200, 200], z: [0, -3000, 2000], rx: [0, -60, 60], ry: [0, -60, 60], rz: [0, -180, 180] };
         var numeric = { smoothness: ['scrub', 1, 0, 3], glide_smoothing: ['glide', 0.015, 0.003, 0.1], wind_strength: ['wind', 7, 0, 20], camera_breath: ['breath', 0, 0, 10], tilt_strength: ['tilt', 4, 0, 20] };
-        var switches = { snap: 'snap', stay_fixed: 'stayFixed', cover_autoplay: 'coverPlay', idle_enabled: 'idle', pointer_tilt: 'pointer', gyro_tilt: 'gyro' };
+        var switches = { snap: 'snap', stay_fixed: 'stayFixed', cover_autoplay: 'coverPlay', idle_enabled: 'idle', pointer_tilt: 'pointer', gyro_tilt: 'gyro', lock_browser_bar: 'lockBar' };
         var rebuildTimeline = false;
         var scrollChanged = false;
         var fullRebuild = false;

@@ -375,17 +375,29 @@ html.apeiron-depthscape-snap {
 
 /* "Kunci Bilah Browser": the document no longer scrolls (so mobile browser bars stay put); the page's
    Elementor document is a full-screen scroll box instead. Added by depthscape.js on that page only. */
-html.apeiron-depthscape-lock,
-html.apeiron-depthscape-lock body {
+/* html and body are pinned like the reference demo: a full-screen fixed scroll box alone is still promoted
+   by Chrome Android to the root scroller, which collapses the bar again. */
+html.apeiron-depthscape-lock {
+    position: fixed;
+    inset: 0;
     overflow: hidden;
+    overscroll-behavior: none;
+}
+
+html.apeiron-depthscape-lock body {
+    position: fixed;
+    inset: var(--wp-admin--admin-bar--height, 0px) 0 0 0;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
 }
 
 .apeiron-depthscape-scroller {
-    position: fixed;
-    inset: var(--wp-admin--admin-bar--height, 0px) 0 0 0;
+    position: relative;
+    height: 100%;
     overflow-x: hidden;
     overflow-y: auto;
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: contain;
 }
 
 /* A swipe that starts on the fixed stage would scroll the locked document; let it reach the scroll box. */

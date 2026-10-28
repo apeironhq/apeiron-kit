@@ -685,7 +685,15 @@
         });
 
         var scroller = config.lockBar && !isEditMode() ? lockPageScroll(ctx.root) : window;
-        var pinType = scroller === window ? undefined : 'fixed';
+        // Only a locked page passes scroller/pinType: ScrollTrigger reads the mere presence of "pinType", and an
+        // undefined value would switch window pins from fixed to transform pinning (the stage then lags and lifts).
+        var onScroller = function (vars) {
+            if (scroller !== window) {
+                vars.scroller = scroller;
+                if (vars.pin) { vars.pinType = 'fixed'; }
+            }
+            return vars;
+        };
         // Swipes on a fixed element chain to the (locked) document, not to the scroll box, so the pinned stage
         // lets touches through to the scroller beneath it; links and buttons stay clickable (see CSS).
         if (scroller !== window) {
@@ -724,23 +732,19 @@
                 ctx.root.classList.remove('is-backdrop', 'is-stay-fixed');
             };
 
-            triggers.push(ScrollTrigger.create({
+            triggers.push(ScrollTrigger.create(onScroller({
                 trigger: ctx.root,
-                scroller: scroller,
-                pinType: pinType,
                 start: 'top top',
                 end: 'max',
                 pin: ctx.stage,
                 pinSpacing: false,
                 anticipatePin: 1,
-            }));
+            })));
         }
 
         var glide = config.motion === 'glide' && !reduce;
-        var trigger = ScrollTrigger.create({
+        var trigger = ScrollTrigger.create(onScroller({
             trigger: ctx.root,
-            scroller: scroller,
-            pinType: pinType,
             start: 'top top',
             end: function () {
                 return '+=' + distance();
@@ -774,22 +778,21 @@
                 delay: 0.1,
                 ease: config.snapEase || 'power2.inOut',
             } : false,
-        });
+        }));
 
         ctx.state.scroll = { trigger: trigger, points: snapPoints, glide: glide, scroller: scroller };
         triggers.push(trigger);
         var stopGlide = glide ? setupGlide(ctx, built, trigger, snapPoints, distance, triggers, editorProgress) : null;
 
         // Idle loops and tilt only run while the stage is on screen (to the end of the page as a backdrop).
-        triggers.push(ScrollTrigger.create({
+        triggers.push(ScrollTrigger.create(onScroller({
             trigger: ctx.root,
-            scroller: scroller,
             start: 'top bottom',
             end: stayFixed ? 'max' : 'bottom top',
             onToggle: function (self) {
                 setActive(ctx, self.isActive);
             },
-        }));
+        })));
         return function () {
             if (stopGlide) { stopGlide(); }
             if (releaseRoot) { releaseRoot(); }

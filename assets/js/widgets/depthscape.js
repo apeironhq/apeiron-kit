@@ -494,8 +494,10 @@
             var projected = projectLayer(item, camera, ctx.size, ctx.perspective, ctx.compensate);
             var bend = item.wind ? gust * ctx.windStrength * windFactor(item.depth) : 0;
             var drift = item.gust ? gust * 46 * windFactor(item.depth) : 0;
+            // A 2D translate (not translate3d) like the reference demo: a 3D layer is rasterised once and then
+            // only GPU-scaled, so a slow camera zoom made phones re-raster it in steps and the image shimmered.
             var transform = projected
-                ? 'translate3d(' + (projected.x + drift).toFixed(2) + 'px,' + projected.y.toFixed(2) + 'px,0) translate(var(--ds-tx),var(--ds-ty)) rotate(' + projected.rotation.toFixed(3) + 'deg) scale(' + projected.scale.toFixed(4) + ')' + (bend ? ' skewX(' + bend.toFixed(3) + 'deg)' : '')
+                ? 'translate(' + (projected.x + drift).toFixed(2) + 'px,' + projected.y.toFixed(2) + 'px) translate(var(--ds-tx),var(--ds-ty)) rotate(' + projected.rotation.toFixed(3) + 'deg) scale(' + projected.scale.toFixed(4) + ')' + (bend ? ' skewX(' + bend.toFixed(3) + 'deg)' : '')
                 : item.transform;
             var visibility = projected ? '' : 'hidden';
 
@@ -1757,12 +1759,20 @@
             if (!Number.isInteger(update.index) || update.index < 0) { return false; }
             target = (update.scope === 'layer' ? config.layers : config.scenes)[update.index];
             pattern = update.scope === 'layer' ? /^(image|depth|anchor|layer_key|layer_space|fit|video_loop|eyebrow|title|subtitle|button_text|idle_(type|amount|speed)|layer_wind|reveal_(split|style)|start_(x|y|scale|rotate|opacity|blur))$/ : /^(scene_(label|length|ease)|cam_(x|y|z|rx|ry|rz))$/;
-        } else if (update.scope === 'keyframe') {
+        } else if (update.scope === 'keyframe' || update.scope === 'scenes') {
             if (!Array.isArray(update.rows)) { return false; }
             pattern = /^kf_(layer|scene|at|duration|ease|x|y|scale|rotate|opacity|blur|reveal)$/;
-        } else if (update.scope !== 'root') { return false; }
+        } else if (update.scope !== 'root' && update.scope !== 'layer-remove') { return false; }
+        // Structural edits (rows added, removed or moved) carry rows or an index instead of changed values.
+        var removedLayer = null;
+        if (update.scope === 'layer-remove') {
+            var removedConfig = Number.isInteger(update.index) && config.layers ? config.layers[update.index] : null;
+            removedLayer = removedConfig ? root.querySelector('[data-ds-index="' + update.index + '"]') : null;
+            if (!removedLayer || removedLayer.getAttribute('data-ds-layer') !== removedConfig.key) { return false; }
+        }
         var keys = Object.keys(update.values);
-        if (!target || !keys.length || !keys.every(function (key) { return pattern.test(key); })) { return false; }
+        var structural = update.scope === 'scenes' || update.scope === 'layer-remove' || update.scope === 'keyframe';
+        if (!target || (!keys.length && !structural) || !keys.every(function (key) { return pattern.test(key); })) { return false; }
         var layer = update.scope === 'layer' ? root.querySelector('[data-ds-index="' + update.index + '"]') : null;
         if (update.scope === 'layer' && !layer) { return false; }
         if (keys.indexOf('anchor') >= 0 && ['center', 'top', 'bottom'].indexOf(update.values.anchor) < 0) { return false; }
@@ -1816,6 +1826,29 @@
             }).filter(Boolean);
             fullRebuild = revealed !== Object.keys(collectFlags(config).reveal).sort().join('|');
             rebuildTimeline = true;
+            keys = [];
+        }
+        if (update.scope === 'scenes') {
+            // Same rules as SceneConfigBuilder::build_scenes(): a camera value is only set when the field has one.
+            config.scenes = update.rows.map(function (row) {
+                var camera = {};
+                Object.keys(cameraLimits).forEach(function (prop) {
+                    if (rawNumber(row['cam_' + prop]) !== null) { camera[prop] = number(row['cam_' + prop], cameraLimits[prop]); }
+                });
+                return { length: number(row.scene_length, [100, 10, 600]), ease: ease(row.scene_ease, 'power2.inOut'), camera: camera };
+            });
+            rebuildTimeline = true;
+            scrollChanged = true;
+            keys = [];
+        }
+        if (removedLayer) {
+            removedLayer.parentNode.removeChild(removedLayer);
+            config.layers.splice(update.index, 1);
+            Array.prototype.forEach.call(root.querySelectorAll('.apeiron-depthscape__layer[data-ds-index]'), function (el) {
+                var position = Number(el.getAttribute('data-ds-index'));
+                if (position > update.index) { el.setAttribute('data-ds-index', String(position - 1)); }
+            });
+            fullRebuild = true;
             keys = [];
         }
         keys.forEach(function (key) {

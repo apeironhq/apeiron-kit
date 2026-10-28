@@ -48,6 +48,31 @@
         return attributes;
     }
 
+    // Rows added, removed or moved in a repeater: keyframes and scenes are rebuilt from their rows, and a
+    // removed layer is dropped from the preview when the remaining rows still match it one to one.
+    // Anything else (e.g. a new layer that needs fresh markup) keeps Elementor's server render.
+    function structuralUpdate(owner, root, changed) {
+        if (changed.length !== 1) { return null; }
+        if (changed[0] === 'keyframes' && owner.get('keyframes')) {
+            return { scope: 'keyframe', index: -1, rows: owner.get('keyframes').toJSON() };
+        }
+        if (changed[0] === 'scenes' && owner.get('scenes')) {
+            return { scope: 'scenes', index: -1, rows: owner.get('scenes').toJSON() };
+        }
+        if (changed[0] !== 'layers' || !owner.get('layers')) { return null; }
+        var rows = owner.get('layers').map(function (row) { return String(row.get('_id')); });
+        var shown = Array.prototype.slice.call(root.querySelectorAll('.apeiron-depthscape__layer[data-ds-index]'))
+            .filter(function (el) { return !el.classList.contains('apeiron-depthscape__particle'); })
+            .sort(function (a, b) { return Number(a.getAttribute('data-ds-index')) - Number(b.getAttribute('data-ds-index')); })
+            .map(function (el) { var match = /elementor-repeater-item-([\w-]+)/.exec(el.className); return match ? match[1] : ''; });
+        if (shown.length !== rows.length + 1) { return null; }
+        for (var i = 0; i < shown.length; i++) {
+            var rest = shown.slice(0, i).concat(shown.slice(i + 1));
+            if (rest.join('|') === rows.join('|')) { return { scope: 'layer-remove', index: i }; }
+        }
+        return null;
+    }
+
     function registerLivePreview(editor) {
         var LiveView;
         editor.hooks.addFilter('element/view', function (View, model) {
@@ -80,6 +105,15 @@
                                         pattern = /^kf_(layer|scene|at|duration|ease|x|y|scale|rotate|opacity|blur|reveal)$/;
                                     }
                                 }
+                            }
+                            // Rows added, removed or moved: Elementor re-renders with the repeater's own settings ({ name }).
+                            var repeaterName = settings !== owner && settings.attributes && Object.keys(settings.attributes).join(',') === 'name' ? settings.get('name') : '';
+                            var structural = repeaterName ? structuralUpdate(owner, root, [repeaterName]) : null;
+                            if (structural) {
+                                var structuralEvent = new root.ownerDocument.defaultView.CustomEvent('apeiron:depthscape:preview-change', {
+                                    bubbles: true, cancelable: true, detail: Object.assign({ values: {}, settings: settings, css: false }, structural),
+                                });
+                                if (!root.dispatchEvent(structuralEvent)) { return; }
                             }
                             var values = {};
                             var renderStyles = false;

@@ -235,8 +235,11 @@ class Depthscape extends BaseWidget {
 		}
 		unset( $row );
 
+		// Duplicated/imported widgets may carry containers without a row; the frontend adopts them. In the editor the
+		// layer sync adds such rows itself, and a render requested while a row and its container are being removed
+		// would otherwise bring the deleted container back as a stray "konten-…" layer.
 		foreach ( $children as $id => $child ) {
-			if ( ! isset( $used[ $id ] ) ) {
+			if ( ! isset( $used[ $id ] ) && ! $this->is_content_editor() ) {
 				$rows[] = [
 					'_id'        => $id,
 					'layer_key'  => 'konten-' . $id,

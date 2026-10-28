@@ -744,8 +744,10 @@
         };
         // Swipes on a fixed element chain to the (locked) document, not to the scroll box, so the pinned stage
         // lets touches through to the scroller beneath it; links and buttons stay clickable (see CSS).
+        var stopSwipeRelay = null;
         if (scroller !== window) {
             ctx.root.classList.add('is-scroll-locked');
+            stopSwipeRelay = relayStageSwipes(ctx, scroller);
         }
 
         var distance = function () {
@@ -846,6 +848,7 @@
             if (releaseRoot) { releaseRoot(); }
             triggers.forEach(function (item) { item.kill(true, true); });
             if (scroller !== window) {
+                if (stopSwipeRelay) { stopSwipeRelay(); }
                 ctx.root.classList.remove('is-scroll-locked');
                 unlockPageScroll(scroller);
             }
@@ -889,6 +892,75 @@
         scroller.classList.remove('apeiron-depthscape-scroller');
         document.documentElement.classList.remove('apeiron-depthscape-lock');
         window.scrollTo(0, top);
+    }
+
+    // On a locked page a swipe that starts on a link or button in the pinned stage still chains to the locked
+    // document, so it moved nothing: going back and forth over scenes with buttons felt stuck. Such vertical
+    // swipes are passed to the scroll box as one scene forward or back. Taps, sideways swipes (carousels) and
+    // swipes inside an element that scrolls by itself stay native.
+    function relayStageSwipes(ctx, scroller) {
+        var stage = ctx.stage;
+        var start = null;
+        var last = null;
+
+        var canScrollY = function (el) {
+            for (; el && el !== stage; el = el.parentElement) {
+                var overflow = window.getComputedStyle(el).overflowY;
+                if ((overflow === 'auto' || overflow === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        var onStart = function (event) {
+            var target = event.target && event.target.closest ? event.target.closest('a, button, input, select, textarea, label, summary, [role="button"]') : null;
+            var touch = event.touches.length === 1 ? event.touches[0] : null;
+            start = touch && target && stage.contains(target) && !canScrollY(target)
+                ? { x: touch.clientX, y: touch.clientY, top: scroller.scrollTop }
+                : null;
+            last = start;
+        };
+        var onMove = function (event) {
+            if (start && event.touches.length === 1) {
+                last = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+            }
+        };
+        var onEnd = function () {
+            var scroll = ctx.state.scroll;
+            var from = start;
+            start = null;
+            if (!from || !scroll || Math.abs(scroller.scrollTop - from.top) > 2) {
+                return;
+            }
+            var dx = last.x - from.x;
+            var dy = last.y - from.y;
+            if (Math.abs(dy) < 24 || Math.abs(dy) < Math.abs(dx)) {
+                return;
+            }
+            var trigger = scroll.trigger;
+            var next = null;
+            scroll.points.forEach(function (point) {
+                if (dy < 0 && next === null && point > trigger.progress + 0.001) { next = point; }
+                if (dy > 0 && point < trigger.progress - 0.001) { next = point; }
+            });
+            var target = next !== null
+                ? trigger.start + (trigger.end - trigger.start) * next
+                : (dy < 0 ? trigger.start + ctx.root.offsetHeight : null);
+            if (target !== null) {
+                scrollToPosition(scroller, Math.round(target), 'smooth');
+            }
+        };
+
+        stage.addEventListener('touchstart', onStart, { passive: true });
+        stage.addEventListener('touchmove', onMove, { passive: true });
+        stage.addEventListener('touchend', onEnd, { passive: true });
+        stage.addEventListener('touchcancel', onEnd, { passive: true });
+        return function () {
+            stage.removeEventListener('touchstart', onStart);
+            stage.removeEventListener('touchmove', onMove);
+            stage.removeEventListener('touchend', onEnd);
+            stage.removeEventListener('touchcancel', onEnd);
+        };
     }
 
     function scrollPosition(scroller) {

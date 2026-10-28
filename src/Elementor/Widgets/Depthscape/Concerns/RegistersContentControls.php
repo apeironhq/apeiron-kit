@@ -888,6 +888,19 @@ trait RegistersContentControls {
 		);
 
 		$this->add_control(
+			'lock_browser_bar',
+			[
+				'label'        => __( 'Kunci Bilah Browser (HP)', 'apeiron-kit' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'label_on'     => __( 'Ya', 'apeiron-kit' ),
+				'label_off'    => __( 'Tidak', 'apeiron-kit' ),
+				'return_value' => 'yes',
+				'default'      => '',
+				'description'  => __( 'Bilah alamat Chrome/Safari tidak lagi mengecil saat scroll, jadi tinggi layar tetap. Hanya berlaku di halaman ini; paling cocok dengan template Elementor Canvas. Motion Effects/Sticky Elementor dan widget Gulir Otomatis tidak berjalan di halaman ini.', 'apeiron-kit' ),
+			]
+		);
+
+		$this->add_control(
 			'smoothness',
 			[
 				'label'       => __( 'Kehalusan Scroll', 'apeiron-kit' ),

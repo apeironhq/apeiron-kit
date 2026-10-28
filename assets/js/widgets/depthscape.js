@@ -684,6 +684,14 @@
             return a - b;
         });
 
+        var scroller = config.lockBar && !isEditMode() ? lockPageScroll(ctx.root) : window;
+        var pinType = scroller === window ? undefined : 'fixed';
+        // Swipes on a fixed element chain to the (locked) document, not to the scroll box, so the pinned stage
+        // lets touches through to the scroller beneath it; links and buttons stay clickable (see CSS).
+        if (scroller !== window) {
+            ctx.root.classList.add('is-scroll-locked');
+        }
+
         var distance = function () {
             var height = window.innerHeight;
             if (!isEditMode() && ScrollTrigger.isTouch === 1) {
@@ -718,6 +726,8 @@
 
             triggers.push(ScrollTrigger.create({
                 trigger: ctx.root,
+                scroller: scroller,
+                pinType: pinType,
                 start: 'top top',
                 end: 'max',
                 pin: ctx.stage,
@@ -729,6 +739,8 @@
         var glide = config.motion === 'glide' && !reduce;
         var trigger = ScrollTrigger.create({
             trigger: ctx.root,
+            scroller: scroller,
+            pinType: pinType,
             start: 'top top',
             end: function () {
                 return '+=' + distance();
@@ -764,13 +776,14 @@
             } : false,
         });
 
-        ctx.state.scroll = { trigger: trigger, points: snapPoints, glide: glide };
+        ctx.state.scroll = { trigger: trigger, points: snapPoints, glide: glide, scroller: scroller };
         triggers.push(trigger);
         var stopGlide = glide ? setupGlide(ctx, built, trigger, snapPoints, distance, triggers, editorProgress) : null;
 
         // Idle loops and tilt only run while the stage is on screen (to the end of the page as a backdrop).
         triggers.push(ScrollTrigger.create({
             trigger: ctx.root,
+            scroller: scroller,
             start: 'top bottom',
             end: stayFixed ? 'max' : 'bottom top',
             onToggle: function (self) {
@@ -781,8 +794,58 @@
             if (stopGlide) { stopGlide(); }
             if (releaseRoot) { releaseRoot(); }
             triggers.forEach(function (item) { item.kill(true, true); });
+            if (scroller !== window) {
+                ctx.root.classList.remove('is-scroll-locked');
+                unlockPageScroll(scroller);
+            }
             ctx.state.scroll = null;
         };
+    }
+
+    // "Kunci Bilah Browser": mobile Chrome/Safari only collapse their address bar when the document itself
+    // scrolls. Like an app shell, the page's Elementor document becomes a fixed, full-screen scroll box, so the
+    // bar stays and the viewport height never changes. <body> cannot be used: ScrollTrigger treats it as the window.
+    function lockPageScroll(root) {
+        var scroller = root;
+        var parent = root.parentElement && root.parentElement.closest('[data-elementor-type]');
+        while (parent) {
+            scroller = parent;
+            parent = parent.parentElement && parent.parentElement.closest('[data-elementor-type]');
+        }
+        if (scroller === root) {
+            return window;
+        }
+
+        var count = Number(scroller.getAttribute('data-ds-scroll-lock') || 0);
+        if (count === 0) {
+            var top = window.scrollY;
+            document.documentElement.classList.add('apeiron-depthscape-lock');
+            scroller.classList.add('apeiron-depthscape-scroller');
+            scroller.scrollTop = top;
+        }
+        scroller.setAttribute('data-ds-scroll-lock', String(count + 1));
+        return scroller;
+    }
+
+    function unlockPageScroll(scroller) {
+        var count = Number(scroller.getAttribute('data-ds-scroll-lock') || 0) - 1;
+        if (count > 0) {
+            scroller.setAttribute('data-ds-scroll-lock', String(count));
+            return;
+        }
+        var top = scroller.scrollTop;
+        scroller.removeAttribute('data-ds-scroll-lock');
+        scroller.classList.remove('apeiron-depthscape-scroller');
+        document.documentElement.classList.remove('apeiron-depthscape-lock');
+        window.scrollTo(0, top);
+    }
+
+    function scrollPosition(scroller) {
+        return scroller && scroller !== window ? scroller.scrollTop : window.scrollY;
+    }
+
+    function scrollToPosition(scroller, top, behavior) {
+        (scroller && scroller !== window ? scroller : window).scrollTo({ top: top, behavior: behavior });
     }
 
     // "Meluncur" mode. The page snaps natively to exactly one scene per swipe (CSS scroll snap with
@@ -838,6 +901,7 @@
             // The start sits 2px early so the first scene (scroll exactly at the widget top) already snaps.
             triggers.push(ScrollTrigger.create({
                 trigger: ctx.root,
+                scroller: trigger.scroller,
                 start: 'top top+=2',
                 end: 'bottom top+=2',
                 onToggle: function (self) {
@@ -1335,8 +1399,9 @@
     }
 
     function playOpening(state, target) {
-        var position = { y: window.scrollY };
-        var scrollRoot = document.scrollingElement || document.documentElement;
+        var scroller = state.scroll.scroller;
+        var position = { y: scrollPosition(scroller) };
+        var scrollRoot = scroller && scroller !== window ? scroller : (document.scrollingElement || document.documentElement);
         var previousBehavior = scrollRoot.style.scrollBehavior;
         var tween = null;
         var opening = { stop: stop };
@@ -1374,7 +1439,7 @@
             duration: OPENING_DURATION,
             ease: 'power2.inOut',
             onUpdate: function () {
-                window.scrollTo({ top: position.y, behavior: 'auto' });
+                scrollToPosition(scroller, position.y, 'auto');
             },
             onComplete: cleanup,
             onInterrupt: cleanup,
@@ -1407,7 +1472,7 @@
         if (!reduce && next === scroll.points[1] && !scroll.glide) {
             playOpening(state, target);
         } else {
-            window.scrollTo({ top: Math.round(target), behavior: reduce ? 'auto' : 'smooth' });
+            scrollToPosition(scroll.scroller, Math.round(target), reduce ? 'auto' : 'smooth');
         }
 
         return true;
@@ -1421,7 +1486,7 @@
         }
 
         var trigger = scroll.trigger;
-        var nearTop = trigger.start - window.scrollY < window.innerHeight * 0.6;
+        var nearTop = trigger.start - scrollPosition(scroll.scroller) < window.innerHeight * 0.6;
         if (trigger.progress <= 0.02 && nearTop) {
             glideToNextScene(state);
         }

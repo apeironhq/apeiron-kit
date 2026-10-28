@@ -90,6 +90,7 @@ final class SceneConfigBuilder {
 			'snapEase'    => self::ease( $settings['snap_ease'] ?? 'power2.inOut', 'power2.inOut' ),
 			'motion'      => self::pick( $settings['motion_style'] ?? 'scrub', [ 'scrub', 'glide' ], 'scrub' ),
 			'glide'       => self::num( self::slider_size( $settings['glide_smoothing'] ?? null ), 0.015, 0.003, 0.1 ),
+			'lockBar'     => 'yes' === ( $settings['lock_browser_bar'] ?? '' ),
 			'coverPlay'   => 'yes' === ( $settings['cover_autoplay'] ?? '' ),
 			'stayFixed'   => 'yes' === ( $settings['stay_fixed'] ?? '' ),
 			'perspective' => self::num( self::slider_size( $settings['perspective'] ?? null ), 1000.0, 200.0, 4000.0 ),

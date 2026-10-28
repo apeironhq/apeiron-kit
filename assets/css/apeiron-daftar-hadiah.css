@@ -505,6 +505,68 @@
 	background: rgba(15, 23, 42, .38);
 }
 
+/* Opening and closing animation; the script adds .is-closing and closes the dialog when it ends. */
+.apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog[open] {
+	animation: apeiron-daftar-hadiah-popup-in .26s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog[open]::backdrop {
+	animation: apeiron-daftar-hadiah-backdrop-in .26s ease both;
+}
+
+.apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog.is-closing {
+	animation: apeiron-daftar-hadiah-popup-out .2s ease-in both;
+	pointer-events: none;
+}
+
+.apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog.is-closing::backdrop {
+	animation: apeiron-daftar-hadiah-backdrop-out .2s ease-in both;
+}
+
+@keyframes apeiron-daftar-hadiah-popup-in {
+	from {
+		opacity: 0;
+		transform: translateY(16px) scale(.97);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes apeiron-daftar-hadiah-popup-out {
+	from {
+		opacity: 1;
+		transform: none;
+	}
+
+	to {
+		opacity: 0;
+		transform: translateY(12px) scale(.97);
+	}
+}
+
+@keyframes apeiron-daftar-hadiah-backdrop-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes apeiron-daftar-hadiah-backdrop-out {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
 .apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog-content {
 	display: grid;
 	grid-template-columns: minmax(0, var(--dh-popup-media-share, 44%)) minmax(0, 1fr);
@@ -882,6 +944,13 @@
 		height: 0;
 	}
 
+	/* Narrow desktop window: the row is dragged with the mouse (daftar-hadiah.js); snapping pauses mid-drag. */
+	.elementor-element.elementor-widget-apeiron-daftar-hadiah .apeiron-daftar-hadiah.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__grid.is-dragging {
+		scroll-snap-type: none;
+		cursor: grabbing;
+		user-select: none;
+	}
+
 	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__swipe-navigation {
 		display: flex;
 	}
@@ -901,9 +970,20 @@
 	}
 }
 
+@media (max-width: 767px) and (hover: hover) and (pointer: fine) {
+	.apeiron-daftar-hadiah.apeiron-daftar-hadiah--mobile-swipe .apeiron-daftar-hadiah__grid {
+		cursor: grab;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__button,
 	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__input {
 		transition: none;
+	}
+
+	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog[open],
+	.apeiron-daftar-hadiah .apeiron-daftar-hadiah__dialog[open]::backdrop {
+		animation: none;
 	}
 }

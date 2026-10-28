@@ -87,6 +87,87 @@
 		state.queueNavigation();
 	}
 
+	// A narrow desktop window shows the cards as the same sideways row as phones, but a mouse cannot swipe it.
+	// Dragging the row with the mouse scrolls it; on release it settles on the nearest card (or the next one in
+	// the drag direction). Snapping is paused while dragging so the row follows the pointer smoothly.
+	function nearestCard(state) {
+		var bounds = state.track.getBoundingClientRect();
+		var rtl = getComputedStyle(state.track).direction === 'rtl';
+		var index = 0;
+		var nearest = Infinity;
+		state.cards.forEach(function (card, cardIndex) {
+			var rect = card.getBoundingClientRect();
+			var distance = Math.abs(rtl ? bounds.right - rect.right : rect.left - bounds.left);
+			if (distance < nearest) {
+				nearest = distance;
+				index = cardIndex;
+			}
+		});
+		return index;
+	}
+
+	function initCardDrag(state) {
+		var track = state.track;
+		var drag = null;
+		var settle = function () {
+			window.clearTimeout(state.dragSettleTimer);
+			track.removeEventListener('scrollend', settle);
+			track.classList.remove('is-dragging');
+		};
+		state.dragStart = function (event) {
+			if (event.pointerType !== 'mouse' || event.button !== 0 || !state.cards.length || getComputedStyle(track).overflowX !== 'auto'
+				|| track.scrollWidth - track.clientWidth <= 1 || event.target.closest('a, button, input, textarea, select, label')) {
+				return;
+			}
+			settle();
+			drag = { id: event.pointerId, x: event.clientX, left: track.scrollLeft, card: nearestCard(state), moved: false };
+		};
+		state.dragMove = function (event) {
+			if (!drag || event.pointerId !== drag.id) {
+				return;
+			}
+			var distance = event.clientX - drag.x;
+			if (!drag.moved) {
+				if (Math.abs(distance) < 6) {
+					return;
+				}
+				drag.moved = true;
+				track.setPointerCapture(event.pointerId);
+				track.classList.add('is-dragging');
+				if (window.getSelection) { window.getSelection().removeAllRanges(); }
+			}
+			track.scrollLeft = drag.left - distance;
+		};
+		state.dragEnd = function (event) {
+			if (!drag || event.pointerId !== drag.id) {
+				return;
+			}
+			var finished = drag;
+			drag = null;
+			if (!finished.moved) {
+				return;
+			}
+			var distance = event.type === 'pointercancel' ? 0 : event.clientX - finished.x;
+			var forward = getComputedStyle(track).direction === 'rtl' ? distance > 0 : distance < 0;
+			var index = nearestCard(state);
+			if (index === finished.card && Math.abs(distance) > 40) {
+				index += forward ? 1 : -1;
+			}
+			track.addEventListener('scrollend', settle);
+			state.dragSettleTimer = window.setTimeout(settle, 700);
+			navigateToCard(state, index);
+		};
+		// Without this, a drag that starts on a card photo becomes the browser's own image drag.
+		state.dragImage = function (event) {
+			if (drag) { event.preventDefault(); }
+		};
+		track.addEventListener('pointerdown', state.dragStart);
+		track.addEventListener('dragstart', state.dragImage);
+		track.addEventListener('pointermove', state.dragMove);
+		track.addEventListener('pointerup', state.dragEnd);
+		track.addEventListener('pointercancel', state.dragEnd);
+	}
+
 	function collectFormData(form) {
 		var data = new FormData(form);
 		return {
@@ -302,7 +383,7 @@
 		state.successTimer = window.setTimeout(function () {
 			state.successTimer = null;
 			if (instances.get(state.root) === state && state.root.isConnected && state.dialog.open && state.confirmed) {
-				closeDialog(state);
+				closeDialog(state, true);
 			}
 		}, 3000);
 	}
@@ -344,9 +425,29 @@
 		state.opener = null;
 	}
 
-	function closeDialog(state) {
-		if (state.dialog.open) {
-			state.dialog.close();
+	// `animate` plays the closing animation (CSS .is-closing) before the dialog really closes; programmatic
+	// closes (another gift opening, widget teardown) stay instant.
+	function closeDialog(state, animate) {
+		var dialog = state.dialog;
+		if (animate && dialog.open && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			if (!dialog.classList.contains('is-closing')) {
+				dialog.classList.add('is-closing');
+				state.closingEnd = function (event) {
+					if (event.target === dialog) { closeDialog(state); }
+				};
+				dialog.addEventListener('animationend', state.closingEnd);
+				state.closingTimer = window.setTimeout(function () { closeDialog(state); }, 400);
+			}
+			return;
+		}
+		window.clearTimeout(state.closingTimer);
+		if (state.closingEnd) {
+			dialog.removeEventListener('animationend', state.closingEnd);
+			state.closingEnd = null;
+		}
+		dialog.classList.remove('is-closing');
+		if (dialog.open) {
+			dialog.close();
 		}
 		afterClose(state);
 	}
@@ -555,7 +656,16 @@
 		state.form.removeEventListener('submit', state.submitHandler);
 		state.form.removeEventListener('input', state.input);
 		state.dialog.removeEventListener('keydown', state.keydown);
+		state.dialog.removeEventListener('cancel', state.cancel);
 		state.dialog.removeEventListener('close', state.close);
+		if (state.dragStart) {
+			state.track.removeEventListener('pointerdown', state.dragStart);
+			state.track.removeEventListener('dragstart', state.dragImage);
+			state.track.removeEventListener('pointermove', state.dragMove);
+			state.track.removeEventListener('pointerup', state.dragEnd);
+			state.track.removeEventListener('pointercancel', state.dragEnd);
+			window.clearTimeout(state.dragSettleTimer);
+		}
 		if (state.queueNavigation) {
 			state.track.removeEventListener('scroll', state.queueNavigation);
 			window.removeEventListener('resize', state.queueNavigation);
@@ -629,11 +739,11 @@
 				return;
 			}
 			if (event.target.closest('[data-gift-close]')) {
-				closeDialog(state);
+				closeDialog(state, true);
 			} else if (event.target === dialog && dialog.open) {
 				var bounds = dialog.getBoundingClientRect();
 				if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
-					closeDialog(state);
+					closeDialog(state, true);
 				}
 			}
 		};
@@ -664,6 +774,13 @@
 				trapFocus(state, event);
 			}
 		};
+		// Escape closes with the same animation as the close button.
+		state.cancel = function (event) {
+			if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+				event.preventDefault();
+				closeDialog(state, true);
+			}
+		};
 		state.close = function () {
 			// A queued close event from a previous opening must not reset a new one.
 			if (!dialog.open) {
@@ -677,9 +794,13 @@
 		form.addEventListener('submit', state.submitHandler);
 		form.addEventListener('input', state.input);
 		dialog.addEventListener('keydown', state.keydown);
+		dialog.addEventListener('cancel', state.cancel);
 		dialog.addEventListener('close', state.close);
 		instances.set(root, state);
 		initCardNavigation(state);
+		if (state.track) {
+			initCardDrag(state);
+		}
 		refreshAvailability(state);
 	}
 

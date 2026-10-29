@@ -45,12 +45,14 @@
 	line-height: 1;
 }
 
-/* Ucapan Tamu, Manajemen Tamu, Form WhatsApp, Hitung Mundur (its "Pesan Waktu Habis" section) and Tombol Salin
-   (the only panel with both a Tombol and an Ikon style section): their typography toggles start empty, so
-   Elementor builds each typography popover only when the pencil is clicked and only then moves the "Back to
-   default" button into the popover header. Until that moment
-   the button also showed beside the row, and its tooltip stayed stuck on screen after the move. The popover
-   header keeps the reset button. */
-#elementor-controls:is(:has(> :is(.elementor-control-section_style_attendance_summary, .elementor-control-section_table_style_unified, .elementor-control-section_style_confirmation, .elementor-control-section_style_expired)), :has(> .elementor-control-section_style_button):has(> .elementor-control-section_style_icon)) > .elementor-control-type-popover_toggle[class*="_typography_typography"] > .elementor-control-content .elementor-control-input-wrapper > .elementor-control-popover-toggle-reset-label {
+/* Ucapan Tamu, Manajemen Tamu, Form WhatsApp, Hitung Mundur (its "Pesan Waktu Habis" section), Daftar Hadiah
+   (its "Navigasi Swipe Card" section), Form Order (its "Interaksi dan Tata Letak" section), Cerita Cinta (its
+   "Teks Cerita" section), Page Loader (its section_style_surface "Container" section), Social Proof (its
+   "Tombol Tutup" section), Soundscape (its "Penempatan" section) and Tombol Salin (the only panel with both a
+   Tombol and an Ikon style section): their typography toggles start empty, so Elementor builds each typography
+   popover only when the pencil is clicked and only then moves the "Back to default" button into the popover
+   header. Until that moment the button also showed beside the row, and its tooltip stayed stuck on screen after
+   the move. The popover header keeps the reset button. */
+#elementor-controls:is(:has(> :is(.elementor-control-section_style_attendance_summary, .elementor-control-section_table_style_unified, .elementor-control-section_style_confirmation, .elementor-control-section_style_expired, .elementor-control-section_style_swipe_navigation, .elementor-control-style_interaction, .elementor-control-section_style_story_text, .elementor-control-section_style_surface, .elementor-control-section_style_close_button, .elementor-control-section_style_placement)), :has(> .elementor-control-section_style_button):has(> .elementor-control-section_style_icon)) > .elementor-control-type-popover_toggle[class*="_typography_typography"] > .elementor-control-content .elementor-control-input-wrapper > .elementor-control-popover-toggle-reset-label {
 	display: none;
 }

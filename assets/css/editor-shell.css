@@ -45,10 +45,10 @@
 	line-height: 1;
 }
 
-/* Ucapan Tamu and Manajemen Tamu: their typography toggles start empty, so Elementor builds each typography popover only when the
+/* Ucapan Tamu, Manajemen Tamu and Form WhatsApp: their typography toggles start empty, so Elementor builds each typography popover only when the
    pencil is clicked and only then moves the "Back to default" button into the popover header. Until that moment
    the button also showed beside the row, and its tooltip stayed stuck on screen after the move. The popover
    header keeps the reset button. */
-#elementor-controls:has(> :is(.elementor-control-section_style_attendance_summary, .elementor-control-section_table_style_unified)) > .elementor-control-type-popover_toggle[class*="_typography_typography"] > .elementor-control-content .elementor-control-input-wrapper > .elementor-control-popover-toggle-reset-label {
+#elementor-controls:has(> :is(.elementor-control-section_style_attendance_summary, .elementor-control-section_table_style_unified, .elementor-control-section_style_confirmation)) > .elementor-control-type-popover_toggle[class*="_typography_typography"] > .elementor-control-content .elementor-control-input-wrapper > .elementor-control-popover-toggle-reset-label {
 	display: none;
 }

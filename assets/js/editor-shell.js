@@ -111,6 +111,28 @@
 		document.body.appendChild(notice);
 	}
 
+	// Elementor's hover tooltips (tipsy) stay on screen when the control under the mouse is re-rendered or hidden
+	// by a click (typography "Back to default", Normal/Focus tabs): the mouse never "leaves" it, so the tooltip
+	// piled up and could cover other buttons. In ApeironKit widget panels a tooltip is dropped as soon as the
+	// mouse is over something that has no tooltip of its own.
+	function bindStaleTooltipCleanup() {
+		document.addEventListener('mouseover', function(event) {
+			var tips = document.querySelectorAll('.tipsy');
+			if (!tips.length || (event.target.closest && event.target.closest('.tooltip-target, [original-title], .tipsy'))) {
+				return;
+			}
+			var panel = window.elementor && window.elementor.getPanelView && window.elementor.getPanelView();
+			var page = panel && panel.getCurrentPageView && panel.getCurrentPageView();
+			var type = page && page.model && page.model.get && page.model.get('widgetType');
+			if (!type || type.indexOf('apeiron-') !== 0) {
+				return;
+			}
+			Array.prototype.forEach.call(tips, function(tip) {
+				tip.remove();
+			});
+		}, true);
+	}
+
 	function bindHeartbeat() {
 		if (!window.wp || !window.wp.heartbeat || !$) {
 			return;
@@ -134,6 +156,7 @@
 	}
 
 	bindHeartbeat();
+	bindStaleTooltipCleanup();
 	bindLivePreviews();
 	if (window.elementor && window.elementor.once) { window.elementor.once('panel:init', bindLivePreviews); }
 })(window, document, window.jQuery);

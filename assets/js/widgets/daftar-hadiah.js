@@ -157,21 +157,23 @@
 			state.dragSettleTimer = window.setTimeout(settle, 700);
 			navigateToCard(state, index);
 		};
-		// Without this, a drag that starts on a card photo becomes the browser's own image drag.
+		// Without this, a drag that starts on a card photo becomes the browser's own image drag, and in the Elementor
+		// editor the whole widget (draggable for moving it) would start moving instead; that drag starts on an
+		// ancestor of the row, so the listener is on the document.
 		state.dragImage = function (event) {
 			if (drag) { event.preventDefault(); }
 		};
 		track.addEventListener('pointerdown', state.dragStart);
-		track.addEventListener('dragstart', state.dragImage);
+		document.addEventListener('dragstart', state.dragImage, true);
 		track.addEventListener('pointermove', state.dragMove);
 		track.addEventListener('pointerup', state.dragEnd);
 		track.addEventListener('pointercancel', state.dragEnd);
 	}
 
-	// Inside a Paralaks stage the widget sits in a phone-sized column even on a desktop screen, so the phone layout
-	// (CSS .is-compact) follows the widget's own width there instead of the window's media queries.
+	// In a narrow container (a Paralaks stage, a small column) the widget is phone-sized even on a desktop screen, so
+	// the phone layout (CSS .is-compact) follows the widget's own width instead of the window's media queries.
 	function initCompactLayout(state) {
-		if (!window.ResizeObserver || !state.root.closest('.apeiron-depthscape__stage')) {
+		if (!window.ResizeObserver) {
 			return;
 		}
 		state.compactResize = new window.ResizeObserver(function () {
@@ -682,7 +684,7 @@
 		}
 		if (state.dragStart) {
 			state.track.removeEventListener('pointerdown', state.dragStart);
-			state.track.removeEventListener('dragstart', state.dragImage);
+			document.removeEventListener('dragstart', state.dragImage, true);
 			state.track.removeEventListener('pointermove', state.dragMove);
 			state.track.removeEventListener('pointerup', state.dragEnd);
 			state.track.removeEventListener('pointercancel', state.dragEnd);

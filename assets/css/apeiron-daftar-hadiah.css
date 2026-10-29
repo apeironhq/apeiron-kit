@@ -976,9 +976,9 @@
 	}
 }
 
-/* Inside a Paralaks stage the widget sits in a phone-sized column even on a desktop screen. daftar-hadiah.js
-   adds .is-compact there while the widget is at most 767px wide, so the phone layout (one column, or the
-   sideways swipe row) follows the widget's own width instead of the window's. */
+/* In a narrow container (a Paralaks stage, a small column) the widget is phone-sized even on a desktop screen.
+   daftar-hadiah.js adds .is-compact while the widget is at most 767px wide, so the phone layout (one column, or
+   the sideways swipe row) follows the widget's own width instead of the window's. */
 .apeiron-daftar-hadiah.is-compact .apeiron-daftar-hadiah__grid {
 	grid-template-columns: minmax(0, var(--dh-card-max-width, var(--dh-card-default-max-width, 260px)));
 }

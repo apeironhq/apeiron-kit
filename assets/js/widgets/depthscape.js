@@ -27,6 +27,8 @@
     var pluginsRegistered = false;
     var refreshListenerAdded = false;
     var resizeTimer = null;
+    var resizeWidth = 0;
+    var widthObserver = null;
     var motionQuery = null;
     var motionWatchBound = false;
     var detachObserver = null;
@@ -974,8 +976,9 @@
 
     // "Meluncur" mode. The page snaps natively to exactly one scene per swipe (CSS scroll snap with
     // snap-stop), while the picture follows the scroll position with exponential smoothing: quick at
-    // first, then a long, slow settle. Like the reference demo, the factor is applied once per screen frame:
-    // a 60 Hz phone glides slower and dreamier, a 120 Hz phone twice as fast, exactly as the demo does there.
+    // first, then a long, slow settle. The factor is the share of the gap covered per 1/60 s. It used to apply
+    // once per screen frame like the reference demo, but phones switch between 60 and 120 Hz (and drop frames)
+    // mid-glide, so the speed jumped with every change of frame rhythm and the motion juddered.
     function setupGlide(ctx, built, trigger, snapPoints, distance, triggers, editorProgress) {
         var gsap = ctx.gsap;
         var ScrollTrigger = window.ScrollTrigger;
@@ -986,7 +989,15 @@
 
         built.timeline.progress(current, true);
 
-        var tick = function () {
+        // Elapsed time in 60 Hz frames: exactly 1 per frame on a 60 Hz screen, so the tuned speed is kept there.
+        // It is read from the frame's own timestamp (aligned to the screen refresh); the ticker's delta is taken
+        // when the callback runs and wobbles by a few ms, which made the step size, and the motion, wobble too.
+        var lastFrame = 0;
+        var tick = function (time, deltaTime) {
+            var frameTime = document.timeline && typeof document.timeline.currentTime === 'number' ? document.timeline.currentTime : 0;
+            var elapsed = frameTime && lastFrame ? frameTime - lastFrame : deltaTime;
+            lastFrame = frameTime;
+            var steps = elapsed > 0 ? clamp(elapsed / (1000 / 60), 0.25, 4) : 1;
             var target = trigger.progress;
             var gap = target - current;
             if (Math.abs(gap) < 0.00005) {
@@ -996,7 +1007,7 @@
                 }
                 return;
             }
-            current += gap * factor;
+            current = target - gap * Math.pow(1 - factor, steps);
             built.timeline.progress(current, true);
         };
         gsap.ticker.add(tick);
@@ -1707,6 +1718,12 @@
         if (detachObserver) { detachObserver.disconnect(); detachObserver = null; }
         if (refreshListenerAdded && hasScrollTrigger()) {
             window.ScrollTrigger.removeEventListener('refresh', scheduleSizeCheck);
+            if (widthObserver) {
+                widthObserver.disconnect();
+                widthObserver = null;
+            } else if (typeof window.removeEventListener === 'function') {
+                window.removeEventListener('resize', onWidthResize);
+            }
             refreshListenerAdded = false;
         }
         clearTimeout(resizeTimer);
@@ -1782,6 +1799,26 @@
     function scheduleSizeCheck() {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(checkSizes, 120);
+    }
+
+    // A pinned stage keeps ScrollTrigger's px position until its debounced refresh, so a width change (the editor
+    // panel hidden or shown, a rotated phone) showed the stage off-centre for a moment before it jumped into place.
+    // A width change refreshes at once, before that frame is painted (ResizeObserver runs after layout, a resize
+    // event can arrive a frame late); height-only changes (mobile browser bars) are left alone.
+    function viewportWidth() {
+        return (document.documentElement && document.documentElement.clientWidth) || window.innerWidth || 0;
+    }
+
+    function onWidthResize() {
+        var width = viewportWidth();
+        if (Math.abs(width - resizeWidth) < 1) {
+            return;
+        }
+        resizeWidth = width;
+        if (liveRoots.length && hasScrollTrigger()) {
+            window.ScrollTrigger.refresh();
+            checkSizes();
+        }
     }
 
     // In the Elementor editor, style controls (stage width/height…) update CSS without re-rendering the
@@ -2226,6 +2263,13 @@
 
         if (hasScrollTrigger() && !refreshListenerAdded) {
             window.ScrollTrigger.addEventListener('refresh', scheduleSizeCheck);
+            resizeWidth = viewportWidth();
+            if (window.ResizeObserver && document.documentElement) {
+                widthObserver = new window.ResizeObserver(onWidthResize);
+                widthObserver.observe(document.documentElement);
+            } else {
+                window.addEventListener('resize', onWidthResize);
+            }
             refreshListenerAdded = true;
         }
 

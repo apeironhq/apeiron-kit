@@ -882,7 +882,7 @@ trait RegistersContentControls {
 					'px' => [ 'min' => 0.005, 'max' => 0.08, 'step' => 0.001 ],
 				],
 				'default'     => [ 'size' => 0.015 ],
-				'description' => __( 'Porsi jarak yang ditempuh tiap frame layar, seperti demo envelope. Kecil = lebih lambat dan lembut. 0.015 ≈ 2,4 detik di HP 60 Hz dan 1,2 detik di HP 120 Hz.', 'apeiron-kit' ),
+				'description' => __( 'Porsi jarak yang ditempuh tiap 1/60 detik. Kecil = lebih lambat dan lembut. 0.015 ≈ 2,4 detik, sama di HP 60 Hz maupun 120 Hz.', 'apeiron-kit' ),
 				'condition'   => [ 'motion_style' => 'glide' ],
 			]
 		);

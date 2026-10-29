@@ -178,19 +178,19 @@ trait RegistersStyleControls {
 	}
 
 	private function register_state_style_controls( string $prefix, array $selectors, string $label, array $properties = [ 'color', 'background', 'border_color' ] ): void {
-		$this->add_control(
-			$prefix . '_heading',
-			[
-				'label'        => $label,
-				'type'         => Controls_Manager::POPOVER_TOGGLE,
-				'return_value' => 'yes',
-				'default'      => 'yes',
-				'toggle'       => false,
-				'render_type'  => 'ui',
-				'separator'    => 'before',
-			]
-		);
-		$this->start_popover();
+		// Colours and opacity sit directly in the panel, like the other colour controls (no popover to open):
+		// a group with one value is a single control named after the group, a larger group gets a heading.
+		$single = 1 === count( $properties );
+		if ( ! $single ) {
+			$this->add_control(
+				$prefix . '_heading',
+				[
+					'label'     => $label,
+					'type'      => Controls_Manager::HEADING,
+					'separator' => 'before',
+				]
+			);
+		}
 
 		$rules = [
 			'color'            => [ __( 'Warna Teks', 'apeiron-kit' ), 'color: {{VALUE}};' ],
@@ -203,18 +203,19 @@ trait RegistersStyleControls {
 
 		foreach ( $properties as $property ) {
 			$args = [
-				'label'     => $rules[ $property ][0],
+				'label'     => $single ? $label : $rules[ $property ][0],
 				'type'      => 'opacity' === $property ? Controls_Manager::NUMBER : Controls_Manager::COLOR,
-				'condition' => [ $prefix . '_heading' => 'yes' ],
 				'selectors' => array_fill_keys( $selectors, $rules[ $property ][1] ),
 			];
+			if ( $single ) {
+				$args['separator'] = 'before';
+			}
 			if ( 'opacity' === $property ) {
 				$args += [ 'min' => 0, 'max' => 1, 'step' => 0.05 ];
 			}
 			// No defaults: existing invitations keep their current interaction styles.
 			$this->add_control( $prefix . '_' . $property, $args );
 		}
-		$this->end_popover();
 	}
 
 	private function register_layout_style_controls(): void {

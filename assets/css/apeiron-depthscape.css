@@ -136,6 +136,19 @@
     will-change: transform, opacity;
 }
 
+/* Draws hidden layers once before they are needed (see warmLayers); 0.01 is invisible but still decodes the pictures. */
+.apeiron-depthscape.is-warming .apeiron-depthscape__layer.is-warming-layer {
+    visibility: visible !important;
+    pointer-events: none !important;
+}
+
+.apeiron-depthscape.is-warming .apeiron-depthscape__layer.is-warming-layer > .apeiron-depthscape__inner {
+    opacity: 0.01 !important;
+    visibility: visible !important;
+    transform: none !important;
+    pointer-events: none !important;
+}
+
 .is-fit-cover > .apeiron-depthscape__inner,
 .is-fit-cover .apeiron-depthscape__idle {
     height: 100%;

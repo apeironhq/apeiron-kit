@@ -16,6 +16,7 @@
         hint: '.apeiron-depthscape__hint',
     });
     var BOOT_TIMEOUT = 2500;
+    var WARM_TIME = 1500;
     var OPENING_DURATION = 3;
     var SNAP_INTENT = 0.1;
     var MEDIA = Object.freeze({
@@ -1745,6 +1746,47 @@
             window.ScrollTrigger.sort();
             window.ScrollTrigger.refresh();
         }
+
+        warmLayers(state.root);
+    }
+
+    // Phones decode a picture only when it is about to be drawn, and the frame waits for it, so every object stuttered
+    // the moment it first came into view. Layers that are hidden or off stage are drawn once, practically transparent,
+    // while the guest is still on the cover. Classes, not inline styles, so GSAP's own values stay untouched.
+    function warmLayers(root) {
+        var stage = root.querySelector(SELECTOR.stage);
+        if (isEditMode() || !stage || root.classList.contains('is-warming')) {
+            return;
+        }
+
+        var bounds = stage.getBoundingClientRect();
+        var warmed = Array.prototype.filter.call(root.querySelectorAll('.apeiron-depthscape__layer.is-type-image, .apeiron-depthscape__layer.is-type-container'), function (layer) {
+            var inner = layer.querySelector(SELECTOR.inner);
+            if (!inner) {
+                return false;
+            }
+            var style = window.getComputedStyle(inner);
+            var box = inner.getBoundingClientRect();
+            return style.visibility === 'hidden' || Number(style.opacity) < 0.02
+                || box.top >= bounds.bottom || box.bottom <= bounds.top || box.left >= bounds.right || box.right <= bounds.left;
+        });
+        if (!warmed.length) {
+            return;
+        }
+
+        var events = ['pointerdown', 'touchstart', 'wheel', 'keydown'];
+        var timer = null;
+        var finish = function () {
+            clearTimeout(timer);
+            events.forEach(function (type) { document.removeEventListener(type, finish, true); });
+            root.classList.remove('is-warming');
+            warmed.forEach(function (layer) { layer.classList.remove('is-warming-layer'); });
+        };
+        warmed.forEach(function (layer) { layer.classList.add('is-warming-layer'); });
+        root.classList.add('is-warming');
+        // The first touch ends it at once: the invitation must react immediately.
+        events.forEach(function (type) { document.addEventListener(type, finish, { capture: true, passive: true }); });
+        timer = setTimeout(finish, WARM_TIME);
     }
 
     function destroy(root) {

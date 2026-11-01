@@ -779,7 +779,30 @@
             sizeRoot();
             ctx.root.classList.add('is-stay-fixed');
             ScrollTrigger.addEventListener('refreshInit', sizeRoot);
+            // The pin ends at the page's height at the last refresh, so content that loads later (comments, lazy
+            // pictures) left the backdrop scrolling away over the last page. A height change re-measures the end.
+            var pageHeight = function () {
+                return scroller === window ? document.documentElement.scrollHeight : scroller.scrollHeight;
+            };
+            var lastHeight = pageHeight();
+            var heightTimer = null;
+            var heightObserver = window.ResizeObserver ? new window.ResizeObserver(function () {
+                var height = pageHeight();
+                if (Math.abs(height - lastHeight) < 1) {
+                    return;
+                }
+                lastHeight = height;
+                clearTimeout(heightTimer);
+                heightTimer = setTimeout(function () { ScrollTrigger.refresh(); }, 250);
+            }) : null;
+            if (heightObserver) {
+                Array.prototype.forEach.call((scroller === window ? document.body : scroller).children, function (child) {
+                    heightObserver.observe(child);
+                });
+            }
             releaseRoot = function () {
+                clearTimeout(heightTimer);
+                if (heightObserver) { heightObserver.disconnect(); }
                 ScrollTrigger.removeEventListener('refreshInit', sizeRoot);
                 ctx.root.style.paddingBottom = '';
                 ctx.root.classList.remove('is-backdrop', 'is-stay-fixed');

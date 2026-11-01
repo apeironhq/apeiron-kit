@@ -1055,12 +1055,23 @@
         // Elapsed time in 60 Hz frames: exactly 1 per frame on a 60 Hz screen, so the tuned speed is kept there.
         // It is read from the frame's own timestamp (aligned to the screen refresh); the ticker's delta is taken
         // when the callback runs and wobbles by a few ms, which made the step size, and the motion, wobble too.
+        // A step follows the screen's usual frame length, not the last frame's: catching up after one late frame
+        // doubled the next step, and that jump showed more than the late frame did. Three long frames in a row
+        // mean the screen itself slowed down, so the usual length follows.
+        var usualFrame = 1000 / 60;
+        var longFrames = 0;
         var lastFrame = 0;
         var tick = function (time, deltaTime) {
             var frameTime = document.timeline && typeof document.timeline.currentTime === 'number' ? document.timeline.currentTime : 0;
             var elapsed = frameTime && lastFrame ? frameTime - lastFrame : deltaTime;
             lastFrame = frameTime;
-            var steps = elapsed > 0 ? clamp(elapsed / (1000 / 60), 0.25, 4) : 1;
+            if (elapsed > usualFrame * 1.5 && ++longFrames < 3) {
+                elapsed = usualFrame;
+            } else if (elapsed > 0) {
+                longFrames = 0;
+                usualFrame += (elapsed - usualFrame) * 0.2;
+            }
+            var steps = clamp(usualFrame / (1000 / 60), 0.25, 4);
             var target = trigger.progress;
             var gap = target - current;
             if (Math.abs(gap) < 0.00005) {

@@ -136,6 +136,21 @@
     will-change: transform, opacity;
 }
 
+/* Idle loops and particles scripted by drivesLoops() in depthscape.js change every frame, each on its own GPU layer. */
+.apeiron-depthscape.is-ready .apeiron-depthscape__idle.is-driven,
+.apeiron-depthscape.is-ready .apeiron-depthscape__layer.apeiron-depthscape__particle.is-driven {
+    will-change: transform, opacity;
+}
+
+/* A scripted particle is one GPU layer instead of three. */
+.apeiron-depthscape.is-ready .apeiron-depthscape__layer.is-driven > .apeiron-depthscape__inner {
+    will-change: auto;
+}
+
+.apeiron-depthscape__particle.is-driven .apeiron-depthscape__particle-dot {
+    animation: none;
+}
+
 /* Draws hidden layers once before they are needed (see warmLayers); 0.01 is invisible but still decodes the pictures. */
 .apeiron-depthscape.is-warming .apeiron-depthscape__layer.is-warming-layer {
     visibility: visible !important;

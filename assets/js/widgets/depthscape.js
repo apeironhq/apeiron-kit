@@ -319,9 +319,34 @@
             + toNumber(vars.rotation, 0).toFixed(3) + 'deg) scale(' + toNumber(vars.scale, 1).toFixed(4) + ')';
     }
 
+    // Camera breath keeps script running every frame, and then Chrome also re-evaluates each running CSS or Web
+    // Animation on the main thread: 18 particles alone added 2.7 ms to every frame on a phone. A running animation
+    // also ties the layer to the compositor's own rescaling, so a mist layer that zooms re-rasterised over and over.
+    // Loops then join the scripted frame instead; a page without breath keeps them on the compositor, at no cost.
+    function drivesLoops(ctx) {
+        return !isEditMode() && !ctx.reduce && toNumber(ctx.config.breath, 0) > 0;
+    }
+
+    function idleVars(vars) {
+        return { x: toNumber(vars.x, 0), y: toNumber(vars.y, 0), rotation: toNumber(vars.rotation, 0), scale: toNumber(vars.scale, 1) };
+    }
+
     // Idle loops use the Web Animations API with concrete transforms, so the compositor runs them:
     // a resting page costs no JavaScript and no style recalculation per frame.
     function startIdleLoop(ctx, el, range, halfCycle) {
+        if (drivesLoops(ctx)) {
+            el.classList.add('is-driven');
+            ctx.idleTweens.push(ctx.gsap.fromTo(el, idleVars(range.from), Object.assign(idleVars(range.to), {
+                duration: halfCycle,
+                ease: 'sine.inOut',
+                repeat: -1,
+                yoyo: true,
+                paused: true,
+                force3D: false,
+            })).progress(Math.random()));
+            return null;
+        }
+
         if (typeof el.animate !== 'function') {
             return;
         }
@@ -540,10 +565,17 @@
             var projected = projectLayer(item, camera, ctx.size, ctx.perspective, ctx.compensate);
             var bend = item.wind ? gust * ctx.windStrength * windFactor(item.depth) : 0;
             var drift = item.gust ? gust * 46 * windFactor(item.depth) : 0;
+            // A particle's own float (see drivesLoops), scaled with its depth like the nested loop it replaces.
+            var loop = item.loop;
+            var now = loop ? ctx.gsap.ticker.time : 0;
+            var sway = loop && projected ? 0.5 - 0.5 * Math.cos(now * loop.pace + loop.phase) : 0;
+            var floatX = loop && projected ? loop.x * sway * projected.scale : 0;
+            var floatY = loop && projected ? loop.y * sway * projected.scale : 0;
+            var spin = loop ? loop.rotation * sway : 0;
             // A 2D translate (not translate3d) like the reference demo: a 3D layer is rasterised once and then
             // only GPU-scaled, so a slow camera zoom made phones re-raster it in steps and the image shimmered.
             var transform = projected
-                ? 'translate(' + (projected.x + drift).toFixed(2) + 'px,' + projected.y.toFixed(2) + 'px) translate(var(--ds-tx),var(--ds-ty)) rotate(' + projected.rotation.toFixed(3) + 'deg) scale(' + projected.scale.toFixed(4) + ')' + (bend ? ' skewX(' + bend.toFixed(3) + 'deg)' : '')
+                ? 'translate(' + (projected.x + drift + floatX).toFixed(2) + 'px,' + (projected.y + floatY).toFixed(2) + 'px) translate(var(--ds-tx),var(--ds-ty)) rotate(' + (projected.rotation + spin).toFixed(3) + 'deg) scale(' + projected.scale.toFixed(4) + ')' + (bend ? ' skewX(' + bend.toFixed(3) + 'deg)' : '')
                 : item.transform;
             var visibility = projected ? '' : 'hidden';
 
@@ -554,6 +586,13 @@
             if (visibility !== item.visibility) {
                 item.el.style.visibility = visibility;
                 item.visibility = visibility;
+            }
+            if (loop && loop.blink) {
+                var glow = (0.625 - 0.375 * Math.cos(now * loop.blink + loop.shine)).toFixed(2);
+                if (glow !== item.glow) {
+                    item.el.style.opacity = glow;
+                    item.glow = glow;
+                }
             }
         });
     }
@@ -1220,20 +1259,32 @@
                 }
             }
             ctx.camera.insertBefore(el, index < ctx.world.length ? ctx.world[index].el : null);
-            ctx.world.splice(index, 0, { el: el, depth: depth, wind: false, gust: true, ax: 0, ay: 0, transform: '', visibility: '' });
+            var item = { el: el, depth: depth, wind: false, gust: true, ax: 0, ay: 0, transform: '', visibility: '' };
+            ctx.world.splice(index, 0, item);
             created.push(el);
 
             el._apeironParticleRatio = size / toNumber(options.size, 6);
             el._apeironParticleStyle = options.style || 'pollen';
-            el._apeironParticleLoop = startIdleLoop(ctx, inner, {
-                from: { x: 0, y: 0, rotation: 0 },
-                to: {
-                    x: randomBetween(-34, 34),
-                    y: -randomBetween(30, 110),
-                    rotation: options.style === 'petal' ? randomBetween(-160, 160) : 0,
-                },
-            }, randomBetween(5, 11));
-            dot.style.setProperty('--ds-twinkle', randomBetween(1.4, 3.2).toFixed(2) + 's');
+            var drift = {
+                x: randomBetween(-34, 34),
+                y: -randomBetween(30, 110),
+                rotation: options.style === 'petal' ? randomBetween(-160, 160) : 0,
+            };
+            var halfCycle = randomBetween(5, 11);
+            var twinkle = randomBetween(1.4, 3.2);
+            if (drivesLoops(ctx)) {
+                el.classList.add('is-driven');
+                item.glow = '';
+                item.loop = Object.assign(drift, {
+                    pace: Math.PI / halfCycle,
+                    phase: Math.random() * Math.PI * 2,
+                    blink: options.style === 'petal' ? 0 : Math.PI / twinkle,
+                    shine: Math.random() * Math.PI * 2,
+                });
+            } else {
+                el._apeironParticleLoop = startIdleLoop(ctx, inner, { from: { x: 0, y: 0, rotation: 0 }, to: drift }, halfCycle);
+                dot.style.setProperty('--ds-twinkle', twinkle.toFixed(2) + 's');
+            }
         }
 
         return created;

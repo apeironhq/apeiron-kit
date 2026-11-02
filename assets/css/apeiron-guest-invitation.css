@@ -1207,7 +1207,7 @@
 
 	.apeiron-invitation-container .apeiron-guest-table .apeiron-action-buttons {
 		display: grid;
-		grid-template-columns: repeat(2, 28px);
+		grid-template-columns: repeat(2, 32px);
 		gap: 6px;
 		justify-content: flex-end;
 		width: max-content;
@@ -1215,10 +1215,10 @@
 	}
 
 	.apeiron-invitation-container .apeiron-guest-table .apeiron-action-btn {
-		width: 28px;
-		height: 28px;
-		min-width: 28px;
-		min-height: 28px;
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
+		min-height: 32px;
 		padding: 0;
 	}
 

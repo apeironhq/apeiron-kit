@@ -959,6 +959,7 @@
         var row = tbody.rows[guestIndex];
         if (!row) return;
         var removedGuest = data.guests[guestIndex];
+        if (!window.confirm('Hapus ' + removedGuest.name + ' dari daftar tamu?')) return;
         var container = document.getElementById('apeiron-invitation-' + widgetId);
         var state = widgetStates.get(container);
         var names = document.getElementById('guest_names_' + widgetId);

@@ -1442,6 +1442,8 @@ trait RegistersStyleControls {
 				'type'      => Controls_Manager::SLIDER,
 				'range'     => [ 'px' => [ 'min' => 30, 'max' => 60 ] ],
 				'default'   => [ 'size' => 30 ],
+				'tablet_default' => [ 'size' => 32 ],
+				'mobile_default' => [ 'size' => 32 ],
 				'selectors' => [
 					'{{WRAPPER}} .apeiron-scroll-top-btn' => 'width: {{SIZE}}{{UNIT}}; height: {{SIZE}}{{UNIT}};',
 				],

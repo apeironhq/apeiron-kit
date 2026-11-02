@@ -387,6 +387,8 @@ trait RegistersStyleControls {
 					'em' => [ 'min' => 1, 'max' => 4 ],
 				],
 				'default'    => [ 'size' => 28, 'unit' => 'px' ],
+				'tablet_default' => [ 'size' => 32, 'unit' => 'px' ],
+				'mobile_default' => [ 'size' => 32, 'unit' => 'px' ],
 				'selectors'  => [
 					self::POPUP => '--apeiron-sp-close-size: {{SIZE}}{{UNIT}};',
 				],

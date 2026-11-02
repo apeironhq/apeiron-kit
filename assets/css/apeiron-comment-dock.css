@@ -1369,6 +1369,12 @@
 	text-decoration: none;
 }
 
+@media (max-width: 1024px) {
+	.apeiron-comment-dock .apeiron-kit-comment-action {
+		min-height: 32px;
+	}
+}
+
 .apeiron-comment-dock .apeiron-kit-comment-action:focus:not(:focus-visible) {
 	background: transparent;
 	color: var(--apeiron-muted);

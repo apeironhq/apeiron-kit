@@ -434,11 +434,25 @@
 			if (refreshMobileNavigation) { refreshMobileNavigation(); }
 		}
 
+		// Mirrors the host rules in FormOrderController so a wrong link stops at its own step, not at the final submit.
+		function linkHostError(input) {
+			var isDrive = input.name === 'photo_drive_url';
+			if (!isDrive && !/^(akad|reception|ngunduh)_maps$/.test(input.name)) { return ''; }
+			var value = String(input.value).trim();
+			if (value === '') { return ''; }
+			var hosts = isDrive ? ['drive.google.com', 'photos.google.com'] : ['google.com', 'www.google.com', 'maps.google.com', 'maps.app.goo.gl'];
+			var host = '';
+			try { host = new URL(value).hostname.toLowerCase(); } catch (error) { return ''; }
+			if (hosts.indexOf(host) !== -1) { return ''; }
+			return isDrive ? 'Masukkan link Google Drive atau Google Photos.' : 'Masukkan link Google Maps.';
+		}
+
 		function validateStep(step) {
 			var inputs = step.querySelectorAll('.apeiron-form-order__input');
 			for (var i = 0; i < inputs.length; i++) {
 				var input = inputs[i];
 				if (input.disabled) { continue; }
+				input.setCustomValidity(linkHostError(input));
 				var valid = input.checkValidity() && (!input.required || String(input.value).trim() !== '');
 				input.setAttribute('aria-invalid', valid ? 'false' : 'true');
 				if (!valid) {
@@ -532,7 +546,10 @@
 		next.addEventListener('click', function () { if (validateStep(steps[current]) && current < steps.length - 1) { show(current + 1); } });
 		back.addEventListener('click', function () { show(current - 1); });
 		form.addEventListener('input', function (event) {
-			if (event.target.matches('[name]')) { event.target.removeAttribute('aria-invalid'); }
+			if (event.target.matches('[name]')) {
+				event.target.removeAttribute('aria-invalid');
+				event.target.setCustomValidity('');
+			}
 			if (event.target.matches('[data-order-story-title]')) {
 				var group = event.target.closest('[data-order-story-group]');
 				group.querySelector('.apeiron-form-order__heading').textContent = event.target.value.trim() || group.getAttribute('data-order-story-default-title') || '';

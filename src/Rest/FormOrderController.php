@@ -9,6 +9,7 @@ use ApeironKit\Support\FormOrderSettings;
 use ApeironKit\Support\WidgetRegistry;
 use WP_Error;
 use WP_REST_Request;
+use WP_REST_Response;
 use WP_REST_Server;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,6 +23,16 @@ final class FormOrderController {
 			'callback' => [ $this, 'submit' ],
 			'permission_callback' => [ $this, 'verify_nonce' ],
 		] );
+		register_rest_route( 'apeiron-kit/v1', '/form-order/nonce', [
+			'methods' => WP_REST_Server::READABLE,
+			'callback' => [ $this, 'refresh_nonce' ],
+			'permission_callback' => '__return_true',
+		] );
+	}
+
+	public function refresh_nonce(): WP_REST_Response {
+		nocache_headers();
+		return new WP_REST_Response( [ 'nonce' => wp_create_nonce( 'apeiron_form_order' ) ] );
 	}
 
 	public function verify_nonce( WP_REST_Request $request ): bool {

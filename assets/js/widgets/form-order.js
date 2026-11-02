@@ -601,23 +601,37 @@
 			back.disabled = true;
 			if (draftClear) { draftClear.disabled = true; }
 			message('Mengirim pesanan...', false, '', false, true);
-			var headers = { 'Content-Type': 'application/json', 'X-Apeiron-Nonce': config.nonce };
-			headers['X-Apeiron-Request-ID'] = submissionId;
-			if (config.restNonce) { headers['X-WP-Nonce'] = config.restNonce; }
-			fetch(config.endpoint, {
-				method: 'POST',
-				headers: headers,
-				body: JSON.stringify({ post_id: config.postId, document_id: config.documentId, element_id: config.elementId, target_token: config.targetToken, website: form.querySelector('[name="website"]').value, fields: fields }),
-				credentials: 'same-origin'
-			}).then(function (response) {
-				return response.json().catch(function () {
-					throw new Error('Respons server tidak valid. Hubungi pengelola sebelum mengirim ulang.');
-				}).then(function (data) {
-					if (!data || typeof data !== 'object' || Array.isArray(data)) { throw new Error('Respons server tidak valid. Hubungi pengelola sebelum mengirim ulang.'); }
-					if (!response.ok) { throw new Error(data.message || 'Pesanan gagal dikirim.'); }
-					return data;
+			function sendOrder(retried) {
+				var headers = { 'Content-Type': 'application/json', 'X-Apeiron-Nonce': config.nonce };
+				headers['X-Apeiron-Request-ID'] = submissionId;
+				if (config.restNonce) { headers['X-WP-Nonce'] = config.restNonce; }
+				return fetch(config.endpoint, {
+					method: 'POST',
+					headers: headers,
+					body: JSON.stringify({ post_id: config.postId, document_id: config.documentId, element_id: config.elementId, target_token: config.targetToken, website: form.querySelector('[name="website"]').value, fields: fields }),
+					credentials: 'same-origin'
+				}).then(function (response) {
+					return response.json().catch(function () {
+						throw new Error('Respons server tidak valid. Hubungi pengelola sebelum mengirim ulang.');
+					}).then(function (data) {
+						if (!data || typeof data !== 'object' || Array.isArray(data)) { throw new Error('Respons server tidak valid. Hubungi pengelola sebelum mengirim ulang.'); }
+						// A page left open past the nonce lifetime must not lose the order the customer just filled in.
+						if (!retried && !response.ok && ['rest_forbidden', 'rest_cookie_invalid_nonce', 'rest_cookie_expired_nonce'].indexOf(data.code) !== -1) {
+							return fetch(config.endpoint + '/nonce', { credentials: 'same-origin', cache: 'no-store' }).then(function (refresh) {
+								return refresh.json();
+							}).then(function (result) {
+								if (!result || !result.nonce) { throw new Error(data.message || 'Pesanan gagal dikirim.'); }
+								config.nonce = result.nonce;
+								config.restNonce = '';
+								return sendOrder(true);
+							});
+						}
+						if (!response.ok) { throw new Error(data.message || 'Pesanan gagal dikirim.'); }
+						return data;
+					});
 				});
-			}).then(function (data) {
+			}
+			sendOrder(false).then(function (data) {
 				if (draftSettings.clearSuccess) { clearDraft(); } else { flushDraft(); }
 				completed = data;
 				form.classList.add('is-complete');

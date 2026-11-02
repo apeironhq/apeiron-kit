@@ -1,3 +1,8 @@
+/* The root's inline-size container reports no width of its own, which inflates this widget's height in a flex container. */
+.elementor-widget-apeiron-cerita-cinta {
+	width: 100%;
+}
+
 .apeiron-cerita-cinta {
 	--cc-line-base: var(--apeiron-border, #eaecf0);
 	--cc-line-active: var(--apeiron-primary, #083c57);

@@ -201,6 +201,12 @@
 		color var(--apeiron-transition);
 }
 
+/* Hello Elementor's [type="button"]:focus outweighs the default above; Style tab colours still win here. */
+.elementor-widget-apeiron-social-proof button.apeiron-social-proof__close:where(:focus) {
+	background: var(--apeiron-surface-soft);
+	color: var(--apeiron-muted);
+}
+
 .elementor-widget-apeiron-social-proof .apeiron-social-proof__close:hover {
 	background: var(--apeiron-primary-soft);
 	border-color: var(--apeiron-border-strong);

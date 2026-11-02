@@ -677,6 +677,16 @@
 	color: var(--apeiron-primary, #083c57);
 }
 
+/* Hello Elementor's [type="button"]:focus outweighs the default above; Style tab colours still win here. */
+.apeiron-daftar-hadiah button.apeiron-daftar-hadiah__gallery-arrow:where(:focus) {
+	background: var(--apeiron-dashboard-surface, #fff);
+	color: var(--apeiron-text, #1d2939);
+}
+
+.apeiron-daftar-hadiah a.apeiron-daftar-hadiah__button--secondary:where(:focus) {
+	color: var(--apeiron-text, #1d2939);
+}
+
 .apeiron-daftar-hadiah .apeiron-daftar-hadiah__photo-count {
 	position: absolute;
 	right: 8px;

@@ -52,6 +52,11 @@
 .apeiron-form-order .apeiron-form-order__button--back:hover { background: var(--apeiron-soft-bg, #f7f7fb); color: var(--apeiron-dashboard-primary, #083c57); }
 .apeiron-form-order .apeiron-form-order__button--extra { margin: 18px 0; background: var(--apeiron-dashboard-surface, #fff); color: var(--apeiron-dashboard-primary, #083c57); border: 1px solid #e5e7ef; padding: 10px 16px; }
 .apeiron-form-order .apeiron-form-order__button--extra:hover { background: var(--apeiron-soft-bg, #f7f7fb); color: var(--apeiron-dashboard-primary, #083c57); }
+/* Hello Elementor's [type="button"]:hover and :focus outweigh the defaults above; Style tab colours still win here. */
+.apeiron-form-order button.apeiron-form-order__button:where(:hover, :focus, :active) { background: var(--apeiron-dashboard-primary, #083c57); color: #fff; }
+.apeiron-form-order button.apeiron-form-order__button--back:where(:focus, :active),
+.apeiron-form-order button.apeiron-form-order__button--extra:where(:focus, :active) { background: var(--apeiron-dashboard-surface, #fff); color: var(--apeiron-dashboard-primary, #083c57); }
+.apeiron-form-order button.apeiron-form-order__close-group:where(:hover, :focus, :active) { background: transparent; color: var(--apeiron-dashboard-text-muted, #475467); }
 .apeiron-form-order__button:disabled { opacity: .65; cursor: wait; }
 .apeiron-form-order__form.is-complete .apeiron-form-order__button:disabled { cursor: default; }
 .apeiron-form-order__notice { margin: 16px 0 0; padding: 0; border: 0; background: transparent; color: var(--apeiron-dashboard-text-muted, #475467); font-size: 13px; line-height: 1.45; }

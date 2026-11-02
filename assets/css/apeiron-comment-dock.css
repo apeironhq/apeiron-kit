@@ -1862,6 +1862,25 @@
 	-moz-box-shadow: none;
 }
 
+/* Hello Elementor's [type="button"]:hover and :focus outweigh the defaults above; Style tab colours still win here. */
+.apeiron-comment-dock button.apeiron-kit-sticker-trigger:where(:hover) {
+	color: var(--apeiron-primary);
+}
+
+.apeiron-comment-dock button.apeiron-kit-sticker-clear:where(:hover, :focus, :active) {
+	background: var(--apeiron-surface);
+	color: var(--apeiron-muted);
+}
+
+.apeiron-comment-dock button.apeiron-kit-sticker-popover-close:where(:hover, :focus, :active) {
+	background: var(--apeiron-surface-soft);
+	color: var(--apeiron-muted);
+}
+
+.apeiron-comment-dock button.apeiron-kit-sticker-option:where(:focus, :active) {
+	background: var(--apeiron-surface);
+}
+
 @media (hover: hover) and (pointer: fine) {
 	.apeiron-comment-dock .apeiron-kit-sticker-trigger:active {
 		border-color: var(--apeiron-border-focus);

@@ -582,6 +582,7 @@
                 var html = document.documentElement;
                 var body = document.body;
                 var lockClasses = [
+                    'apeiron-cover-booting',
                     'apeiron-cover-scroll-lock',
                     'apeiron-page-loader-scroll-lock',
                     'apeiron-page-loader-booting'
@@ -589,6 +590,13 @@
 
                 return lockClasses.some(function (className) {
                     return html.classList.contains(className) || (body && body.classList.contains(className));
+                }) || hasUnopenedCover();
+            }
+
+            // A cover without scroll lock sets no lock class, so wait for the guest to open it.
+            function hasUnopenedCover() {
+                return Array.prototype.some.call(document.querySelectorAll('[data-apeiron-cover="yes"]:not(.is-complete)'), function (cover) {
+                    return window.getComputedStyle(cover).display !== 'none';
                 });
             }
 

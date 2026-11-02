@@ -2018,7 +2018,51 @@
 			if (!page || !page.view || !page.view.extend || page.view.__apeironCommentDockControls) return;
 			const NativeEditor = page.view;
 			const isDock = (view) => view.model.get('widgetType') === 'apeiron-comment-dock';
-			const isDockTab = (tab) => tab === 'content' || tab === 'style';
+			const isDockTab = (tab) => tab === 'content' || tab === 'style' || tab === 'advanced';
+			const tabSections = new WeakMap();
+
+			function deferColorPicker(child) {
+				const applySavedValue = child.applySavedValue;
+				const dynamicBehaviors = Object.values(child._behaviors || {}).filter((behavior) =>
+					typeof behavior.moveDynamicSwitcherToColorPicker === 'function'
+				);
+				dynamicBehaviors.forEach((behavior) => {
+					const move = behavior.moveDynamicSwitcherToColorPicker;
+					behavior.moveDynamicSwitcherToColorPicker = function () {
+						if (child.isDestroyed || !this.ui.dynamicSwitcher) return;
+						if (child.colorPicker) return move.apply(this, arguments);
+						this.ui.dynamicSwitcher.detach();
+					};
+				});
+				child.applySavedValue = function () {
+					if (this.colorPicker) return applySavedValue.apply(this, arguments);
+					const value = this.getCurrentValue();
+					const placeholder = this.ui.pickerContainer[0];
+					let button = placeholder.querySelector('button');
+					if (!button) {
+						placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+						button = host.document.createElement('button');
+						button.type = 'button';
+						button.className = 'pcr-button';
+						button.setAttribute('aria-label', 'toggle color picker dialog');
+						placeholder.appendChild(button);
+						button.addEventListener('click', (event) => {
+							event.stopPropagation();
+							child.applySavedValue = applySavedValue;
+							child.initPicker();
+							dynamicBehaviors.forEach((behavior) => behavior.moveDynamicSwitcherToColorPicker());
+							child.colorPicker.picker.on('init', () => {
+								if (child.isDestroyed) return;
+								child.$pickerButton[0].click();
+								child.$pickerButton[0].focus();
+							});
+						});
+					}
+					button.classList.toggle('clear', !value);
+					button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+					this.$el.toggleClass('e-control-color--no-value', !value);
+				};
+			}
 
 			page.view = NativeEditor.extend({
 				initCollection() {
@@ -2032,6 +2076,29 @@
 						control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
 					}
 					return NativeEditor.prototype.getChildView.apply(this, arguments);
+				},
+				buildChildView(control) {
+					const child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+					if (isDock(this) && isDockTab(this.activeTab) && control.get('type') === 'color' && child.initPicker) deferColorPicker(child);
+					return child;
+				},
+				_renderChildren() {
+					if (!isDock(this) || !panel.content) return NativeEditor.prototype._renderChildren.apply(this, arguments);
+					// Elementor empties the list while rebuilding it, which drops the panel back to the top.
+					const scrollTop = panel.content.el.scrollTop;
+					const result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+					panel.content.el.scrollTop = scrollTop;
+					return result;
+				},
+				onChildviewControlSectionClicked(child) {
+					if (!isDock(this) || !panel.content) return NativeEditor.prototype.onChildviewControlSectionClicked.apply(this, arguments);
+					// The clicked heading stays under the mouse when the section above it collapses.
+					const top = child.el.getBoundingClientRect().top;
+					const name = child.model.get('name');
+					const result = NativeEditor.prototype.onChildviewControlSectionClicked.apply(this, arguments);
+					const heading = NativeEditor.prototype.getControlViewByName.call(this, name);
+					if (heading) panel.content.el.scrollTop += heading.el.getBoundingClientRect().top - top;
+					return result;
 				},
 				filter(control, index, collection) {
 					if (!NativeEditor.prototype.filter.call(this, control, index, collection)) return false;
@@ -2130,6 +2197,31 @@
 					view.on('destroy', () => {
 						if (refreshFrame) host.cancelAnimationFrame(refreshFrame);
 					});
+
+					// Elementor builds a new view per tab; going back reopens the section being edited.
+					const memory = tabSections.get(view.model) || { sections: {}, switching: false };
+					tabSections.set(view.model, memory);
+					const section = memory.switching && memory.sections[view.activeTab];
+					memory.switching = false;
+					const sectionControl = section && view.getControlModel(section);
+					if (sectionControl && view.isVisibleSectionControl(sectionControl)) {
+						view.activateSection(section);
+						view.once('show', () => {
+							const heading = NativeEditor.prototype.getControlViewByName.call(view, section);
+							const scroller = panel.content && panel.content.el;
+							if (!heading || !scroller) return;
+							const offset = heading.el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+							if (offset + heading.el.offsetHeight > scroller.clientHeight) scroller.scrollTop += offset;
+						});
+					}
+					const onNavigationClick = (event) => {
+						const tab = event.target.closest('.elementor-panel-navigation-tab');
+						if (!tab || tab.getAttribute('data-tab') === view.activeTab) return;
+						memory.sections[view.activeTab] = view.activeSection;
+						memory.switching = true;
+					};
+					view.el.addEventListener('click', onNavigationClick, true);
+					view.on('before:destroy', () => view.el.removeEventListener('click', onNavigationClick, true));
 				}
 			});
 			page.view.__apeironCommentDockControls = true;

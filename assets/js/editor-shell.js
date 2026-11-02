@@ -75,6 +75,253 @@
 		});
 	}
 
+	// Widgets whose own panel code does not build control defaults or colour pickers on demand yet.
+	var lazyControlWidgets = ['apeiron-cover', 'apeiron-autoscroll', 'apeiron-cerita-cinta'];
+	var lazyColorWidgets = lazyControlWidgets.concat('apeiron-depthscape');
+
+	function deferColorPicker(child) {
+		var applySavedValue = child.applySavedValue;
+		var dynamicBehaviors = Object.values(child._behaviors || {}).filter(function(behavior) {
+			return typeof behavior.moveDynamicSwitcherToColorPicker === 'function';
+		});
+		dynamicBehaviors.forEach(function(behavior) {
+			var move = behavior.moveDynamicSwitcherToColorPicker;
+			behavior.moveDynamicSwitcherToColorPicker = function() {
+				if (child.isDestroyed || !this.ui.dynamicSwitcher) { return; }
+				if (child.colorPicker) { return move.apply(this, arguments); }
+				this.ui.dynamicSwitcher.detach();
+			};
+		});
+		child.applySavedValue = function() {
+			if (this.colorPicker) { return applySavedValue.apply(this, arguments); }
+			var value = this.getCurrentValue();
+			var placeholder = this.ui.pickerContainer[0];
+			var button = placeholder.querySelector('button');
+			if (!button) {
+				placeholder.classList.add('pickr', 'elementor-control-unit-1', 'elementor-control-tag-area');
+				button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'pcr-button';
+				button.setAttribute('aria-label', 'toggle color picker dialog');
+				placeholder.appendChild(button);
+				button.addEventListener('click', function(event) {
+					event.stopPropagation();
+					child.applySavedValue = applySavedValue;
+					child.initPicker();
+					dynamicBehaviors.forEach(function(behavior) { behavior.moveDynamicSwitcherToColorPicker(); });
+					child.colorPicker.picker.on('init', function() {
+						if (child.isDestroyed) { return; }
+						child.$pickerButton[0].click();
+						child.$pickerButton[0].focus();
+					});
+				});
+			}
+			button.classList.toggle('clear', !value);
+			button.style.setProperty('--pcr-color', value || 'rgba(0, 0, 0, 0.15)');
+			this.$el.toggleClass('e-control-color--no-value', !value);
+		};
+	}
+
+	function bindPanelControls() {
+		var editor = window.elementor;
+		var panel = editor && editor.panel && editor.panel.currentView;
+		var page = panel && panel.getPages && panel.getPages('editor');
+		if (!page || !page.view || !page.view.extend || page.view.__apeironPanelControls) { return; }
+		var NativeEditor = page.view;
+		var tabSections = new WeakMap();
+
+		function widgetType(view) {
+			return view.model.get('widgetType') || '';
+		}
+
+		function isApeiron(view) {
+			return widgetType(view).indexOf('apeiron-') === 0;
+		}
+
+		function isLazyPanel(view) {
+			return lazyControlWidgets.indexOf(widgetType(view)) >= 0 && ['content', 'style', 'advanced'].indexOf(view.getOption('tab')) >= 0;
+		}
+
+		// AutoScroll's own script already loads its Style tab conditionally.
+		function isLazyControl(view, control) {
+			return isLazyPanel(view) && !(widgetType(view) === 'apeiron-autoscroll' && control.get('tab') === 'style');
+		}
+
+		function bindLazyControls(view) {
+			var settings = view.model.get('settings');
+			var previous = null;
+			var owner = null;
+			view.__apeironPopoverOwners = new Map();
+			view.__apeironPopoverToggles = new Set();
+			view.__apeironLoadedPopovers = new Set();
+			view.collection.each(function(control) {
+				var popover = control.get('popover');
+				if (popover && popover.start && isLazyControl(view, control)) {
+					owner = previous && previous.get('type') === 'popover_toggle' ? previous.get('name') : null;
+					if (owner) { view.__apeironPopoverToggles.add(owner); }
+				}
+				if (owner) { view.__apeironPopoverOwners.set(control.cid, owner); }
+				if (popover && popover.end) { owner = null; }
+				previous = control;
+			});
+
+			var refreshFrame = null;
+			var visibleControls = '';
+			function signature() {
+				return view.collection.filter(view.filter, view).map(function(control) { return control.cid; }).join('|');
+			}
+			function refreshControls() {
+				refreshFrame = null;
+				if (view.isDestroyed) { return; }
+				var pendingPopover = view.__apeironPendingPopover;
+				view.__apeironPendingPopover = null;
+				if (signature() === visibleControls && !pendingPopover) { return; }
+				var openPopovers = view.children.filter(function(child) {
+					return child.model.get('type') === 'popover_toggle' && child.$el.next('.elementor-controls-popover').is(':visible');
+				}).map(function(child) { return child.model.get('name'); });
+				if (pendingPopover && openPopovers.indexOf(pendingPopover) < 0) { openPopovers.push(pendingPopover); }
+				var focusSelector = 'input, select, textarea, button, [tabindex]';
+				var focused = view.children.find(function(child) { return child.el.contains(document.activeElement); });
+				var focusIndex = focused ? Array.from(focused.el.querySelectorAll(focusSelector)).indexOf(document.activeElement) : -1;
+				view._renderChildren();
+				openPopovers.forEach(function(name) {
+					var toggle = NativeEditor.prototype.getControlViewByName.call(view, name);
+					if (toggle) {
+						if (!toggle.$el.next('.elementor-controls-popover').attr('data-on-hide')) { toggle.onShow(); }
+						toggle.activate();
+					}
+				});
+				if (focused && focusIndex >= 0) {
+					var control = NativeEditor.prototype.getControlViewByName.call(view, focused.model.get('name'));
+					var input = control && control.el.querySelectorAll(focusSelector)[focusIndex];
+					if (input) { input.focus({ preventScroll: true }); }
+				}
+			}
+			view.on('render:collection', function() { visibleControls = signature(); });
+			view.__apeironScheduleControls = function() {
+				if (!refreshFrame) { refreshFrame = window.requestAnimationFrame(refreshControls); }
+			};
+			view.listenTo(settings, 'change', view.__apeironScheduleControls);
+			view.on('destroy', function() {
+				if (refreshFrame) { window.cancelAnimationFrame(refreshFrame); }
+			});
+		}
+
+		page.view = NativeEditor.extend({
+			initCollection: function() {
+				if (lazyControlWidgets.indexOf(widgetType(this)) < 0) { return NativeEditor.prototype.initCollection.apply(this, arguments); }
+				// Unopened controls keep their IDs without merging every native default.
+				this.collection = new window.Backbone.Collection(Object.values(this.getOption('controls')));
+			},
+			getChildView: function(control) {
+				if (lazyControlWidgets.indexOf(widgetType(this)) >= 0 && !control.get('features')) {
+					control.set(editor.mergeControlsSettings({ control: control.attributes }).control, { silent: true });
+				}
+				return NativeEditor.prototype.getChildView.apply(this, arguments);
+			},
+			buildChildView: function(control) {
+				var child = NativeEditor.prototype.buildChildView.apply(this, arguments);
+				if (lazyColorWidgets.indexOf(widgetType(this)) >= 0 && control.get('type') === 'color' && child.initPicker) { deferColorPicker(child); }
+				if (isLazyPanel(this) && control.get('responsive') && child.getResponsiveChildrenViews) {
+					var getChildren = child.getResponsiveChildrenViews;
+					child.getResponsiveChildrenViews = function() {
+						return getChildren.apply(this, arguments).filter(function(view) { return !!view; });
+					};
+				}
+				return child;
+			},
+			filter: function(control, index, collection) {
+				if (!NativeEditor.prototype.filter.call(this, control, index, collection)) { return false; }
+				if (!isLazyControl(this, control)) { return true; }
+				var owner = this.__apeironPopoverOwners && this.__apeironPopoverOwners.get(control.cid);
+				if (owner) { return this.__apeironLoadedPopovers.has(owner); }
+				// Unknown/add-on popover groups retain their native boundaries.
+				if (control.get('popover')) { return true; }
+				var settings = this.model.get('settings');
+				return editor.helpers.isActiveControl(control, settings.attributes, settings.controls);
+			},
+			getControlViewByName: function(name) {
+				var control = NativeEditor.prototype.getControlViewByName.call(this, name);
+				if (!isLazyPanel(this) || !this.__apeironPopoverOwners) { return control; }
+				var model = this.getControlModel(name);
+				if (!model || model.get('section') !== this.activeSection) { return control; }
+				var owner = this.__apeironPopoverToggles.has(name) ? name : this.__apeironPopoverOwners.get(model.cid);
+				if (owner && !this.__apeironLoadedPopovers.has(owner)) {
+					// Native Elementor routes activate the toggle before opening its popover.
+					this.__apeironLoadedPopovers.add(owner);
+					if (control && name === owner) {
+						// Finish the native radio change before replacing the clicked input.
+						this.__apeironPendingPopover = owner;
+						this.__apeironScheduleControls();
+					} else {
+						this._renderChildren();
+						control = NativeEditor.prototype.getControlViewByName.call(this, name);
+					}
+				}
+				return control;
+			},
+			activateSection: function(section) {
+				if (this.activeSection !== section && this.__apeironLoadedPopovers) {
+					this.__apeironLoadedPopovers.clear();
+					this.__apeironPendingPopover = null;
+				}
+				return NativeEditor.prototype.activateSection.apply(this, arguments);
+			},
+			_renderChildren: function() {
+				if (!isApeiron(this) || !panel.content) { return NativeEditor.prototype._renderChildren.apply(this, arguments); }
+				// Elementor empties the list while rebuilding it, which drops the panel back to the top.
+				var scrollTop = panel.content.el.scrollTop;
+				var result = NativeEditor.prototype._renderChildren.apply(this, arguments);
+				panel.content.el.scrollTop = scrollTop;
+				return result;
+			},
+			onChildviewControlSectionClicked: function(child) {
+				if (!isApeiron(this) || !panel.content) { return NativeEditor.prototype.onChildviewControlSectionClicked.apply(this, arguments); }
+				// The clicked heading stays under the mouse when the section above it collapses.
+				var top = child.el.getBoundingClientRect().top;
+				var name = child.model.get('name');
+				var result = NativeEditor.prototype.onChildviewControlSectionClicked.apply(this, arguments);
+				var heading = NativeEditor.prototype.getControlViewByName.call(this, name);
+				if (heading) { panel.content.el.scrollTop += heading.el.getBoundingClientRect().top - top; }
+				return result;
+			},
+			initialize: function() {
+				NativeEditor.prototype.initialize.apply(this, arguments);
+				if (!isApeiron(this)) { return; }
+				if (isLazyPanel(this)) { bindLazyControls(this); }
+
+				// Elementor builds a new view per tab; going back reopens the section being edited.
+				var view = this;
+				var memory = tabSections.get(view.model) || { sections: {}, switching: false };
+				tabSections.set(view.model, memory);
+				var section = memory.switching && memory.sections[view.activeTab];
+				memory.switching = false;
+				var sectionControl = section && view.getControlModel(section);
+				if (sectionControl && view.isVisibleSectionControl(sectionControl)) {
+					view.activateSection(section);
+					view.once('show', function() {
+						var heading = NativeEditor.prototype.getControlViewByName.call(view, section);
+						var scroller = panel.content && panel.content.el;
+						if (!heading || !scroller) { return; }
+						var offset = heading.el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+						if (offset + heading.el.offsetHeight > scroller.clientHeight) { scroller.scrollTop += offset; }
+					});
+				}
+				function onNavigationClick(event) {
+					var tab = event.target.closest('.elementor-panel-navigation-tab');
+					if (!tab || tab.getAttribute('data-tab') === view.activeTab) { return; }
+					memory.sections[view.activeTab] = view.activeSection;
+					memory.switching = true;
+				}
+				view.el.addEventListener('click', onNavigationClick, true);
+				view.on('before:destroy', function() {
+					view.el.removeEventListener('click', onNavigationClick, true);
+				});
+			},
+		});
+		page.view.__apeironPanelControls = true;
+	}
+
 	function createToggleNotice() {
 		if (document.getElementById('apeiron-editor-toggle-notice')) {
 			return;
@@ -158,5 +405,9 @@
 	bindHeartbeat();
 	bindStaleTooltipCleanup();
 	bindLivePreviews();
-	if (window.elementor && window.elementor.once) { window.elementor.once('panel:init', bindLivePreviews); }
+	bindPanelControls();
+	if (window.elementor && window.elementor.once) {
+		window.elementor.once('panel:init', bindLivePreviews);
+		window.elementor.once('panel:init', bindPanelControls);
+	}
 })(window, document, window.jQuery);

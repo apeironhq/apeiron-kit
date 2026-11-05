@@ -1888,6 +1888,12 @@
 	color: var(--apeiron-muted);
 }
 
+/* Touch screens keep :hover after a tap; the hover reset above only covers mouse pointers. */
+.apeiron-comment-dock button.apeiron-kit-comment-action:where(:hover) {
+	background: transparent;
+	color: var(--apeiron-muted);
+}
+
 .apeiron-comment-dock button.apeiron-kit-sticker-option:where(:focus, :active) {
 	background: var(--apeiron-surface);
 }

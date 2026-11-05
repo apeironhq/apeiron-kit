@@ -341,6 +341,7 @@
             var lastHeightRefresh = 0;
             var scrollStartTime = 0;
             var currentVelocity = 0;
+            var frameDurationEstimate = 0;
             var currentSpeed = clamp(parseInt(config.speed, 10) || 30, 1, 100);
             var targetSpeed = currentSpeed;
             var smoothedSpeed = currentSpeed;
@@ -956,6 +957,27 @@
                 return true;
             }
 
+            // Browsers round scroll positions to whole device pixels, so a step such as 3.24 device px
+            // lands as 3, 3, 3, 4 and judders. Move a whole number of device pixels per frame instead.
+            function getDevicePixelScrollDelta(velocity, deltaMs) {
+                var rawDelta = velocity * deltaMs / 1000;
+
+                // Track the display's frame length. Late frames are skipped here; the frame count below covers them.
+                if (!frameDurationEstimate) frameDurationEstimate = 1000 / BASE_FRAME_RATE;
+                if (deltaMs < frameDurationEstimate * 1.25) {
+                    frameDurationEstimate += (Math.max(deltaMs, frameDurationEstimate * 0.5) - frameDurationEstimate) * 0.1;
+                }
+
+                var devicePixel = 1 / (window.devicePixelRatio || 1);
+                var unitsPerFrame = Math.abs(velocity) * frameDurationEstimate / 1000 / devicePixel;
+
+                // Slower than one device pixel per frame cannot be even; keep the exact sub-pixel motion.
+                if (unitsPerFrame < 1) return rawDelta;
+
+                var frames = Math.max(1, Math.round(deltaMs / frameDurationEstimate));
+                return (velocity < 0 ? -1 : 1) * Math.round(unitsPerFrame) * frames * devicePixel;
+            }
+
             function applyScrollDelta(scrollDelta) {
                 var maxScroll = getMaxScrollTop();
                 var nextTop = clamp(virtualScrollY + scrollDelta, 0, maxScroll);
@@ -1013,7 +1035,7 @@
                 if (!isPaused && isAtEnd()) {
                     if (finishAtBoundary()) return;
                 } else if (currentVelocity !== 0) {
-                    if (applyScrollDelta(currentVelocity * deltaSeconds)) return;
+                    if (applyScrollDelta(getDevicePixelScrollDelta(currentVelocity, delta))) return;
                 } else {
                     updateProgress();
                 }

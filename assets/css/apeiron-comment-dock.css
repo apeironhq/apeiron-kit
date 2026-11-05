@@ -1883,6 +1883,11 @@
 	color: var(--apeiron-muted);
 }
 
+.apeiron-comment-dock button.apeiron-kit-sticker-tab:where(:hover, :focus, :active) {
+	background: var(--apeiron-surface-soft);
+	color: var(--apeiron-muted);
+}
+
 .apeiron-comment-dock button.apeiron-kit-sticker-option:where(:focus, :active) {
 	background: var(--apeiron-surface);
 }

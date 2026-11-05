@@ -585,7 +585,9 @@
                     'apeiron-cover-booting',
                     'apeiron-cover-scroll-lock',
                     'apeiron-page-loader-scroll-lock',
-                    'apeiron-page-loader-booting'
+                    'apeiron-page-loader-booting',
+                    // Custom Elementor covers lock the page with this class until the guest opens them.
+                    'stop-scrolling'
                 ];
 
                 return lockClasses.some(function (className) {

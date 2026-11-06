@@ -1734,6 +1734,16 @@
 	transform: translate(calc(-50% + var(--ak-widget-offset-x, 0px)), calc(0px - var(--ak-widget-offset-y, 0px)));
 }
 
+@media (max-width: 767px) {
+	[id^="apeiron-autoscroll-"].skin-simple-capsule.pos-center-right {
+		top: 50dvh;
+	}
+
+	[id^="apeiron-autoscroll-"].skin-simple-capsule.pos-center-left {
+		top: 50dvh;
+	}
+}
+
 [id^="apeiron-autoscroll-"].skin-simple-capsule .apeiron-btn-container {
 	--ak-button-appear-duration: 0.3s;
 	--ak-button-appear-delay: 0s;

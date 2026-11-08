@@ -1831,6 +1831,20 @@ trait RegistersStyleControls {
 			]
 		);
 
+		$modal_field_selector = '{{WRAPPER}} .apeiron-kit-comment-modal .apeiron-kit-comment-dialog input, {{WRAPPER}} .apeiron-kit-comment-modal .apeiron-kit-comment-dialog textarea';
+		$this->add_control(
+			'modal_fields_color',
+			[
+				'label'       => __( 'Warna Teks Field Popup', 'apeiron-kit' ),
+				'description' => __( 'Menimpa Warna Teks Field hanya di dalam popup.', 'apeiron-kit' ),
+				'type'        => Controls_Manager::COLOR,
+				'selectors'   => [
+					$modal_field_selector => 'color: {{VALUE}};',
+					'{{WRAPPER}} .apeiron-kit-comment-modal .apeiron-kit-comment-dialog input:is(:focus, :active, :focus-visible), {{WRAPPER}} .apeiron-kit-comment-modal .apeiron-kit-comment-dialog textarea:is(:focus, :active, :focus-visible)' => 'color: {{VALUE}};',
+				],
+			]
+		);
+
 		$this->add_control(
 			'modal_title_heading',
 			[

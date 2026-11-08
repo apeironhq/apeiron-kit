@@ -1734,13 +1734,21 @@
 	transform: translate(calc(-50% + var(--ak-widget-offset-x, 0px)), calc(0px - var(--ak-widget-offset-y, 0px)));
 }
 
+/* Phones: dvh and top: 50% both move when the browser bar hides, so the capsule jumped while scrolling.
+   Anchor from the bottom with svh, which stays the same, so it keeps one spot on screen. */
 @media (max-width: 767px) {
 	[id^="apeiron-autoscroll-"].skin-simple-capsule.pos-center-right {
-		top: 50dvh;
+		top: auto;
+		bottom: 50%;
+		bottom: 50svh;
+		transform: translate(calc(0px - var(--ak-widget-offset-x, 0px)), calc(50% + var(--ak-widget-offset-y, 0px)));
 	}
 
 	[id^="apeiron-autoscroll-"].skin-simple-capsule.pos-center-left {
-		top: 50dvh;
+		top: auto;
+		bottom: 50%;
+		bottom: 50svh;
+		transform: translate(var(--ak-widget-offset-x, 0px), calc(50% + var(--ak-widget-offset-y, 0px)));
 	}
 }
 

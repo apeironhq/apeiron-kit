@@ -1569,6 +1569,13 @@
 	box-sizing: border-box;
 }
 
+/* The popups stay inside Elementor columns and sections that set their own z-index, so later page
+   decorations and floating buttons painted over them. Lift those wrappers only while a popup is open. */
+.elementor-element:has(.apeiron-comment-dock .apeiron-kit-comment-modal),
+.elementor-element:has(.apeiron-comment-dock [data-sticker-popover]:not([hidden])) {
+	z-index: 2147483000 !important;
+}
+
 .apeiron-comment-dock .apeiron-kit-comment-modal:not(.apeiron-kit-comment-delete-modal) {
 	align-items: safe center;
 	overflow-y: auto;

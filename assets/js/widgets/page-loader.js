@@ -620,6 +620,8 @@
           value = typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
           var className = 'apeiron-page-loader__' + (name === 'loading' ? 'text' : name);
           var element = root.querySelector('.' + className);
+          // Split initials replace Main / Initial Text, so a main_text edit must not overwrite them.
+          if (name === 'main' && element && element.classList.contains('apeiron-page-loader__main--split')) { return; }
           if (!element && value) {
             var parent = root.querySelector(name === 'intro' ? '.apeiron-page-loader__sequence' : name === 'loading' ? '.apeiron-page-loader__progress' : '.apeiron-page-loader__final');
             if (!parent) { return; }

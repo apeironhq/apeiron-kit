@@ -74,11 +74,28 @@ class PageLoader extends BaseWidget {
 
 		$this->prepare_render_attribute( $element_id, $settings, $is_editor );
 
+		// Initial 1 / Separator / Initial 2 replace Main / Initial Text. Loaders that saved their own
+		// Main / Initial Text and never saved an initial keep showing that text.
+		$main_parts = [];
+		if ( ! $this->uses_saved_main_text() ) {
+			$main_parts = [
+				'one'       => $settings['main_initial_one'],
+				'separator' => $settings['main_initial_separator'],
+				'two'       => $settings['main_initial_two'],
+			];
+			$both                  = '' !== $main_parts['one'] && '' !== $main_parts['two'];
+			$settings['main_text'] = trim( implode( ' ', array_filter( $both ? $main_parts : [ $main_parts['one'], $main_parts['two'] ], 'strlen' ) ) );
+			if ( '' === $main_parts['one'] && '' === $main_parts['two'] ) {
+				$main_parts = [];
+			}
+		}
+
 		$default_context = [
 			'render_attributes' => $this->get_render_attribute_string( 'page_loader' ),
 			'loader_style'      => $this->sanitize_choice( (string) ( $settings['loader_style'] ?? 'default' ), self::LOADER_STYLES, 'default' ),
 			'intro_text'        => $settings['intro_text'],
 			'main_text'         => $settings['main_text'],
+			'main_parts'        => $main_parts,
 			'loading_text'      => $settings['loading_text'],
 			'secondary_text'    => $settings['secondary_text'],
 			'show_percentage'   => 'yes' === ( $settings['show_percentage'] ?? 'yes' ),
@@ -106,8 +123,24 @@ class PageLoader extends BaseWidget {
 		$this->render_page_loader( $context );
 	}
 
+	private function uses_saved_main_text(): bool {
+		$saved   = $this->get_data( 'settings' );
+		$saved   = is_array( $saved ) ? $saved : [];
+		$dynamic = isset( $saved['__dynamic__'] ) && is_array( $saved['__dynamic__'] ) ? $saved['__dynamic__'] : [];
+
+		foreach ( [ 'main_initial_one', 'main_initial_two' ] as $key ) {
+			if ( array_key_exists( $key, $saved ) || ! empty( $dynamic[ $key ] ) ) {
+				return false;
+			}
+		}
+
+		$main_text = $saved['main_text'] ?? '';
+
+		return ( is_scalar( $main_text ) && '' !== trim( (string) $main_text ) ) || ! empty( $dynamic['main_text'] );
+	}
+
 	private function resolve_dynamic_content_settings( array $settings ): array {
-		foreach ( [ 'intro_text', 'main_text', 'loading_text', 'secondary_text' ] as $key ) {
+		foreach ( [ 'intro_text', 'main_text', 'main_initial_one', 'main_initial_separator', 'main_initial_two', 'loading_text', 'secondary_text' ] as $key ) {
 			$settings[ $key ] = is_scalar( $settings[ $key ] ?? null ) ? trim( (string) $settings[ $key ] ) : '';
 		}
 
@@ -166,6 +199,7 @@ class PageLoader extends BaseWidget {
 		$loader_style      = (string) $context['loader_style'];
 		$intro_text        = (string) $context['intro_text'];
 		$main_text         = (string) $context['main_text'];
+		$main_parts        = is_array( $context['main_parts'] ?? null ) ? $context['main_parts'] : [];
 		$loading_text      = (string) $context['loading_text'];
 		$secondary_text    = (string) $context['secondary_text'];
 		$show_percentage   = (bool) $context['show_percentage'];

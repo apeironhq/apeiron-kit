@@ -13,7 +13,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div class="apeiron-page-loader__intro"><?php echo esc_html( $intro_text ); ?></div>
 					<?php endif; ?>
 					<div class="apeiron-page-loader__final">
-						<?php if ( '' !== $main_text ) : ?>
+						<?php if ( ! empty( $main_parts ) ) : ?>
+							<div class="apeiron-page-loader__mask"><div class="apeiron-page-loader__main apeiron-page-loader__main--split"><?php
+							if ( '' !== (string) ( $main_parts['one'] ?? '' ) ) {
+								echo '<span class="apeiron-page-loader__initial apeiron-page-loader__initial--one">' . esc_html( (string) $main_parts['one'] ) . '</span>';
+							}
+							if ( '' !== (string) ( $main_parts['separator'] ?? '' ) && '' !== (string) ( $main_parts['one'] ?? '' ) && '' !== (string) ( $main_parts['two'] ?? '' ) ) {
+								echo '<span class="apeiron-page-loader__initial-sep">' . esc_html( (string) $main_parts['separator'] ) . '</span>';
+							}
+							if ( '' !== (string) ( $main_parts['two'] ?? '' ) ) {
+								echo '<span class="apeiron-page-loader__initial apeiron-page-loader__initial--two">' . esc_html( (string) $main_parts['two'] ) . '</span>';
+							}
+							?></div></div>
+						<?php elseif ( '' !== $main_text ) : ?>
 							<div class="apeiron-page-loader__mask"><div class="apeiron-page-loader__main"><?php echo esc_html( $main_text ); ?></div></div>
 						<?php endif; ?>
 						<div class="apeiron-page-loader__rule" aria-hidden="true"><span></span><i></i><span></span></div>

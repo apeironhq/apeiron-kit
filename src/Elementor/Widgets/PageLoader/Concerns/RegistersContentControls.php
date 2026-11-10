@@ -50,12 +50,44 @@ trait RegistersContentControls {
 			]
 		);
 
+		// Replaced by Initial 1 / Separator / Initial 2. Kept hidden so loaders that saved their own text still show it.
 		$this->add_control(
 			'main_text',
 			[
-				'label'       => __( 'Main / Initial Text', 'apeiron-kit' ),
+				'type'    => Controls_Manager::HIDDEN,
+				'default' => 'RK',
+				'dynamic' => [ 'active' => true ],
+			]
+		);
+
+		$this->add_control(
+			'main_initial_one',
+			[
+				'label'       => __( 'Initial 1', 'apeiron-kit' ),
 				'type'        => Controls_Manager::TEXT,
-				'default'     => 'RK',
+				'default'     => 'R',
+				'label_block' => true,
+				'dynamic'     => [ 'active' => true ],
+			]
+		);
+
+		$this->add_control(
+			'main_initial_separator',
+			[
+				'label'       => __( 'Initial Separator', 'apeiron-kit' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => '&',
+				'label_block' => true,
+				'dynamic'     => [ 'active' => true ],
+			]
+		);
+
+		$this->add_control(
+			'main_initial_two',
+			[
+				'label'       => __( 'Initial 2', 'apeiron-kit' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => 'K',
 				'label_block' => true,
 				'dynamic'     => [ 'active' => true ],
 			]

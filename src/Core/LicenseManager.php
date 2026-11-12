@@ -26,8 +26,20 @@ class LicenseManager {
 	private const NONCE_ACTION       = 'apeiron_license_management';
 	private const AEAD_CONTEXT       = 'apeiron-kit/license-key/v1';
 
-	/** Masa berlaku cache tetap: tujuh hari. */
-	private const PERSISTENT_CACHE_TTL = 604800;
+	/** Masa berlaku cache tetap: tiga puluh hari, agar gangguan koneksi hosting tidak cepat mematikan lisensi. */
+	private const PERSISTENT_CACHE_TTL = 2592000;
+
+	/** Opsi alasan pemeriksaan lisensi terakhir yang gagal (untuk peringatan di dashboard). */
+	private const LAST_ERROR_OPTION = 'apeiron_kit_license_last_error';
+
+	/** Penanda agar pemeriksaan cadangan dicoba paling banyak sekali per enam jam. */
+	private const FALLBACK_THROTTLE = 'apeiron_kit_license_check_throttle';
+
+	/** Peringatan muncul jika lisensi belum berhasil diperiksa selama tiga hari. */
+	private const STALE_WARNING_AFTER = 259200;
+
+	/** Kunci lisensi tersimpan tetapi tidak dapat didekripsi (misalnya AUTH_KEY berubah). */
+	private bool $license_key_unreadable = false;
 
 	/** Alamat baku server lisensi. */
 	private const DEFAULT_API_URL = 'https://server-apeiron.web.id/api';
@@ -61,6 +73,10 @@ class LicenseManager {
 			wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', 'apeiron_kit_check_license' );
 		}
 		add_action( 'apeiron_kit_check_license', [ $this, 'check_license_status' ] );
+
+		// Cadangan bila WP-Cron tidak berjalan (situs sepi atau WP-Cron dimatikan hosting).
+		add_action( 'admin_init', [ $this, 'maybe_run_overdue_check' ] );
+		add_action( 'shutdown', [ $this, 'maybe_run_overdue_check_after_response' ], 1000 );
 
 		add_action( 'wp_ajax_apeiron_activate_license', [ $this, 'handle_activate' ] );
 		add_action( 'wp_ajax_apeiron_deactivate_license', [ $this, 'handle_deactivate' ] );
@@ -226,6 +242,7 @@ class LicenseManager {
 				if ( class_exists( '\ApeironKit\Support\ErrorLogger' ) ) {
 					\ApeironKit\Support\ErrorLogger::error( 'Failed to decrypt license key. Salt, AUTH_KEY, or siteurl may have changed.' );
 				}
+				$this->license_key_unreadable = true;
 				$license['key'] = '';
 			} else {
 				$license['key'] = $decrypted_key;
@@ -351,6 +368,7 @@ return $this->license_cache = $license;
 			$this->save_persistent_cache( $license_data );
 			
 			delete_option( 'apeiron_kit_check_fail_count' );
+			delete_option( self::LAST_ERROR_OPTION );
 			
 			$this->invalidate_caches();
 		}
@@ -382,6 +400,7 @@ return $this->license_cache = $license;
 			$this->invalidate_caches();
 			$this->clear_persistent_cache();
 			delete_option( 'apeiron_kit_check_fail_count' );
+			delete_option( self::LAST_ERROR_OPTION );
 		}
 
 		return $response;
@@ -391,6 +410,9 @@ return $this->license_cache = $license;
 		$license = $this->get_license();
 
 		if ( empty( $license['key'] ) ) {
+			if ( $this->license_key_unreadable ) {
+				$this->record_check_failure( 'KEY_UNREADABLE', __( 'License Key tersimpan tidak dapat dibaca.', 'apeiron-kit' ) );
+			}
 			return [
 				'success' => false,
 				'message' => __( 'Tidak ada license key yang terdaftar.', 'apeiron-kit' ),
@@ -404,8 +426,9 @@ return $this->license_cache = $license;
 			'product_id'  => $this->product_id,
 		], $fresh );
 
-		// Respons cache tidak memperbarui waktu verifikasi.
+		// Respons cache tidak memperbarui waktu verifikasi, tetapi alasan gagalnya dicatat.
 		if ( $response['success'] && ! $fresh ) {
+			$this->record_check_failure( (string) ( $response['error_code'] ?? 'APEIRON_CACHED' ), (string) ( $response['message'] ?? '' ) );
 			return $response;
 		}
 
@@ -425,9 +448,12 @@ return $this->license_cache = $license;
 			$this->save_persistent_cache( $license_data );
 			
 			delete_option( 'apeiron_kit_check_fail_count' );
+			delete_option( self::LAST_ERROR_OPTION );
 			
 			$this->invalidate_caches();
 		} else {
+			$this->record_check_failure( (string) ( $response['error_code'] ?? '' ), (string) ( $response['message'] ?? '' ) );
+
 			// Gangguan sementara tidak langsung menonaktifkan lisensi.
 			$fail_count = (int) get_option( 'apeiron_kit_check_fail_count', 0 );
 			$fail_count++;
@@ -493,6 +519,102 @@ return $this->license_cache = $license;
 			[ 'LICENSE_NOT_FOUND', 'LICENSE_EXPIRED', 'LICENSE_SUSPENDED', 'LICENSE_INACTIVE' ],
 			true
 		);
+	}
+
+	/**
+	 * Simpan alasan pemeriksaan terakhir yang gagal tanpa data sensitif.
+	 */
+	private function record_check_failure( string $code, string $message ): void {
+		update_option(
+			self::LAST_ERROR_OPTION,
+			[
+				'code'    => '' !== $code ? (string) preg_replace( '/[^A-Za-z0-9_\-]/', '', $code ) : 'unknown',
+				'message' => trim( strip_tags( $message ) ),
+				'time'    => time(),
+			],
+			false
+		);
+	}
+
+	/**
+	 * Waktu pemeriksaan terakhir yang berhasil dari data lisensi tersimpan (0 bila belum pernah).
+	 */
+	private function get_last_verified_time(): int {
+		$stored = get_option( $this->option_name, [] );
+
+		return is_array( $stored ) ? (int) ( $stored['last_check'] ?? 0 ) : 0;
+	}
+
+	/**
+	 * Pemeriksaan dianggap tertunda bila ada lisensi tersimpan dan sudah lewat sehari sejak verifikasi terakhir.
+	 */
+	private function is_check_overdue(): bool {
+		$stored = get_option( $this->option_name, [] );
+		if ( ! is_array( $stored ) || empty( $stored['key'] ) ) {
+			return false;
+		}
+
+		$last_verified = (int) ( $stored['last_check'] ?? 0 );
+		if ( $last_verified > 0 && ( time() - $last_verified ) < DAY_IN_SECONDS ) {
+			return false;
+		}
+
+		return false === get_transient( self::FALLBACK_THROTTLE );
+	}
+
+	/**
+	 * Jalankan pemeriksaan tertunda, paling banyak sekali per enam jam.
+	 */
+	private function run_overdue_check(): void {
+		if ( ! $this->is_check_overdue() ) {
+			return;
+		}
+
+		// Pasang penanda sebelum meminta agar beberapa permintaan sekaligus tidak ikut memeriksa.
+		set_transient( self::FALLBACK_THROTTLE, 1, 6 * HOUR_IN_SECONDS );
+		$this->check_license_status();
+	}
+
+	/**
+	 * Cadangan WP-Cron saat admin membuka dashboard.
+	 */
+	public function maybe_run_overdue_check(): void {
+		if ( wp_doing_ajax() || wp_doing_cron() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$this->run_overdue_check();
+	}
+
+	/**
+	 * Cadangan WP-Cron di halaman depan, dijalankan setelah respons terkirim agar pengunjung tidak menunggu.
+	 */
+	public function maybe_run_overdue_check_after_response(): void {
+		if ( is_admin() || wp_doing_ajax() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return;
+		}
+
+		if ( ! $this->is_check_overdue() ) {
+			return;
+		}
+
+		if ( function_exists( 'fastcgi_finish_request' ) ) {
+			fastcgi_finish_request();
+		} elseif ( function_exists( 'litespeed_finish_request' ) ) {
+			litespeed_finish_request();
+		} else {
+			// Tanpa cara mengakhiri respons lebih dulu, jangan buat pengunjung menunggu server lisensi.
+			return;
+		}
+
+		$this->run_overdue_check();
+	}
+
+	/**
+	 * API key tersimpan tetapi tidak dapat didekripsi (misalnya AUTH_KEY berubah).
+	 */
+	private function is_api_key_unreadable(): bool {
+		return '' !== (string) get_option( 'apeiron_kit_api_key_encrypted', '' ) && ! $this->api_key_manager->has_api_key();
 	}
 
 	/**
@@ -638,10 +760,11 @@ return $this->license_cache = $license;
 				$cached = $this->get_cached_response( $action );
 				if ( $cached !== null ) {
 					return [
-						'success' => true,
-						'data'    => $cached['data'],
-						'message' => __( 'License status dari cache (server tidak dapat dihubungi).', 'apeiron-kit' ),
-						'cached'  => true,
+						'success'    => true,
+						'data'       => $cached['data'],
+						'message'    => __( 'License status dari cache (server tidak dapat dihubungi).', 'apeiron-kit' ),
+						'cached'     => true,
+						'error_code' => $error_code,
 					];
 				}
 			}
@@ -696,10 +819,11 @@ return $this->license_cache = $license;
 				$cached = $this->get_cached_response( $action );
 				if ( $cached !== null ) {
 					return [
-						'success' => true,
-						'data'    => $cached['data'],
-						'message' => __( 'License status dari cache (server error).', 'apeiron-kit' ),
-						'cached'  => true,
+						'success'    => true,
+						'data'       => $cached['data'],
+						'message'    => __( 'License status dari cache (server error).', 'apeiron-kit' ),
+						'cached'     => true,
+						'error_code' => $error_code ?: 'HTTP_' . $code,
 					];
 				}
 			}
@@ -1228,6 +1352,68 @@ return $this->license_cache = $license;
 	public function render_admin_notices(): void {
 		if ( ! is_admin() || wp_doing_ajax() || ! current_user_can( 'manage_options' ) ) {
 			return;
+		}
+
+		$license_link = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( admin_url( 'admin.php?page=apeiron-kit&tab=license' ) ),
+			esc_html__( 'Buka halaman Lisensi', 'apeiron-kit' )
+		);
+
+		// Kunci yang tidak terbaca harus diisi ulang; peringatan ini tampil di semua halaman admin.
+		$this->get_license();
+		$unreadable = [];
+		if ( $this->license_key_unreadable ) {
+			$unreadable[] = __( 'License Key', 'apeiron-kit' );
+		}
+		if ( $this->is_api_key_unreadable() ) {
+			$unreadable[] = __( 'API Key', 'apeiron-kit' );
+		}
+		if ( ! empty( $unreadable ) ) {
+			printf(
+				'<div class="notice notice-error"><p><strong>%s</strong> %s %s</p></div>',
+				esc_html__( 'Apeiron Kit:', 'apeiron-kit' ),
+				esc_html(
+					sprintf(
+						/* translators: %s: License Key and/or API Key. */
+						__( '%s tersimpan tidak dapat dibaca karena kunci keamanan WordPress (AUTH_KEY) berubah. Masukkan ulang agar lisensi tetap aktif.', 'apeiron-kit' ),
+						implode( ' & ', $unreadable )
+					)
+				),
+				$license_link // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- dibangun dengan esc_url/esc_html di atas.
+			);
+			return;
+		}
+
+		// Lisensi belum berhasil diperiksa beberapa hari: beri tahu sebelum masa tenggang habis.
+		$stored        = get_option( $this->option_name, [] );
+		$last_verified = $this->get_last_verified_time();
+		if ( is_array( $stored ) && ! empty( $stored['key'] ) && 'active' === ( $stored['status'] ?? '' )
+			&& $last_verified > 0 && ( time() - $last_verified ) > self::STALE_WARNING_AFTER ) {
+			$last_error = get_option( self::LAST_ERROR_OPTION, [] );
+			$reason     = is_array( $last_error ) && ! empty( $last_error['code'] ) ? strtoupper( (string) $last_error['code'] ) : __( 'pemeriksaan otomatis tidak berjalan', 'apeiron-kit' );
+			$days       = (int) floor( ( time() - $last_verified ) / DAY_IN_SECONDS );
+			$deadline   = wp_date( 'j F Y', $last_verified + self::PERSISTENT_CACHE_TTL );
+			$expired    = ( time() - $last_verified ) > self::PERSISTENT_CACHE_TTL;
+
+			printf(
+				'<div class="notice %s"><p><strong>%s</strong> %s %s</p></div>',
+				$expired ? 'notice-error' : 'notice-warning',
+				esc_html__( 'Apeiron Kit:', 'apeiron-kit' ),
+				esc_html(
+					sprintf(
+						$expired
+							/* translators: 1: days since last check, 2: reason, 3: date the license stopped working. */
+							? __( 'Lisensi berhenti sejak %3$s karena belum berhasil diperiksa ke server selama %1$d hari (alasan terakhir: %2$s). Klik Periksa di halaman Lisensi atau hubungi hosting jika koneksi ke server lisensi diblokir.', 'apeiron-kit' )
+							/* translators: 1: days since last check, 2: reason, 3: date the license stops working. */
+							: __( 'Lisensi belum berhasil diperiksa ke server selama %1$d hari (alasan terakhir: %2$s). Lisensi tetap aktif sampai %3$s; klik Periksa di halaman Lisensi atau hubungi hosting jika koneksi ke server lisensi diblokir.', 'apeiron-kit' ),
+						$days,
+						$reason,
+						$deadline
+					)
+				),
+				$license_link // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- dibangun dengan esc_url/esc_html di atas.
+			);
 		}
 
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;

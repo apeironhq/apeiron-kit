@@ -52,11 +52,11 @@
     function syncLayout(state) {
         var value = window.getComputedStyle(state.root).getPropertyValue('--pa-layout').trim();
         if (LAYOUTS.indexOf(value) === -1) return;
-        // The film strip needs room for thumbnails, photo and counter side by side.
-        if (value === 'filmstrip' && state.root.clientWidth > 0 && state.root.clientWidth < FILMSTRIP_MIN_WIDTH) {
-            value = 'card';
-        }
-        if (state.root.getAttribute('data-layout') !== value) {
+        // Without room for thumbnails, photo and counter side by side, the film strip runs below the photo.
+        var compact = value === 'filmstrip' && state.root.clientWidth > 0 && state.root.clientWidth < FILMSTRIP_MIN_WIDTH ? 'yes' : 'no';
+        var compactChanged = state.root.getAttribute('data-compact') !== compact;
+        if (compactChanged) state.root.setAttribute('data-compact', compact);
+        if (state.root.getAttribute('data-layout') !== value || compactChanged) {
             state.root.setAttribute('data-layout', value);
             revealThumb(state, false);
         }
@@ -66,7 +66,7 @@
         var box = state.thumbsBox;
         var thumb = state.thumbs[state.index];
         if (!box || !thumb) return;
-        var horizontal = state.root.getAttribute('data-layout') === 'card';
+        var horizontal = state.root.getAttribute('data-layout') === 'card' || state.root.getAttribute('data-compact') === 'yes';
         var options = { behavior: smooth && !motion.matches ? 'smooth' : 'auto' };
         // Scroll only the strip itself so the page never jumps.
         if (horizontal) {
@@ -358,6 +358,7 @@
         updateMeta(state, false);
         if (observer) observer.observe(root);
         if (resizeObserver) resizeObserver.observe(root);
+        if (root.getAttribute('data-editor') === 'yes') watchEditorStyles();
         schedule(state);
     }
 
@@ -387,6 +388,37 @@
 
     function refreshAll() {
         albums.forEach(schedule);
+    }
+
+    function syncAllLayouts() {
+        albums.forEach(function (state) {
+            if (state.root.isConnected) syncLayout(state);
+        });
+    }
+
+    // In the Elementor editor a Layout change only rewrites the widget CSS. Watch the style
+    // elements so the new layout shows on the next frame instead of waiting for a re-render.
+    var styleWatchFrame = null;
+    function watchEditorStyles() {
+        if (!('MutationObserver' in window) || !document.documentElement) return;
+        if (!document.querySelector('[data-apeiron-photo-album][data-editor="yes"]')) return;
+        if (window.__apeironPhotoAlbumStyleWatch) return;
+        window.__apeironPhotoAlbumStyleWatch = true;
+        new MutationObserver(function (mutations) {
+            var styleChanged = mutations.some(function (mutation) {
+                var node = mutation.target;
+                if (node.nodeType === 3) node = node.parentNode;
+                if (node && (node.nodeName === 'STYLE' || node.nodeName === 'LINK')) return true;
+                return Array.prototype.some.call(mutation.addedNodes, function (added) {
+                    return added.nodeName === 'STYLE' || added.nodeName === 'LINK';
+                });
+            });
+            if (!styleChanged || styleWatchFrame !== null) return;
+            styleWatchFrame = window.requestAnimationFrame(function () {
+                styleWatchFrame = null;
+                syncAllLayouts();
+            });
+        }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
     }
 
     function registerElementorHook() {

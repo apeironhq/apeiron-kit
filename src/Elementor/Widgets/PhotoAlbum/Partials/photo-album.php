@@ -15,12 +15,20 @@ $pad         = static function ( int $number ): string {
 };
 $first       = $photos[0];
 $second      = $photos[ $total > 1 ? 1 : 0 ];
-$arrow_next  = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-$arrow_prev  = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+$arrow_next  = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5.5v13a1 1 0 0 0 1.6.8l8.2-6.5a1 1 0 0 0 0-1.6L9.6 4.7A1 1 0 0 0 8 5.5z" fill="currentColor"/></svg>';
+$arrow_prev  = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 5.5v13a1 1 0 0 1-1.6.8l-8.2-6.5a1 1 0 0 1 0-1.6l8.2-6.5a1 1 0 0 1 1.6.8z" fill="currentColor"/></svg>';
 $svg_allowed = [
 	'svg'  => [ 'viewbox' => true, 'aria-hidden' => true, 'focusable' => true ],
 	'path' => [ 'd' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true, 'stroke-linecap' => true, 'stroke-linejoin' => true ],
 ];
+// Ikon pilihan dari panel Elementor; kosong berarti segitiga lembut bawaan.
+$render_nav_icon = static function ( $icon, string $fallback ) use ( $svg_allowed ): void {
+	if ( is_array( $icon ) && ! empty( $icon['value'] ) ) {
+		\Elementor\Icons_Manager::render_icon( $icon, [ 'aria-hidden' => 'true' ] );
+		return;
+	}
+	echo wp_kses( $fallback, $svg_allowed );
+};
 ?>
 <div <?php echo $render_attributes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor escapes render attributes ?>>
 	<?php if ( $flags['title'] ) : ?>
@@ -70,10 +78,10 @@ $svg_allowed = [
 			<?php if ( $flags['prev'] || $flags['next'] ) : ?>
 				<div class="apeiron-photo-album__nav">
 					<?php if ( $flags['prev'] ) : ?>
-						<button type="button" class="apeiron-photo-album__button apeiron-photo-album__button--prev" data-apeiron-photo-album-prev aria-label="<?php esc_attr_e( 'Foto sebelumnya', 'apeiron-kit' ); ?>"><?php echo wp_kses( $arrow_prev, $svg_allowed ); ?></button>
+						<button type="button" class="apeiron-photo-album__button apeiron-photo-album__button--prev" data-apeiron-photo-album-prev aria-label="<?php esc_attr_e( 'Foto sebelumnya', 'apeiron-kit' ); ?>"><?php $render_nav_icon( $settings['prev_icon'] ?? null, $arrow_prev ); ?></button>
 					<?php endif; ?>
 					<?php if ( $flags['next'] ) : ?>
-						<button type="button" class="apeiron-photo-album__button apeiron-photo-album__button--next" data-apeiron-photo-album-next aria-label="<?php esc_attr_e( 'Foto berikutnya', 'apeiron-kit' ); ?>"><?php echo wp_kses( $arrow_next, $svg_allowed ); ?></button>
+						<button type="button" class="apeiron-photo-album__button apeiron-photo-album__button--next" data-apeiron-photo-album-next aria-label="<?php esc_attr_e( 'Foto berikutnya', 'apeiron-kit' ); ?>"><?php $render_nav_icon( $settings['next_icon'] ?? null, $arrow_next ); ?></button>
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>

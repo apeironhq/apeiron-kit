@@ -144,8 +144,7 @@ trait RegistersContentControls {
 					'filmstrip' => __( 'Film Strip', 'apeiron-kit' ),
 					'card'      => __( 'Kartu', 'apeiron-kit' ),
 				],
-				'description'          => __( 'Film Strip menampilkan thumbnail di samping, Kartu menampilkan keterangan di atas foto dengan thumbnail di bawah. Film Strip otomatis tampil sebagai Kartu jika lebar widget kurang dari 760px.', 'apeiron-kit' ),
-				'render_type'          => 'template',
+				'description'          => __( 'Film Strip menampilkan thumbnail di samping, Kartu menampilkan keterangan di atas foto dengan thumbnail di bawah. Jika lebar widget kurang dari 760px, film strip Film Strip pindah ke bawah foto.', 'apeiron-kit' ),
 				'selectors'            => [ '{{WRAPPER}} .apeiron-photo-album' => '{{VALUE}}' ],
 				'selectors_dictionary' => [
 					'filmstrip' => '--pa-layout: filmstrip;',
@@ -182,6 +181,32 @@ trait RegistersContentControls {
 			}
 			$this->add_control( $name, $args );
 		}
+
+		$this->add_control(
+			'next_icon',
+			[
+				'label'       => __( 'Ikon Berikutnya', 'apeiron-kit' ),
+				'type'        => Controls_Manager::ICONS,
+				'default'     => [ 'value' => '', 'library' => '' ],
+				'skin'        => 'inline',
+				'label_block' => false,
+				'description' => __( 'Kosongkan untuk memakai ikon segitiga bawaan.', 'apeiron-kit' ),
+				'separator'   => 'before',
+				'condition'   => [ 'show_next' => 'yes' ],
+			]
+		);
+
+		$this->add_control(
+			'prev_icon',
+			[
+				'label'       => __( 'Ikon Sebelumnya', 'apeiron-kit' ),
+				'type'        => Controls_Manager::ICONS,
+				'default'     => [ 'value' => '', 'library' => '' ],
+				'skin'        => 'inline',
+				'label_block' => false,
+				'condition'   => [ 'show_prev' => 'yes' ],
+			]
+		);
 
 		$this->end_controls_section();
 	}

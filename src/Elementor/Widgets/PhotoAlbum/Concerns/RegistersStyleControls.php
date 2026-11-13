@@ -120,7 +120,8 @@ trait RegistersStyleControls {
 			'section_style_button',
 			[ 'label' => __( 'Tombol', 'apeiron-kit' ), 'tab' => Controls_Manager::TAB_STYLE ]
 		);
-		$this->add_album_slider( 'button_size', __( 'Ukuran Tombol', 'apeiron-kit' ), '--pa-button-size', 32, 120 );
+		$this->add_album_slider( 'button_size', __( 'Ukuran Tombol', 'apeiron-kit' ), '--pa-button-size', 28, 120 );
+		$this->add_album_slider( 'button_icon_size', __( 'Ukuran Ikon', 'apeiron-kit' ), '--pa-button-icon-size', 8, 60 );
 		$this->add_album_color( 'button_background', __( 'Warna Tombol', 'apeiron-kit' ), '--pa-button-bg' );
 		$this->add_album_color( 'button_hover_background', __( 'Warna Tombol (Hover)', 'apeiron-kit' ), '--pa-button-bg-hover' );
 		$this->add_album_color( 'button_icon_color', __( 'Warna Ikon', 'apeiron-kit' ), '--pa-button-icon' );

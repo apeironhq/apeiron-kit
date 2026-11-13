@@ -78,16 +78,14 @@ trait RegistersStyleControls {
 			[
 				'label'                => __( 'Penyesuaian Foto', 'apeiron-kit' ),
 				'type'                 => Controls_Manager::SELECT,
-				'default'              => 'auto',
+				'default'              => 'cover',
 				'options'              => [
-					'auto'    => __( 'Otomatis', 'apeiron-kit' ),
-					'cover'   => __( 'Isi Penuh (dipotong)', 'apeiron-kit' ),
+					'cover'   => __( 'Isi Penuh (di tengah)', 'apeiron-kit' ),
 					'contain' => __( 'Utuh (tidak dipotong)', 'apeiron-kit' ),
 				],
-				'description'          => __( 'Otomatis menampilkan foto utuh di tengah jika bentuknya jauh berbeda dari bingkai, misalnya foto potret di bingkai lebar.', 'apeiron-kit' ),
+				'description'          => __( 'Isi Penuh mengisi bingkai dengan foto tepat di tengah; geser Posisi Fokus jika bagian penting foto terpotong. Utuh menampilkan seluruh foto tanpa dipotong.', 'apeiron-kit' ),
 				'selectors'            => [ '{{WRAPPER}} .apeiron-photo-album' => '{{VALUE}}' ],
 				'selectors_dictionary' => [
-					'auto'    => '--pa-fit: auto;',
 					'cover'   => '--pa-fit: cover;',
 					'contain' => '--pa-fit: contain;',
 				],
@@ -167,6 +165,14 @@ trait RegistersStyleControls {
 		$this->add_album_color( 'button_hover_background', __( 'Warna Tombol (Hover)', 'apeiron-kit' ), '--pa-button-bg-hover' );
 		$this->add_album_color( 'button_icon_color', __( 'Warna Ikon', 'apeiron-kit' ), '--pa-button-icon' );
 		$this->add_album_color( 'button_ring_color', __( 'Warna Cincin', 'apeiron-kit' ), '--pa-button-ring' );
+		$this->add_control(
+			'glass_button_heading',
+			[ 'label' => __( 'Tombol di Atas Foto (Layout Kartu)', 'apeiron-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ]
+		);
+		$this->add_album_color( 'glass_button_background', __( 'Warna Latar Kaca', 'apeiron-kit' ), '--pa-glass-bg' );
+		$this->add_album_color( 'glass_button_hover_background', __( 'Warna Latar Kaca (Hover)', 'apeiron-kit' ), '--pa-glass-bg-hover' );
+		$this->add_album_color( 'glass_button_border', __( 'Warna Border', 'apeiron-kit' ), '--pa-glass-border' );
+		$this->add_album_color( 'glass_button_icon', __( 'Warna Ikon', 'apeiron-kit' ), '--pa-glass-icon' );
 		$this->end_controls_section();
 
 		// Progres.

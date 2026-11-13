@@ -14,7 +14,6 @@
     var LAYOUTS = ['filmstrip', 'card'];
     var SWIPE_DISTANCE = 40;
     var FILMSTRIP_MIN_WIDTH = 760;
-    var FIT_TOLERANCE = 1.7;
     var albums = new Map();
     var motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
     var resizeFrame = null;
@@ -50,25 +49,11 @@
         return Math.max(0, Math.min(state.total - 1, index));
     }
 
-    function photoRatio(slide) {
-        var ratio = parseFloat(slide.getAttribute('data-ratio'));
-        if (ratio > 0) return ratio;
-        var image = slide.querySelector('.apeiron-photo-album__image');
-        return image && image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 0;
-    }
-
-    // Auto: show the whole photo when its shape is far from the frame (e.g. portrait in a wide frame).
+    // Isi Penuh fills the frame centred; Utuh shows the whole photo over a backdrop.
     function syncFit(state) {
-        var mode = window.getComputedStyle(state.root).getPropertyValue('--pa-fit').trim() || 'auto';
-        var viewport = state.viewport;
-        var frame = viewport && viewport.clientHeight ? viewport.clientWidth / viewport.clientHeight : 0;
+        var mode = window.getComputedStyle(state.root).getPropertyValue('--pa-fit').trim() || 'cover';
         state.slides.forEach(function (slide) {
-            var contain = mode === 'contain';
-            if (mode === 'auto' && frame > 0) {
-                var ratio = photoRatio(slide);
-                contain = ratio > 0 && Math.max(ratio / frame, frame / ratio) > FIT_TOLERANCE;
-            }
-            slide.classList.toggle('is-contain', contain);
+            slide.classList.toggle('is-contain', mode === 'contain');
         });
     }
 
@@ -382,11 +367,6 @@
 
         albums.set(root, state);
         syncLayout(state);
-        slides.forEach(function (slide) {
-            if (slide.getAttribute('data-ratio')) return;
-            var image = slide.querySelector('.apeiron-photo-album__image');
-            if (image && !image.complete) image.addEventListener('load', function () { syncFit(state); }, { once: true });
-        });
         bind(state);
         updateMeta(state, false);
         if (observer) observer.observe(root);

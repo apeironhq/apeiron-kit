@@ -37,6 +37,11 @@
 	--pa-progress-bar: var(--apeiron-primary, #083c57);
 	--pa-progress-height: 3px;
 	--pa-speed: 700ms;
+	--pa-fit: auto;
+	--pa-photo-pos-x: 50%;
+	--pa-photo-pos-y: 50%;
+	--pa-backdrop-blur: 1;
+	--pa-backdrop-color: var(--apeiron-surface-soft, #f9fafb);
 	position: relative;
 	width: 100%;
 	max-width: 100%;
@@ -169,8 +174,35 @@
 	border: 0;
 	border-radius: 0;
 	object-fit: cover;
+	object-position: var(--pa-photo-pos-x) var(--pa-photo-pos-y);
 	-webkit-user-drag: none;
 	user-select: none;
+}
+
+/* Whole photo, centred, over a blurred copy of itself (or a plain colour). */
+.apeiron-photo-album .apeiron-photo-album__slide.is-contain {
+	overflow: hidden;
+	background: var(--pa-backdrop-color);
+}
+
+.apeiron-photo-album .apeiron-photo-album__slide.is-contain::before {
+	content: "";
+	position: absolute;
+	inset: -24px;
+	background: var(--pa-slide-bg) center / cover no-repeat;
+	filter: blur(22px) brightness(0.88);
+	opacity: var(--pa-backdrop-blur);
+	pointer-events: none;
+}
+
+.apeiron-photo-album .apeiron-photo-album__slide.is-contain .apeiron-photo-album__link,
+.apeiron-photo-album .apeiron-photo-album__slide.is-contain .apeiron-photo-album__image {
+	position: relative;
+}
+
+.apeiron-photo-album .apeiron-photo-album__slide.is-contain .apeiron-photo-album__image {
+	object-fit: contain;
+	object-position: center;
 }
 
 /* The next photo, tilted and overlapping the right edge of the main photo. */

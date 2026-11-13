@@ -140,6 +140,7 @@ class PhotoAlbum extends BaseWidget {
 					continue;
 				}
 				$photos[] = [
+					'ratio'   => ! empty( $main[1] ) && ! empty( $main[2] ) ? round( (float) $main[1] / (float) $main[2], 4 ) : 0,
 					'src'     => (string) $main[0],
 					'srcset'  => (string) wp_get_attachment_image_srcset( $id, $size ),
 					'thumb'   => $thumb ? (string) $thumb[0] : (string) $main[0],
@@ -152,6 +153,7 @@ class PhotoAlbum extends BaseWidget {
 
 			if ( '' !== $url ) {
 				$photos[] = [
+					'ratio'   => 0,
 					'src'     => $url,
 					'srcset'  => '',
 					'thumb'   => $url,
@@ -198,7 +200,7 @@ class PhotoAlbum extends BaseWidget {
 		$photos  = [];
 
 		for ( $i = 0; $i < 4; $i++ ) {
-			$photos[] = [ 'src' => $src, 'srcset' => '', 'thumb' => $src, 'full' => $src, 'alt' => '', 'caption' => $caption ];
+			$photos[] = [ 'ratio' => 0, 'src' => $src, 'srcset' => '', 'thumb' => $src, 'full' => $src, 'alt' => '', 'caption' => $caption ];
 		}
 
 		return $photos;

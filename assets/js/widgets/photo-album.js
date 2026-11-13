@@ -14,6 +14,7 @@
     var LAYOUTS = ['filmstrip', 'card'];
     var SWIPE_DISTANCE = 40;
     var FILMSTRIP_MIN_WIDTH = 760;
+    var FIT_TOLERANCE = 1.7;
     var albums = new Map();
     var motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
     var resizeFrame = null;
@@ -49,9 +50,34 @@
         return Math.max(0, Math.min(state.total - 1, index));
     }
 
+    function photoRatio(slide) {
+        var ratio = parseFloat(slide.getAttribute('data-ratio'));
+        if (ratio > 0) return ratio;
+        var image = slide.querySelector('.apeiron-photo-album__image');
+        return image && image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 0;
+    }
+
+    // Auto: show the whole photo when its shape is far from the frame (e.g. portrait in a wide frame).
+    function syncFit(state) {
+        var mode = window.getComputedStyle(state.root).getPropertyValue('--pa-fit').trim() || 'auto';
+        var viewport = state.viewport;
+        var frame = viewport && viewport.clientHeight ? viewport.clientWidth / viewport.clientHeight : 0;
+        state.slides.forEach(function (slide) {
+            var contain = mode === 'contain';
+            if (mode === 'auto' && frame > 0) {
+                var ratio = photoRatio(slide);
+                contain = ratio > 0 && Math.max(ratio / frame, frame / ratio) > FIT_TOLERANCE;
+            }
+            slide.classList.toggle('is-contain', contain);
+        });
+    }
+
     function syncLayout(state) {
         var value = window.getComputedStyle(state.root).getPropertyValue('--pa-layout').trim();
-        if (LAYOUTS.indexOf(value) === -1) return;
+        if (LAYOUTS.indexOf(value) === -1) {
+            syncFit(state);
+            return;
+        }
         // Without room for thumbnails, photo and counter side by side, the film strip runs below the photo.
         var compact = value === 'filmstrip' && state.root.clientWidth > 0 && state.root.clientWidth < FILMSTRIP_MIN_WIDTH ? 'yes' : 'no';
         var compactChanged = state.root.getAttribute('data-compact') !== compact;
@@ -60,6 +86,8 @@
             state.root.setAttribute('data-layout', value);
             revealThumb(state, false);
         }
+        // The frame shape depends on the layout, so decide the photo fit after it.
+        syncFit(state);
     }
 
     function revealThumb(state, smooth) {
@@ -354,6 +382,11 @@
 
         albums.set(root, state);
         syncLayout(state);
+        slides.forEach(function (slide) {
+            if (slide.getAttribute('data-ratio')) return;
+            var image = slide.querySelector('.apeiron-photo-album__image');
+            if (image && !image.complete) image.addEventListener('load', function () { syncFit(state); }, { once: true });
+        });
         bind(state);
         updateMeta(state, false);
         if (observer) observer.observe(root);

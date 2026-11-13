@@ -73,6 +73,47 @@ trait RegistersStyleControls {
 		);
 		$this->add_album_slider( 'photo_height', __( 'Tinggi Foto', 'apeiron-kit' ), '--pa-photo-height', 200, 900 );
 		$this->add_album_slider( 'photo_radius', __( 'Radius Foto', 'apeiron-kit' ), '--pa-photo-radius', 0, 60 );
+		$this->add_responsive_control(
+			'photo_fit',
+			[
+				'label'                => __( 'Penyesuaian Foto', 'apeiron-kit' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => 'auto',
+				'options'              => [
+					'auto'    => __( 'Otomatis', 'apeiron-kit' ),
+					'cover'   => __( 'Isi Penuh (dipotong)', 'apeiron-kit' ),
+					'contain' => __( 'Utuh (tidak dipotong)', 'apeiron-kit' ),
+				],
+				'description'          => __( 'Otomatis menampilkan foto utuh di tengah jika bentuknya jauh berbeda dari bingkai, misalnya foto potret di bingkai lebar.', 'apeiron-kit' ),
+				'selectors'            => [ '{{WRAPPER}} .apeiron-photo-album' => '{{VALUE}}' ],
+				'selectors_dictionary' => [
+					'auto'    => '--pa-fit: auto;',
+					'cover'   => '--pa-fit: cover;',
+					'contain' => '--pa-fit: contain;',
+				],
+			]
+		);
+		$this->add_album_slider( 'photo_position_x', __( 'Posisi Fokus X (%)', 'apeiron-kit' ), '--pa-photo-pos-x', 0, 100, '%' );
+		$this->add_album_slider( 'photo_position_y', __( 'Posisi Fokus Y (%)', 'apeiron-kit' ), '--pa-photo-pos-y', 0, 100, '%' );
+		$this->add_control(
+			'photo_backdrop',
+			[
+				'label'                => __( 'Latar Foto Utuh', 'apeiron-kit' ),
+				'type'                 => Controls_Manager::SELECT,
+				'default'              => 'blur',
+				'options'              => [
+					'blur'  => __( 'Blur dari Foto', 'apeiron-kit' ),
+					'color' => __( 'Warna Polos', 'apeiron-kit' ),
+				],
+				'selectors'            => [ '{{WRAPPER}} .apeiron-photo-album' => '{{VALUE}}' ],
+				'selectors_dictionary' => [
+					'blur'  => '--pa-backdrop-blur: 1;',
+					'color' => '--pa-backdrop-blur: 0;',
+				],
+				'condition'            => [ 'photo_fit!' => 'cover' ],
+			]
+		);
+		$this->add_album_color( 'photo_backdrop_color', __( 'Warna Latar Foto Utuh', 'apeiron-kit' ), '--pa-backdrop-color', [ 'photo_fit!' => 'cover' ] );
 		$this->add_album_color( 'peek_frame_color', __( 'Warna Bingkai Foto Intip', 'apeiron-kit' ), '--pa-peek-frame', [ 'show_peek' => 'yes' ] );
 		$this->add_album_slider( 'peek_rotation', __( 'Rotasi Foto Intip (deg)', 'apeiron-kit' ), '--pa-peek-rotate', -15, 15, 'deg', [ 'show_peek' => 'yes' ] );
 		$this->end_controls_section();

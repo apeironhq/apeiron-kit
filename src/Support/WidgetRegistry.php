@@ -16,6 +16,7 @@ use ApeironKit\Elementor\Widgets\Depthscape\Depthscape;
 use ApeironKit\Elementor\Widgets\FormOrder\FormOrder;
 use ApeironKit\Elementor\Widgets\GuestInvitationManager\GuestInvitationManager;
 use ApeironKit\Elementor\Widgets\PageLoader\PageLoader;
+use ApeironKit\Elementor\Widgets\PhotoAlbum\PhotoAlbum;
 use ApeironKit\Elementor\Widgets\SignalForm\SignalForm;
 use ApeironKit\Elementor\Widgets\SocialProof\SocialProof;
 use ApeironKit\Elementor\Widgets\SoundscapePlayer\SoundscapePlayer;
@@ -168,6 +169,15 @@ final class WidgetRegistry {
 			'js_file'  => 'widgets/depthscape',
 			'js_deps'  => [ 'apeiron-kit-gsap', 'apeiron-kit-gsap-scrolltrigger', 'apeiron-kit-gsap-splittext' ],
 		],
+		'photo_album'   => [
+			'class' => PhotoAlbum::class,
+			'type'  => 'apeiron-photo-album',
+			'css'   => 'apeiron-kit-photo-album',
+			'js'    => 'apeiron-kit-photo-album-js',
+			'css_file' => 'apeiron-photo-album',
+			'js_file'  => 'widgets/photo-album',
+			'js_deps'  => [],
+		],
 	];
 
 	/**
@@ -208,6 +218,7 @@ final class WidgetRegistry {
 		'cerita_cinta',
 		'daftar_hadiah',
 		'depthscape',
+		'photo_album',
 	];
 
 	/**
@@ -230,6 +241,7 @@ final class WidgetRegistry {
 		'cerita_cinta',
 		'daftar_hadiah',
 		'depthscape',
+		'photo_album',
 	];
 
 	/**
@@ -252,6 +264,7 @@ final class WidgetRegistry {
 		'cerita_cinta',
 		'daftar_hadiah',
 		'depthscape',
+		'photo_album',
 	];
 
 	/**
@@ -583,6 +596,14 @@ final class WidgetRegistry {
 				'color'       => 'teal',
 				'label'       => __( 'Paralaks 2.5D', 'apeiron-kit' ),
 				'description' => __( 'Adegan scroll sinematik dengan kamera 3D, layer berkedalaman, dan animasi GSAP.', 'apeiron-kit' ),
+				'group'       => __( 'Media', 'apeiron-kit' ),
+				'group_key'   => 'media',
+			],
+			'photo_album'   => [
+				'icon'        => 'format-gallery',
+				'color'       => 'amber',
+				'label'       => __( 'Album Foto', 'apeiron-kit' ),
+				'description' => __( 'Galeri foto bergaya film strip dengan slideshow, thumbnail, dan keterangan per foto.', 'apeiron-kit' ),
 				'group'       => __( 'Media', 'apeiron-kit' ),
 				'group_key'   => 'media',
 			],

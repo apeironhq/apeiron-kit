@@ -5,8 +5,11 @@
  * and mirrors it to data-layout.
  */
 
+/* Never let the album push its container wider than the screen (e.g. a long thumbnail row in a flex container). */
 .elementor-widget-apeiron-photo-album {
 	width: 100%;
+	min-width: 0;
+	max-width: 100%;
 }
 
 .apeiron-photo-album {
@@ -48,6 +51,7 @@
 	width: 100%;
 	max-width: 100%;
 	min-width: 0;
+	overflow-x: clip;
 	padding: 32px;
 	border-radius: 16px;
 	background: var(--pa-card-bg);

@@ -99,8 +99,26 @@ class GithubReleaseUpdater {
 		return $source;
 	}
 
+	/**
+	 * Umur cache mengikuti halaman: Pembaruan (dan "Periksa lagi") selalu melihat release terbaru,
+	 * halaman Plugin paling lama satu jam, dan pemeriksaan latar belakang tetap enam jam.
+	 */
+	private function max_cache_age(): int {
+		if ( doing_action( 'load-update-core.php' ) ) {
+			return MINUTE_IN_SECONDS;
+		}
+		if ( doing_action( 'load-plugins.php' ) || doing_action( 'load-update.php' ) ) {
+			return HOUR_IN_SECONDS;
+		}
+
+		return 6 * HOUR_IN_SECONDS;
+	}
+
 	private function get_release(): ?array {
 		$cached = get_site_transient( self::CACHE_KEY );
+		if ( is_array( $cached ) && ( time() - (int) ( $cached['checked'] ?? 0 ) ) >= $this->max_cache_age() ) {
+			$cached = false;
+		}
 		if ( is_array( $cached ) ) {
 			$release = $cached['release'] ?? null;
 			if ( is_array( $release ) ) {
@@ -124,7 +142,7 @@ class GithubReleaseUpdater {
 			$release = $this->parse_release( $data );
 		}
 
-		set_site_transient( self::CACHE_KEY, [ 'release' => $release ], $release ? 6 * HOUR_IN_SECONDS : HOUR_IN_SECONDS );
+		set_site_transient( self::CACHE_KEY, [ 'release' => $release, 'checked' => time() ], $release ? 6 * HOUR_IN_SECONDS : HOUR_IN_SECONDS );
 		return $release;
 	}
 

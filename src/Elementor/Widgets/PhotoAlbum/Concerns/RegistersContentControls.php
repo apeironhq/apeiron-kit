@@ -144,7 +144,8 @@ trait RegistersContentControls {
 					'filmstrip' => __( 'Film Strip', 'apeiron-kit' ),
 					'card'      => __( 'Kartu', 'apeiron-kit' ),
 				],
-				'description'          => __( 'Film Strip menampilkan thumbnail di samping, Kartu menampilkan keterangan di atas foto dengan thumbnail di bawah.', 'apeiron-kit' ),
+				'description'          => __( 'Film Strip menampilkan thumbnail di samping, Kartu menampilkan keterangan di atas foto dengan thumbnail di bawah. Film Strip otomatis tampil sebagai Kartu jika lebar widget kurang dari 760px.', 'apeiron-kit' ),
+				'render_type'          => 'template',
 				'selectors'            => [ '{{WRAPPER}} .apeiron-photo-album' => '{{VALUE}}' ],
 				'selectors_dictionary' => [
 					'filmstrip' => '--pa-layout: filmstrip;',

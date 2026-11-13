@@ -13,6 +13,7 @@
     var ROOT = '[data-apeiron-photo-album]';
     var LAYOUTS = ['filmstrip', 'card'];
     var SWIPE_DISTANCE = 40;
+    var FILMSTRIP_MIN_WIDTH = 760;
     var albums = new Map();
     var motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
     var resizeFrame = null;
@@ -26,6 +27,14 @@
             schedule(state);
         });
     }, { threshold: 0.2 }) : null;
+
+    // Column resizes in the editor and breakpoint changes do not always resize the window.
+    var resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(function (entries) {
+        entries.forEach(function (entry) {
+            var state = albums.get(entry.target);
+            if (state) syncLayout(state);
+        });
+    }) : null;
 
     function pad(number) {
         return number < 10 ? '0' + number : String(number);
@@ -42,7 +51,12 @@
 
     function syncLayout(state) {
         var value = window.getComputedStyle(state.root).getPropertyValue('--pa-layout').trim();
-        if (LAYOUTS.indexOf(value) !== -1 && state.root.getAttribute('data-layout') !== value) {
+        if (LAYOUTS.indexOf(value) === -1) return;
+        // The film strip needs room for thumbnails, photo and counter side by side.
+        if (value === 'filmstrip' && state.root.clientWidth > 0 && state.root.clientWidth < FILMSTRIP_MIN_WIDTH) {
+            value = 'card';
+        }
+        if (state.root.getAttribute('data-layout') !== value) {
             state.root.setAttribute('data-layout', value);
             revealThumb(state, false);
         }
@@ -213,6 +227,7 @@
     function destroy(state) {
         window.clearTimeout(state.timer);
         if (observer) observer.unobserve(state.root);
+        if (resizeObserver) resizeObserver.unobserve(state.root);
         albums.delete(state.root);
     }
 
@@ -342,6 +357,7 @@
         bind(state);
         updateMeta(state, false);
         if (observer) observer.observe(root);
+        if (resizeObserver) resizeObserver.observe(root);
         schedule(state);
     }
 

@@ -91,7 +91,7 @@
 /* Body: film strip layout */
 .apeiron-photo-album .apeiron-photo-album__body {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(150px, 220px);
+	grid-template-columns: minmax(0, 1fr) clamp(150px, 22%, 220px);
 	grid-template-areas:
 		"stage meta"
 		"progress .";
@@ -101,7 +101,7 @@
 }
 
 .apeiron-photo-album .apeiron-photo-album__body.has-thumbs {
-	grid-template-columns: auto minmax(0, 1fr) minmax(150px, 220px);
+	grid-template-columns: auto minmax(0, 1fr) clamp(150px, 22%, 220px);
 	grid-template-areas:
 		"thumbs stage meta"
 		". progress .";

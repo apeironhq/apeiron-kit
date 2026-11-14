@@ -55,7 +55,6 @@
 	padding: 32px;
 	border-radius: 16px;
 	background: var(--pa-card-bg);
-	box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
 	font-family: var(--apeiron-font-family, "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
 	font-weight: var(--apeiron-font-weight-body, 400);
 	color: var(--apeiron-text, #1d2939);
@@ -327,7 +326,7 @@
 	border-radius: 50%;
 	background: var(--pa-button-bg);
 	color: var(--pa-button-icon);
-	box-shadow: 0 0 0 4px var(--pa-button-ring), 0 6px 16px rgba(16, 24, 40, 0.16);
+	box-shadow: 0 0 0 4px var(--pa-button-ring);
 	cursor: pointer;
 	transition: background-color 0.25s ease, transform 0.25s ease;
 }
@@ -555,7 +554,7 @@
 .apeiron-photo-album[data-compact="yes"] .apeiron-photo-album__button {
 	width: var(--pa-button-size, 40px);
 	height: var(--pa-button-size, 40px);
-	box-shadow: 0 0 0 3px var(--pa-button-ring), 0 6px 14px rgba(16, 24, 40, 0.16);
+	box-shadow: 0 0 0 3px var(--pa-button-ring);
 }
 
 .apeiron-photo-album[data-compact="yes"] .apeiron-photo-album__thumbs {
@@ -616,10 +615,6 @@
 .apeiron-photo-album[data-layout="card"] .apeiron-photo-album__stage {
 	height: var(--pa-photo-height, 480px);
 	padding-right: 20px;
-}
-
-.apeiron-photo-album[data-layout="card"] .apeiron-photo-album__viewport {
-	box-shadow: 0 10px 24px rgba(16, 24, 40, 0.16);
 }
 
 .apeiron-photo-album[data-layout="card"] .apeiron-photo-album__peek {
@@ -699,7 +694,7 @@
 	border: 1px solid var(--pa-glass-border);
 	background: var(--pa-glass-bg);
 	color: var(--pa-glass-icon);
-	box-shadow: 0 6px 16px rgba(16, 24, 40, 0.18);
+	box-shadow: none;
 	-webkit-backdrop-filter: blur(10px);
 	backdrop-filter: blur(10px);
 }

@@ -125,6 +125,9 @@ trait RegistersStyleControls {
 		$this->add_album_color( 'film_number_color', __( 'Warna Nomor Film', 'apeiron-kit' ), '--pa-film-number', [ 'show_numbers' => 'yes' ] );
 		$this->add_album_color( 'film_active_color', __( 'Bingkai Aktif (Film Strip)', 'apeiron-kit' ), '--pa-film-active' );
 		$this->add_album_color( 'thumb_active_color', __( 'Bingkai Aktif (Kartu)', 'apeiron-kit' ), '--pa-thumb-active' );
+		$this->add_album_slider( 'thumb_active_width', __( 'Ketebalan Bingkai Aktif', 'apeiron-kit' ), '--pa-active-ring-width', 0, 8 );
+		$this->add_album_slider( 'thumb_active_inner_width', __( 'Ketebalan Garis Dalam', 'apeiron-kit' ), '--pa-active-ring-inner-width', 0, 6 );
+		$this->add_album_color( 'thumb_active_inner_color', __( 'Warna Garis Dalam', 'apeiron-kit' ), '--pa-active-ring-inner' );
 		$this->add_album_slider( 'thumb_size', __( 'Ukuran Thumbnail', 'apeiron-kit' ), '--pa-thumb-size', 36, 160 );
 		$this->add_album_slider( 'thumb_radius', __( 'Radius Thumbnail', 'apeiron-kit' ), '--pa-thumb-radius', 0, 30 );
 		$this->end_controls_section();

@@ -363,6 +363,10 @@
 	outline-offset: 4px;
 }
 
+.apeiron-photo-album .apeiron-photo-album__thumb:focus-visible {
+	outline-offset: -2px;
+}
+
 /* Thumbnails: vertical film strip with sprocket holes */
 .apeiron-photo-album .apeiron-photo-album__thumbs {
 	grid-area: thumbs;
@@ -414,19 +418,30 @@
 }
 
 .apeiron-photo-album .apeiron-photo-album__thumb-frame {
+	--pa-active-ring: var(--pa-film-active);
+	position: relative;
 	display: block;
 	flex: 0 0 auto;
 	width: var(--pa-thumb-size, 96px);
 	aspect-ratio: 4 / 3;
 	overflow: hidden;
 	border-radius: var(--pa-thumb-radius);
-	outline: 2px solid transparent;
-	outline-offset: 2px;
-	transition: outline-color 0.25s ease;
 }
 
-.apeiron-photo-album .apeiron-photo-album__thumb.is-active .apeiron-photo-album__thumb-frame {
-	outline-color: var(--pa-film-active);
+/* The active frame is drawn inside the thumbnail so the scrolling strip can never clip it. */
+.apeiron-photo-album .apeiron-photo-album__thumb-frame::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: inset 0 0 0 2px var(--pa-active-ring), inset 0 0 0 4px rgba(255, 255, 255, 0.85);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.25s ease;
+}
+
+.apeiron-photo-album .apeiron-photo-album__thumb.is-active .apeiron-photo-album__thumb-frame::after {
+	opacity: 1;
 }
 
 .apeiron-photo-album .apeiron-photo-album__thumb-frame img {
@@ -724,8 +739,8 @@
 	aspect-ratio: 1 / 1;
 }
 
-.apeiron-photo-album[data-layout="card"] .apeiron-photo-album__thumb.is-active .apeiron-photo-album__thumb-frame {
-	outline-color: var(--pa-thumb-active);
+.apeiron-photo-album[data-layout="card"] .apeiron-photo-album__thumb-frame {
+	--pa-active-ring: var(--pa-thumb-active);
 }
 
 .apeiron-photo-album[data-layout="card"] .apeiron-photo-album__thumb-number {

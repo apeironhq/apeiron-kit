@@ -112,8 +112,8 @@ trait RegistersStyleControls {
 			]
 		);
 		$this->add_album_color( 'photo_backdrop_color', __( 'Warna Latar Foto Utuh', 'apeiron-kit' ), '--pa-backdrop-color', [ 'photo_fit!' => 'cover' ] );
-		$this->add_album_color( 'peek_frame_color', __( 'Warna Bingkai Foto Intip', 'apeiron-kit' ), '--pa-peek-frame', [ 'show_peek' => 'yes' ] );
-		$this->add_album_slider( 'peek_rotation', __( 'Rotasi Foto Intip (deg)', 'apeiron-kit' ), '--pa-peek-rotate', -15, 15, 'deg', [ 'show_peek' => 'yes' ] );
+		$this->add_album_color( 'peek_frame_color', __( 'Warna Bingkai Foto Intip (Film Strip)', 'apeiron-kit' ), '--pa-peek-frame', [ 'show_peek' => 'yes' ] );
+		$this->add_album_slider( 'peek_rotation', __( 'Rotasi Foto Intip (Film Strip)', 'apeiron-kit' ), '--pa-peek-rotate', -15, 15, 'deg', [ 'show_peek' => 'yes' ] );
 		$this->end_controls_section();
 
 		// Thumbnail.
@@ -141,14 +141,14 @@ trait RegistersStyleControls {
 			Group_Control_Typography::get_type(),
 			[ 'name' => 'counter_typography', 'label' => __( 'Tipografi Nomor', 'apeiron-kit' ), 'selector' => '{{WRAPPER}} .apeiron-photo-album__current' ]
 		);
-		$this->add_album_color( 'counter_color', __( 'Warna Nomor', 'apeiron-kit' ), '--pa-counter-color' );
-		$this->add_album_color( 'total_color', __( 'Warna Total', 'apeiron-kit' ), '--pa-total-color' );
-		$this->add_album_color( 'rule_color', __( 'Warna Garis Pemisah', 'apeiron-kit' ), '--pa-rule-color' );
+		$this->add_album_color( 'counter_color', __( 'Warna Nomor', 'apeiron-kit' ), '--pa-counter-color', [], true );
+		$this->add_album_color( 'total_color', __( 'Warna Total', 'apeiron-kit' ), '--pa-total-color', [], true );
+		$this->add_album_color( 'rule_color', __( 'Warna Garis Pemisah', 'apeiron-kit' ), '--pa-rule-color', [], true );
 		$this->add_group_control(
 			Group_Control_Typography::get_type(),
 			[ 'name' => 'caption_typography', 'label' => __( 'Tipografi Keterangan', 'apeiron-kit' ), 'selector' => '{{WRAPPER}} .apeiron-photo-album__caption', 'separator' => 'before' ]
 		);
-		$this->add_album_color( 'caption_color', __( 'Warna Keterangan', 'apeiron-kit' ), '--pa-caption-color' );
+		$this->add_album_color( 'caption_color', __( 'Warna Keterangan', 'apeiron-kit' ), '--pa-caption-color', [], true );
 		$this->add_control(
 			'card_overlay_heading',
 			[ 'label' => __( 'Layout Kartu', 'apeiron-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ]
@@ -164,6 +164,10 @@ trait RegistersStyleControls {
 		);
 		$this->add_album_slider( 'button_size', __( 'Ukuran Tombol', 'apeiron-kit' ), '--pa-button-size', 28, 120 );
 		$this->add_album_slider( 'button_icon_size', __( 'Ukuran Ikon', 'apeiron-kit' ), '--pa-button-icon-size', 8, 60 );
+		$this->add_control(
+			'solid_button_heading',
+			[ 'label' => __( 'Tombol Biru (Layout Film Strip)', 'apeiron-kit' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ]
+		);
 		$this->add_album_color( 'button_background', __( 'Warna Tombol', 'apeiron-kit' ), '--pa-button-bg' );
 		$this->add_album_color( 'button_hover_background', __( 'Warna Tombol (Hover)', 'apeiron-kit' ), '--pa-button-bg-hover' );
 		$this->add_album_color( 'button_icon_color', __( 'Warna Ikon', 'apeiron-kit' ), '--pa-button-icon' );
@@ -189,11 +193,17 @@ trait RegistersStyleControls {
 		$this->end_controls_section();
 	}
 
-	private function add_album_color( string $name, string $label, string $variable, array $condition = [] ): void {
+	/**
+	 * @param bool $explicit Also expose the chosen colour as "<variable>-set", so layouts that normally
+	 *                       override it (the text over the photo in the card layout) follow it when it is set.
+	 */
+	private function add_album_color( string $name, string $label, string $variable, array $condition = [], bool $explicit = false ): void {
+		$css  = $variable . ': {{VALUE}};';
+		$css .= $explicit ? ' ' . $variable . '-set: {{VALUE}};' : '';
 		$args = [
 			'label'     => $label,
 			'type'      => Controls_Manager::COLOR,
-			'selectors' => [ '{{WRAPPER}} .apeiron-photo-album' => $variable . ': {{VALUE}};' ],
+			'selectors' => [ '{{WRAPPER}} .apeiron-photo-album' => $css ],
 		];
 		if ( ! empty( $condition ) ) {
 			$args['condition'] = $condition;

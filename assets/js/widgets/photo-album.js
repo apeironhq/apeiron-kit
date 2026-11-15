@@ -157,6 +157,21 @@
         });
     }
 
+    // Photos other than the first are only downloaded when they are about to show.
+    function loadSlide(slide) {
+        var image = slide && slide.querySelector('.apeiron-photo-album__image');
+        if (!image || image.getAttribute('src')) return;
+        var srcset = slide.getAttribute('data-srcset');
+        if (srcset) image.setAttribute('srcset', srcset);
+        image.setAttribute('src', slide.getAttribute('data-src') || '');
+    }
+
+    function preloadNeighbours(state) {
+        if (state.total < 2) return;
+        loadSlide(state.slides[wrap(state, state.index + 1)]);
+        loadSlide(state.slides[wrap(state, state.index - 1)]);
+    }
+
     function setActive(slide, active) {
         slide.classList.toggle('is-active', active);
         if (active) slide.removeAttribute('aria-hidden'); else slide.setAttribute('aria-hidden', 'true');
@@ -176,6 +191,7 @@
 
         var incoming = state.slides[index];
         var outgoing = state.slides[previous];
+        loadSlide(incoming);
 
         if (state.effect === 'slide' && !motion.matches && state.speed > 0) {
             state.slides.forEach(function (slide) {
@@ -210,6 +226,7 @@
         }
 
         updateMeta(state, true);
+        preloadNeighbours(state);
         schedule(state);
     }
 
@@ -372,6 +389,12 @@
         if (observer) observer.observe(root);
         if (resizeObserver) resizeObserver.observe(root);
         if (root.getAttribute('data-editor') === 'yes') watchEditorStyles();
+        // Fetch the next and previous photos only after the page itself has finished loading.
+        if (document.readyState === 'complete') {
+            preloadNeighbours(state);
+        } else {
+            window.addEventListener('load', function () { preloadNeighbours(state); }, { once: true });
+        }
         schedule(state);
     }
 

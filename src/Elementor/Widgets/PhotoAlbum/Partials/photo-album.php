@@ -47,7 +47,8 @@ $render_nav_icon = static function ( $icon, string $fallback ) use ( $svg_allowe
 						<?php if ( $flags['lightbox'] ) : ?>
 							<a class="apeiron-photo-album__link" href="<?php echo esc_url( $photo['full'] ); ?>" data-elementor-open-lightbox="yes" data-elementor-lightbox-slideshow="<?php echo esc_attr( $lightbox_id ); ?>" data-elementor-lightbox-title="<?php echo esc_attr( $photo['caption'] ); ?>"<?php echo 0 === $index ? '' : ' tabindex="-1"'; ?>>
 						<?php endif; ?>
-						<img class="apeiron-photo-album__image" src="<?php echo esc_url( $photo['src'] ); ?>"<?php echo '' !== $photo['srcset'] ? ' srcset="' . esc_attr( $photo['srcset'] ) . '" sizes="(max-width: 767px) 100vw, 60vw"' : ''; ?> alt="<?php echo esc_attr( '' !== $photo['alt'] ? $photo['alt'] : $photo['caption'] ); ?>" decoding="async"<?php echo 0 === $index ? '' : ' loading="lazy"'; ?> />
+						<?php // Only the first photo is downloaded with the page; photo-album.js loads the others when they are about to show. ?>
+						<img class="apeiron-photo-album__image"<?php echo 0 === $index ? ' src="' . esc_url( $photo['src'] ) . '"' . ( '' !== $photo['srcset'] ? ' srcset="' . esc_attr( $photo['srcset'] ) . '"' : '' ) : ''; ?> sizes="(max-width: 767px) 100vw, 60vw" alt="<?php echo esc_attr( '' !== $photo['alt'] ? $photo['alt'] : $photo['caption'] ); ?>" decoding="async" />
 						<?php if ( $flags['lightbox'] ) : ?>
 							</a>
 						<?php endif; ?>
